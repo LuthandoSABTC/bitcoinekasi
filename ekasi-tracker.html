@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitcoin Ekasi · Diploma Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#f7931a;--gold:#ffd700;--green:#00e676;--red:#ff5252;--purple:#a78bfa;
+  --bg:#060609;--bg2:#0e0e16;--bg3:#13131f;--border:#1c1c2e;
+  --text:#e8e0ff;--muted:#4a4a6a;--muted2:#2a2a4a;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif}
+
+/* ── LAYOUT ── */
+.app-shell{display:grid;grid-template-columns:260px 1fr;grid-template-rows:100vh;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sidebar::before{content:'';position:absolute;top:0;left:0;right:0;height:300px;background:radial-gradient(ellipse at top,#f7931a0a,transparent);pointer-events:none}
+
+.logo-area{padding:28px 24px 20px;border-bottom:1px solid var(--border);position:relative}
+.logo-svg{width:100%;max-width:180px;margin:0 auto;display:block}
+.logo-tagline{font-size:9px;color:var(--muted);letter-spacing:4px;text-align:center;margin-top:8px;text-transform:uppercase}
+
+.sidebar-stats{padding:16px;border-bottom:1px solid var(--border)}
+.ss-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.ss-row:last-child{margin-bottom:0}
+.ss-label{font-size:10px;color:var(--muted);letter-spacing:1px}
+.ss-val{font-size:16px;font-weight:700;color:var(--orange);font-family:'Syne',sans-serif}
+
+.nav-area{flex:1;padding:16px;overflow-y:auto}
+.nav-label{font-size:8px;color:var(--muted2);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;padding-left:4px}
+.nb{width:100%;background:none;border:none;color:var(--muted);padding:12px 16px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:500;border-radius:12px;transition:all .2s;display:flex;align-items:center;gap:12px;margin-bottom:4px;text-align:left}
+.nb-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.nb:hover{color:var(--orange);background:#f7931a10}
+.nb.on{background:linear-gradient(135deg,#f7931a18,#ffd70008);color:var(--orange);font-weight:700;border:1px solid #f7931a22}
+.nb-badge{margin-left:auto;background:#f7931a22;color:var(--orange);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border)}
+.date-pill{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--muted);text-align:center}
+.date-pill strong{display:block;color:var(--text);font-size:13px;margin-bottom:2px}
+
+/* ── MAIN CONTENT ── */
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
+.topbar-title span{color:var(--orange)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.streak-pill{display:flex;align-items:center;gap:6px;background:#f7931a12;border:1px solid #f7931a2a;border-radius:20px;padding:6px 14px;font-size:11px;color:var(--orange)}
+
+.content{flex:1;overflow-y:auto;padding:28px;position:relative}
+.content::before{content:'';position:fixed;top:0;right:0;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,#f7931a05,transparent);pointer-events:none;z-index:0}
+
+/* ── TABS ── */
+.tab{display:none;position:relative;z-index:1;animation:fadeUp .25s ease}
+.tab.show{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SECTION LABEL ── */
+.lbl{font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── GRID LAYOUTS ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;transition:all .2s;position:relative;overflow:hidden}
+.card:hover{border-color:#2c2c3e;transform:translateY(-1px)}
+.card-glow::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#f7931a55,transparent)}
+
+/* ── STAT CARDS ── */
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;transition:all .2s;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--orange),transparent);opacity:.4}
+.stat-card:hover{border-color:#2c2c3e;transform:translateY(-2px)}
+.stat-icon{font-size:28px;margin-bottom:10px}
+.stat-v{font-size:clamp(22px,2.5vw,30px);font-weight:900;color:var(--orange);font-family:'Syne',sans-serif;line-height:1}
+.stat-l{font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:6px;text-transform:uppercase}
+
+/* ── STUDENT ATTEND CARD ── */
+.s-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:10px;transition:all .2s;display:flex;align-items:center;gap:16px}
+.s-card.present{border-color:#f7931a44;background:linear-gradient(135deg,#f7931a08,var(--bg2))}
+.s-card:hover{border-color:#2c2c3e}
+.s-avatar{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;transition:all .3s}
+
+/* ── TOGGLE ── */
+.tog{width:52px;height:28px;border-radius:14px;border:none;cursor:pointer;position:relative;transition:all .3s;flex-shrink:0}
+.tog::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:3px;transition:left .3s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.tog.off{background:#1e1e2e}
+.tog.off::after{left:3px}
+.tog.on{background:linear-gradient(135deg,#f7931a,#ffd700);box-shadow:0 0 14px #f7931a44}
+.tog.on::after{left:27px}
+
+/* ── PAYOUT CARD ── */
+.p-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:18px;transition:all .2s}
+.p-card:hover{border-color:#2c2c3e}
+.p-info{flex:1;min-width:0}
+.p-amount-box{text-align:right;flex-shrink:0;min-width:140px}
+.p-amount{font-family:'Syne',sans-serif;font-size:32px;font-weight:900;line-height:1}
+.p-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ── ROSTER CARD ── */
+.r-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all .2s}
+.r-card:hover{border-color:#2c2c3e}
+
+/* ── STATS CARD ── */
+.st-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px}
+.st-mini{background:#080810;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.week-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.week-row:last-child{border-bottom:none}
+
+/* ── BUTTONS ── */
+.btn{border:none;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;border-radius:10px;transition:all .2s;letter-spacing:.3px}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,#f7931a,#ffa733);color:#000;padding:12px 22px;font-size:13px;box-shadow:0 4px 16px #f7931a2a}
+.btn-primary:hover{box-shadow:0 6px 22px #f7931a44;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-outline{background:none;border:1px solid #f7931a44;color:var(--orange);padding:9px 16px;font-size:12px}
+.btn-outline:hover{background:#f7931a10;border-color:#f7931a77}
+.btn-green{background:#00e67614;border:1px solid #00e67633;color:#00e676;padding:10px 18px;font-size:12px}
+.btn-green:hover{background:#00e67622}
+.btn-green:disabled{opacity:.3;cursor:not-allowed}
+.btn-red{background:#ff525214;border:1px solid #ff525233;color:#ff5252;padding:8px 14px;font-size:11px}
+.btn-red:hover{background:#ff525222}
+.btn-purple{background:#a78bfa14;border:1px solid #a78bfa33;color:#a78bfa;padding:8px 14px;font-size:11px}
+.btn-purple:hover{background:#a78bfa22}
+.btn-sm{padding:7px 13px;font-size:11px}
+
+/* ── INPUT ── */
+.inp{background:#080810;border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:12px;font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;width:100%;transition:all .2s}
+.inp:focus{border-color:#f7931a66;box-shadow:0 0 0 3px #f7931a10}
+.inp::placeholder{color:#1e1e3e}
+
+/* ── ALERTS ── */
+.ok{background:#00e67610;border:1px solid #00e67633;color:#00e676;border-radius:12px;padding:12px 16px;font-size:12px;line-height:1.6;margin-bottom:12px}
+.err{background:#ff525210;border:1px solid #ff525233;color:#ff5252;border-radius:12px;padding:12px 16px;font-size:12px;line-height:1.6;margin-bottom:12px}
+.warn{background:#f7931a10;border:1px solid #f7931a33;color:#f7931aaa;border-radius:12px;padding:12px 16px;font-size:12px;line-height:1.6;margin-bottom:12px}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:1px}
+.b-orange{background:#f7931a18;color:#f7931a;border:1px solid #f7931a33}
+.b-green{background:#00e67618;color:#00e676;border:1px solid #00e67633}
+.b-gray{background:#1e1e2e;color:var(--muted);border:1px solid #2e2e3e}
+.b-gold{background:#ffd70018;color:#ffd700;border:1px solid #ffd70033}
+
+/* ── PROGRESS ── */
+.pb{height:5px;background:#1e1e2e;border-radius:4px;overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,#f7931a,#ffd700);border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:#f7931a22;border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ── LOGIN ── */
+.login{display:flex;align-items:center;justify-content:center;width:100vw;height:100vh;background:var(--bg);position:fixed;inset:0;z-index:100}
+.lbox{width:420px;background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:48px 40px;text-align:center;position:relative;overflow:hidden}
+.lbox::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#f7931a06,transparent,#7c3aed06);pointer-events:none}
+
+hr{border:none;border-top:1px solid var(--border);margin:20px 0}
+
+/* ── DIVIDER ── */
+.divider{width:1px;background:var(--border)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginScreen">
+  <div class="lbox">
+    <img src="https://bitcoinekasi-tracker.netlify.app/logo.jpg" alt="Bitcoin Ekasi" style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:2px solid #f7931a55;box-shadow:0 0 30px #f7931a33;margin:0 auto 16px;display:block">
+    <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:900;background:linear-gradient(135deg,#f7931a,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">BITCOIN EKASI</div>
+    <div style="font-size:9px;color:#3a3a5a;letter-spacing:5px;margin-bottom:4px;text-transform:uppercase">Diploma Tracker</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:28px">Mossel Bay · South Africa 🇿🇦</div>
+    <input class="inp" type="password" id="pwInput" placeholder="Teacher password" style="text-align:center;margin-bottom:14px;font-size:15px">
+    <div id="pwErr" style="color:#ff5252;font-size:12px;margin-bottom:12px;min-height:18px"></div>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px" onclick="doLogin()">ENTER →</button>
+    <div style="font-size:9px;color:#1e1e3e;margin-top:14px">Default: ekasi2024</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app-shell" id="app" style="display:none">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Logo -->
+    <div class="logo-area" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px 16px">
+      <img src="https://bitcoinekasi-tracker.netlify.app/logo.jpg" alt="Bitcoin Ekasi" style="width:110px;height:110px;border-radius:50%;object-fit:cover;border:2px solid #f7931a44;box-shadow:0 0 20px #f7931a22;margin-bottom:10px">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:900;background:linear-gradient(135deg,#f7931a,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px">BITCOIN EKASI</div>
+      <div style="font-size:8px;color:#3a3a5a;letter-spacing:4px;margin-top:3px;text-transform:uppercase">Diploma Tracker</div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="sidebar-stats">
+      <div class="ss-row">
+        <span class="ss-label">👥 STUDENTS</span>
+        <span class="ss-val" id="sStudents">0</span>
+      </div>
+      <div class="ss-row">
+        <span class="ss-label">📅 TODAY</span>
+        <span class="ss-val" id="sToday">0/0</span>
+      </div>
+      <div class="ss-row">
+        <span class="ss-label">⚡ OWED</span>
+        <span class="ss-val" id="sOwed">0</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="nav-area">
+      <div class="nav-label">Main Menu</div>
+      <button class="nb on" id="n-attend" onclick="go('attend')">
+        <span class="nb-icon">✓</span>
+        <span>Attendance</span>
+        <span class="nb-badge" id="nb-present" style="display:none">0</span>
+      </button>
+      <button class="nb" id="n-payout" onclick="go('payout')">
+        <span class="nb-icon">⚡</span>
+        <span>Payouts</span>
+        <span class="nb-badge" id="nb-owed" style="display:none">0</span>
+      </button>
+      <button class="nb" id="n-stats" onclick="go('stats')">
+        <span class="nb-icon">📊</span>
+        <span>Statistics</span>
+      </button>
+      <button class="nb" id="n-roster" onclick="go('roster')">
+        <span class="nb-icon">👥</span>
+        <span>Student Roster</span>
+      </button>
+      <div class="nav-label" style="margin-top:16px">System</div>
+      <button class="nb" id="n-classes" onclick="go('classes')">
+        <span class="nb-icon">🏫</span>
+        <span>All Classes</span>
+      </button>
+      <button class="nb" id="n-settings" onclick="go('settings')">
+        <span class="nb-icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+      <button class="nb" onclick="logout()" style="color:#ff5252">
+        <span class="nb-icon">🚪</span>
+        <span>Log Out</span>
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <div class="date-pill">
+        <strong id="dateEl">Loading...</strong>
+        <span id="streakEl" style="font-size:10px;color:var(--orange)">⚡ Bitcoin Ekasi</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">✓ <span>Attendance</span></div>
+      <div class="topbar-right">
+        <div class="streak-pill" id="streakPill">⚡ Loading…</div>
+        <button class="btn btn-outline btn-sm" onclick="go('settings')">⚙ Settings</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ATTEND TAB -->
+      <div class="tab show" id="t-attend">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div class="lbl" style="margin:0;flex:1">Today's Class</div>
+          <button class="btn btn-outline btn-sm" style="margin-left:16px" onclick="markAll()">✓ Mark All Present</button>
+        </div>
+        <div class="grid-2" id="attendList"></div>
+      </div>
+
+      <!-- PAYOUT TAB -->
+      <div class="tab" id="t-payout">
+        <div class="lbl">Lightning Payouts → Student Wallets</div>
+        <div id="payAllMsg"></div>
+        <div style="margin-bottom:20px">
+          <button class="btn btn-primary" style="padding:14px 28px;font-size:14px" onclick="payAll()">⚡ Pay All Outstanding Sats</button>
+        </div>
+        <div id="payoutList"></div>
+      </div>
+
+      <!-- STATS TAB -->
+      <div class="tab" id="t-stats">
+        <div class="lbl">Programme Overview</div>
+        <div class="grid-4" id="statsCards"></div>
+        <div class="lbl">Student Reports</div>
+        <div class="grid-2" id="statsList"></div>
+      </div>
+
+      <!-- ROSTER TAB -->
+      <div class="tab" id="t-roster">
+        <div class="grid-2" style="align-items:start;gap:24px">
+          <div>
+            <div class="lbl">Enroll New Student</div>
+            <div class="card">
+              <input class="inp" id="rName" placeholder="Student full name" style="margin-bottom:12px">
+              <input class="inp" id="rDest" placeholder="Lightning address (name@blink.sv)" style="margin-bottom:12px">
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:16px;background:#080810;border:1px solid var(--border);border-radius:10px;padding:12px">
+                💡 Enter the student's Blink Lightning address<br>
+                Example: <span style="color:var(--orange)">studentname@blink.sv</span>
+              </div>
+              <div id="rErr"></div>
+              <button class="btn btn-primary" style="width:100%;padding:13px" onclick="addStudent()">+ Enroll Student</button>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div class="lbl" style="margin:0;flex:1" id="rosterCount">Enrolled (0)</div>
+            </div>
+            <div id="rosterList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL CLASSES TAB -->
+      <div class="tab" id="t-classes">
+        <div class="lbl">All Teachers & Classes</div>
+        <div id="classesOverview"></div>
+      </div>
+
+      <!-- SETTINGS TAB -->
+      <div class="tab" id="t-settings">
+        <div class="grid-2" style="align-items:start;gap:24px">
+          <div>
+            <div class="lbl">Blink API Connection</div>
+            <div class="card">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.8;background:#080810;border:1px solid var(--border);border-radius:10px;padding:14px">
+                <strong style="color:var(--text)">How to get your API key:</strong><br>
+                1. Go to <span style="color:var(--orange)">dashboard.blink.sv</span><br>
+                2. Click API Keys → Generate Key<br>
+                3. Set scope to <span style="color:#a78bfa">READ + WRITE</span><br>
+                4. Copy and paste below
+              </div>
+              <input class="inp" type="password" id="iKey" placeholder="Paste Blink API key here" style="margin-bottom:14px">
+              <div id="keyBadge" style="margin-bottom:14px"></div>
+              <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="saveSettings()">💾 Save Settings</button>
+              <button class="btn btn-outline" style="width:100%" onclick="testBlink()">🔌 Test Connection</button>
+            </div>
+          </div>
+          <div>
+            <div class="lbl">Security</div>
+            <div class="card" style="margin-bottom:16px">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Change the teacher login password</div>
+              <input class="inp" type="password" id="iPw" placeholder="New password (min 4 chars)" style="margin-bottom:10px">
+              <div style="font-size:11px;color:var(--muted2)" id="curPw"></div>
+            </div>
+            <div id="setMsg"></div>
+            <div class="lbl" style="margin-top:20px">About</div>
+            <div class="card">
+              <div style="text-align:center;padding:10px 0">
+                <img src="https://bitcoinekasi-tracker.netlify.app/logo.jpg" alt="Bitcoin Ekasi" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #f7931a44;box-shadow:0 0 16px #f7931a22;margin:0 auto 12px;display:block">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Diploma Tracker v2.0</div>
+                <div style="font-size:10px;color:var(--muted2)">Mossel Bay · South Africa 🇿🇦</div>
+                <div style="font-size:10px;color:var(--muted2);margin-top:4px">500 sats per day · Powered by Lightning ⚡</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- content -->
+  </div><!-- main -->
+</div><!-- app-shell -->
+
+<script>
+const SATS=500, BACKEND="https://ekasi-backend.onrender.com";
+const TODAY=new Date().toISOString().split("T")[0];
+let students=JSON.parse(localStorage.getItem("ek_students")||"[]");
+let pw=localStorage.getItem("ek_pw")||"ekasi2024";
+let apiKey=localStorage.getItem("ek_key")||"";
+let payStatus={};
+function save(){localStorage.setItem("ek_students",JSON.stringify(students));}
+
+// Date
+const dObj=new Date(TODAY+"T12:00:00");
+document.getElementById("dateEl").textContent=dObj.toLocaleDateString("en-ZA",{weekday:"long",day:"numeric",month:"long"});
+
+// ── Login ──
+document.getElementById("pwInput").onkeydown=e=>{if(e.key==="Enter")doLogin();};
+function doLogin(){
+  if(document.getElementById("pwInput").value===pw){
+    document.getElementById("loginScreen").style.display="none";
+    document.getElementById("app").style.display="grid";
+    document.getElementById("curPw").textContent="Current: "+pw;
+    document.getElementById("iKey").value=apiKey;
+    updateKeyBadge(); renderAll();
+  } else {
+    document.getElementById("pwErr").textContent="❌ Wrong password";
+    document.getElementById("pwInput").value="";
+  }
+}
+function logout(){
+  document.getElementById("loginScreen").style.display="flex";
+  document.getElementById("app").style.display="none";
+  document.getElementById("pwInput").value="";
+  document.getElementById("pwErr").textContent="";
+}
+
+// ── Navigation ──
+const tabTitles={attend:"✓ Attendance",payout:"⚡ Payouts",stats:"📊 Statistics",roster:"👥 Student Roster",classes:"🏫 All Classes",settings:"⚙️ Settings"};
+
+// ── SUPABASE CONFIG ──
+const SUPABASE_URL = 'https://bnteowvyioptlvohyert.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY';
+const SATS_REMOTE = 500;
+const TODAY_REMOTE = new Date().toISOString().split("T")[0];
+
+async function sb(method, table, body=null, params='') {
+  const url = `https://ekasi-backend.onrender.com/db/${table}${params}`;
+  const opts = { method, headers: {'Content-Type': 'application/json'}, body: body ? JSON.stringify(body) : null };
+  const res = await fetch(url, opts);
+  if (!res.ok) { const e = await res.text(); throw new Error(e); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+const dbAdmin = {
+  get: (table, params='') => sb('GET', table, null, params),
+};
+
+// ── RENDER ALL CLASSES from Supabase ──
+let classesRefreshTimer = null;
+let classesWs = null;
+
+function startClassesLive() {
+  // Auto refresh every 10 seconds
+  if (classesRefreshTimer) clearInterval(classesRefreshTimer);
+  classesRefreshTimer = setInterval(() => {
+    if (document.getElementById("t-classes").classList.contains("show")) {
+      renderClasses(false); // silent refresh
+    }
+  }, 10000);
+
+  // Realtime via Supabase websocket
+  if (classesWs) classesWs.close();
+  const wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_ANON_KEY + '&vsn=1.0.0';
+  classesWs = new WebSocket(wsUrl);
+  classesWs.onopen = () => {
+    classesWs.send(JSON.stringify({topic:'realtime:public',event:'phx_join',payload:{config:{broadcast:{self:true},presence:{key:''},postgres_changes:[{event:'*',schema:'public'}]}},ref:'1'}));
+  };
+  classesWs.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.event === 'postgres_changes') {
+      if (document.getElementById("t-classes").classList.contains("show")) {
+        renderClasses(false);
+      }
+    }
+    if (msg.event === 'phx_reply' && msg.ref === '1') {
+      setInterval(() => classesWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})), 25000);
+    }
+  };
+}
+
+async function renderClasses(showLoader=true) {
+  const el = document.getElementById("classesOverview");
+  if (showLoader) el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><span class="spinner"></span> Loading all classes…</div>';
+
+  try {
+    const teachers = await dbAdmin.get('teachers', '?order=created_at.asc');
+    if (!teachers.length) {
+      el.innerHTML = `<div style="text-align:center;padding:80px 20px">
+        <div style="font-size:64px;margin-bottom:20px">🏫</div>
+        <div style="color:var(--muted);font-size:16px;margin-bottom:8px">No teachers registered yet</div>
+        <div style="color:var(--muted2);font-size:13px">Teachers register on the Teacher Portal</div>
+      </div>`;
+      return;
+    }
+
+    const allStudents = await dbAdmin.get('students', '?order=created_at.asc');
+    const allAtt = allStudents.length ? await dbAdmin.get('attendance', `?student_id=in.(${allStudents.map(s=>s.id).join(',')})`) : [];
+
+    // Attach attendance to students
+    const studentsWithAtt = allStudents.map(s=>({
+      ...s,
+      att: Object.fromEntries(allAtt.filter(a=>a.student_id===s.id).map(a=>[a.date,true]))
+    }));
+
+    // Programme totals
+    const totalStudents = studentsWithAtt.length;
+    const totalEarned = studentsWithAtt.reduce((a,s)=>a+Object.keys(s.att||{}).length*SATS_REMOTE,0);
+    const totalPaid = studentsWithAtt.reduce((a,s)=>a+(s.paid||0),0);
+    const totalPresent = studentsWithAtt.filter(s=>s.att&&s.att[TODAY_REMOTE]).length;
+
+    let html = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px">
+      ${[
+        {i:"🏫",l:"Teachers",v:teachers.length,c:"#a78bfa"},
+        {i:"👥",l:"Total Students",v:totalStudents,c:"#f7931a"},
+        {i:"📅",l:"Present Today",v:totalPresent+"/"+totalStudents,c:"#ffd700"},
+        {i:"💰",l:"Total Paid",v:totalPaid.toLocaleString()+"⚡",c:"#00e676"},
+      ].map(x=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
+        <div style="font-size:26px;margin-bottom:8px">${x.i}</div>
+        <div style="font-size:22px;font-weight:700;color:${x.c};font-family:'Syne',sans-serif">${x.v}</div>
+        <div style="font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:5px">${x.l.toUpperCase()}</div>
+      </div>`).join("")}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="renderClasses()">🔄 Refresh</button>
+      <div style="display:flex;align-items:center;gap:6px;background:#00e67610;border:1px solid #00e67633;border-radius:20px;padding:5px 12px;font-size:10px;color:#00e676">
+        <span class="realtime-dot"></span>LIVE — updates automatically
+      </div>
+      <div style="font-size:10px;color:var(--muted)">Last updated: ${new Date().toLocaleTimeString('en-ZA')}</div>
+    </div>`;
+
+    teachers.forEach(t => {
+      const myStudents = studentsWithAtt.filter(s=>s.teacher_id===t.id);
+      const earned = myStudents.reduce((a,s)=>a+Object.keys(s.att||{}).length*SATS_REMOTE,0);
+      const paid = myStudents.reduce((a,s)=>a+(s.paid||0),0);
+      const owed = Math.max(0,earned-paid);
+      const present = myStudents.filter(s=>s.att&&s.att[TODAY_REMOTE]).length;
+      const allDays = [...new Set(myStudents.flatMap(s=>Object.keys(s.att||{})))].length;
+      const ini = t.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+          <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;flex-shrink:0">${ini}</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:18px;margin-bottom:3px">${t.name}</div>
+            <div style="font-size:12px;color:var(--muted)">📚 ${t.class_name} · ${myStudents.length} student${myStudents.length!==1?'s':''}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <span style="background:#f7931a18;border:1px solid #f7931a33;border-radius:20px;padding:5px 12px;font-size:10px;color:#f7931a;font-weight:700">${present}/${myStudents.length} today</span>
+            <span style="background:#ffd70018;border:1px solid #ffd70033;border-radius:20px;padding:5px 12px;font-size:10px;color:#ffd700;font-weight:700">${owed.toLocaleString()} sats owed</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+          ${[
+            {l:"Students",v:myStudents.length,c:"#f7931a"},
+            {l:"Days",v:allDays,c:"#a78bfa"},
+            {l:"Earned",v:earned.toLocaleString()+"⚡",c:"#ffd700"},
+            {l:"Paid",v:paid.toLocaleString()+"⚡",c:"#00e676"},
+          ].map(x=>`<div style="background:#080810;border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:16px;font-weight:700;color:${x.c};font-family:'Syne',sans-serif">${x.v}</div>
+            <div style="font-size:8px;color:var(--muted);letter-spacing:1px;margin-top:3px">${x.l.toUpperCase()}</div>
+          </div>`).join("")}
+        </div>
+        ${myStudents.length ? `
+        <div style="font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px">Student Roster</div>
+        ${myStudents.map(s=>{
+          const d=Object.keys(s.att||{}).length;
+          const here=!!(s.att&&s.att[TODAY_REMOTE]);
+          const ini2=s.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+          const pct=allDays>0?Math.round(d/allDays*100):0;
+          return `<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#080810;border:1px solid var(--border);border-radius:12px;margin-bottom:8px">
+            <div style="width:36px;height:36px;border-radius:10px;background:${here?'linear-gradient(135deg,#f7931a,#ffd700)':'#1e1e2e'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:${here?'#000':'var(--muted)'};flex-shrink:0">${ini2}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:13px;margin-bottom:4px">${s.name}</div>
+              <div style="height:3px;background:#1e1e2e;border-radius:2px;overflow:hidden;margin-bottom:4px">
+                <div style="height:100%;background:linear-gradient(90deg,#f7931a,#ffd700);border-radius:2px;width:${pct}%"></div>
+              </div>
+              <div style="font-size:10px;color:var(--muted)">${d} days · ${(d*SATS_REMOTE).toLocaleString()} sats earned · ${(s.paid||0).toLocaleString()} paid</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:700;color:${here?'#f7931a':'var(--muted2)'}">${here?'✓ PRESENT':'ABSENT'}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">${Math.max(0,d*SATS_REMOTE-(s.paid||0))} owed</div>
+            </div>
+          </div>`;
+        }).join("")}` : `<div style="text-align:center;color:var(--muted2);padding:16px;font-size:12px">No students enrolled yet</div>`}
+      </div>`;
+    });
+
+    el.innerHTML = html;
+
+  } catch(e) {
+    el.innerHTML = `<div class="err" style="padding:20px">
+      <strong>Error loading classes:</strong><br>${e.message}<br><br>
+      <button class="btn btn-outline btn-sm" onclick="renderClasses()">🔄 Try Again</button>
+    </div>`;
+    console.error('renderClasses error:', e);
+  }
+}
+function go(name){
+  ["attend","payout","stats","roster","classes","settings"].forEach(t=>{
+    document.getElementById("t-"+t).classList.toggle("show",t===name);
+    document.getElementById("n-"+t).classList.toggle("on",t===name);
+  });
+  document.getElementById("topbarTitle").innerHTML=tabTitles[name]||name;
+  if(name==="payout")renderPayout();
+  if(name==="stats")renderStats();
+  if(name==="roster")renderRoster();
+  if(name==="classes"){ renderClasses(); startClassesLive(); }
+}
+
+// ── Stats ──
+function updateStats(){
+  const present=students.filter(s=>s.att&&s.att[TODAY]).length;
+  const earned=students.reduce((a,s)=>a+Object.keys(s.att||{}).length*SATS,0);
+  const paid=students.reduce((a,s)=>a+(s.paid||0),0);
+  const owed=Math.max(0,earned-paid);
+  const owing=students.filter(s=>(Object.keys(s.att||{}).length*SATS-(s.paid||0))>0).length;
+  document.getElementById("sStudents").textContent=students.length;
+  document.getElementById("sToday").textContent=present+"/"+students.length;
+  document.getElementById("sOwed").textContent=owed.toLocaleString()+"⚡";
+  // Nav badges
+  const np=document.getElementById("nb-present");
+  if(present>0){np.textContent=present;np.style.display="block";}else{np.style.display="none";}
+  const no=document.getElementById("nb-owed");
+  if(owing>0){no.textContent=owing;no.style.display="block";}else{no.style.display="none";}
+  // Streak pill
+  const totalDays=[...new Set(students.flatMap(s=>Object.keys(s.att||{})))].length;
+  const pill=document.getElementById("streakPill");
+  const streak=document.getElementById("streakEl");
+  if(students.length===0){pill.textContent="⚡ Add students to start";streak.textContent="⚡ Bitcoin Ekasi";}
+  else if(present===students.length&&students.length>0){
+    pill.textContent="🔥 Full house! "+present+"/"+students.length+" present";
+    streak.textContent="🔥 Perfect attendance today!";
+  } else {
+    pill.textContent="📚 "+totalDays+" total class days tracked";
+    streak.textContent="📅 "+present+"/"+students.length+" present today";
+  }
+}
+
+// ── Attend ──
+function renderAttend(){
+  const el=document.getElementById("attendList");
+  if(!students.length){
+    el.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:80px 20px">
+      <div style="font-size:64px;margin-bottom:20px">🎓</div>
+      <div style="color:var(--muted);font-size:16px;margin-bottom:8px;font-weight:600">No students enrolled yet</div>
+      <div style="color:var(--muted2);font-size:13px;margin-bottom:20px">Go to Student Roster to add your first student</div>
+      <button class="btn btn-primary" onclick="go('roster')">👥 Go to Roster</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML=students.map(s=>{
+    const here=!!(s.att&&s.att[TODAY]);
+    const days=Object.keys(s.att||{}).length;
+    const ini=s.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+    return `<div class="s-card ${here?'present':''}">
+      <div class="s-avatar" style="background:${here?'linear-gradient(135deg,#f7931a,#ffd700)':'#1e1e2e'};color:${here?'#000':'var(--muted)'}">${ini}</div>
+      <button class="tog ${here?'on':'off'}" onclick="toggle(${s.id})"></button>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;color:${here?'#ffd700':'var(--text)'};">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${days} day${days!==1?'s':''} · ${(days*SATS).toLocaleString()} sats</div>
+      </div>
+      <span class="badge ${here?'b-orange':'b-gray'}">${here?'✓ PRESENT':'ABSENT'}</span>
+    </div>`;
+  }).join("");
+}
+function toggle(id){
+  students=students.map(s=>{
+    if(s.id!==id)return s;
+    const att={...(s.att||{})};
+    if(att[TODAY])delete att[TODAY];else att[TODAY]=true;
+    return{...s,att};
+  });
+  save();renderAll();
+}
+function markAll(){
+  students=students.map(s=>({...s,att:{...(s.att||{}),[TODAY]:true}}));
+  save();renderAll();
+}
+
+// ── Payout ──
+function renderPayout(){
+  const el=document.getElementById("payoutList");
+  if(!apiKey)document.getElementById("payAllMsg").innerHTML='<div class="warn">⚙️ Set your Blink API key in Settings first.</div>';
+  if(!students.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:60px 0;font-size:14px">No students enrolled yet.</div>';return;}
+  el.innerHTML=students.map(s=>{
+    const earned=Object.keys(s.att||{}).length*SATS;
+    const paid=s.paid||0;
+    const owed=earned-paid;
+    const ps=payStatus[s.id];
+    const ini=s.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+    const dest=s.dest.length>45?s.dest.slice(0,45)+"…":s.dest;
+    let statusHtml="";
+    if(ps==="loading")statusHtml='<div class="warn" style="margin-top:12px">⏳ Sending… please wait (up to 30s)</div>';
+    else if(ps&&ps.startsWith("ok:"))statusHtml=`<div class="ok" style="margin-top:12px">✅ ${ps.slice(3)}</div>`;
+    else if(ps&&ps.startsWith("err:"))statusHtml=`<div class="err" style="margin-top:12px">❌ ${ps.slice(4)}</div>`;
+    return `<div class="p-card">
+      <div style="width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#1e1e2e,#2e2e4e);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:var(--orange);flex-shrink:0">${ini}</div>
+      <div class="p-info">
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;word-break:break-all">⚡ ${dest}</div>
+        <div style="font-size:11px;color:var(--muted2)">Earned: ${earned.toLocaleString()} · Paid: ${paid.toLocaleString()}</div>
+        <div class="p-actions">
+          ${owed>0&&!ps?`<button class="btn btn-green btn-sm" onclick="paySingle(${s.id})" ${!apiKey?'disabled':''}>⚡ Send ${owed.toLocaleString()} sats</button>`:''}
+          ${owed<=0&&earned>0?'<span class="badge b-green" style="padding:7px 14px;font-size:10px">✅ ALL PAID</span>':""}
+          ${earned===0?'<span class="badge b-gray" style="padding:7px 14px;font-size:10px">📅 No attendance</span>':""}
+        </div>
+        ${statusHtml}
+      </div>
+      <div class="p-amount-box">
+        <div class="p-amount" style="color:${owed>0?'#ffd700':'#00e676'}">${owed.toLocaleString()}</div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:4px">SATS OWED</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function paySingle(id){
+  const s=students.find(x=>x.id===id);
+  if(!s)return;
+  const owed=Object.keys(s.att||{}).length*SATS-(s.paid||0);
+  if(owed<=0)return;
+  payStatus[id]="loading";renderPayout();
+  try{
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),35000);
+    const res=await fetch(BACKEND+"/pay",{method:"POST",signal:ctrl.signal,headers:{"Content-Type":"application/json"},body:JSON.stringify({apiKey,destination:s.dest,amount:owed})});
+    clearTimeout(t);
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||"Payment failed");
+    students=students.map(x=>x.id===id?{...x,paid:(x.paid||0)+owed}:x);
+    save();
+    payStatus[id]="ok:Sent "+owed.toLocaleString()+" sats to "+s.name+"! ⚡";
+    setTimeout(()=>{delete payStatus[id];renderPayout();updateStats();},6000);
+  }catch(e){payStatus[id]="err:"+(e.name==="AbortError"?"Timed out — check Blink app":e.message);}
+  renderPayout();updateStats();
+}
+
+async function payAll(){
+  const owing=students.filter(s=>(Object.keys(s.att||{}).length*SATS-(s.paid||0))>0);
+  const el=document.getElementById("payAllMsg");
+  if(!owing.length){el.innerHTML='<div class="warn" style="margin-bottom:14px">No outstanding payments.</div>';setTimeout(()=>{el.innerHTML=""},3000);return;}
+  if(!apiKey){el.innerHTML='<div class="err" style="margin-bottom:14px">Set Blink API key in Settings first.</div>';return;}
+  let sent=0;
+  for(const s of owing){
+    el.innerHTML=`<div class="warn" style="margin-bottom:14px">⚡ Sending ${sent+1} of ${owing.length}…</div>`;
+    await paySingle(s.id);sent++;
+  }
+  el.innerHTML=`<div class="ok" style="margin-bottom:14px">🎉 Done! ${sent} payment${sent!==1?'s':''} sent. Orange pilling the youth! ⚡</div>`;
+  setTimeout(()=>{el.innerHTML=""},6000);
+}
+
+// ── Stats ──
+function renderStats(){
+  const earned=students.reduce((a,s)=>a+Object.keys(s.att||{}).length*SATS,0);
+  const paid=students.reduce((a,s)=>a+(s.paid||0),0);
+  const days=[...new Set(students.flatMap(s=>Object.keys(s.att||{})))].length;
+  document.getElementById("statsCards").innerHTML=[
+    {l:"Total Earned",v:earned.toLocaleString()+" ⚡",c:"#ffd700",i:"💰"},
+    {l:"Total Paid Out",v:paid.toLocaleString()+" ⚡",c:"#00e676",i:"✅"},
+    {l:"Outstanding",v:Math.max(0,earned-paid).toLocaleString()+" ⚡",c:"#f7931a",i:"⏳"},
+    {l:"Class Days",v:days,c:"#a78bfa",i:"📅"},
+  ].map(x=>`<div class="stat-card"><div class="stat-icon">${x.i}</div><div class="stat-v" style="color:${x.c}">${x.v}</div><div class="stat-l">${x.l}</div></div>`).join("");
+
+  const allDays=days;
+  document.getElementById("statsList").innerHTML=[...students].sort((a,b)=>Object.keys(b.att||{}).length-Object.keys(a.att||{}).length).map((s,i)=>{
+    const d=Object.keys(s.att||{}).length;
+    const pct=allDays>0?Math.round(d/allDays*100):0;
+    const ini=s.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+    const medals=["🥇","🥈","🥉"];
+    const attDays=Object.keys(s.att||{}).sort().reverse();
+    const weeksMap={};
+    attDays.forEach(day=>{
+      const dt=new Date(day+"T12:00:00");const ws=new Date(dt);ws.setDate(dt.getDate()-dt.getDay()+1);
+      const wk=ws.toISOString().split("T")[0];
+      if(!weeksMap[wk])weeksMap[wk]=[];weeksMap[wk].push(day);
+    });
+    const weeksHtml=Object.keys(weeksMap).sort().reverse().map(wk=>{
+      const wDays=weeksMap[wk];const wSats=wDays.length*SATS;
+      const wDate=new Date(wk+"T12:00:00").toLocaleDateString("en-ZA",{day:"numeric",month:"short"});
+      return `<div class="week-row"><span style="color:var(--muted)">Week of ${wDate} · ${wDays.length} day${wDays.length!==1?'s':''}</span><span style="color:#ffd700;font-weight:700">${wSats.toLocaleString()} sats ⚡</span></div>`;
+    }).join("");
+    return `<div class="st-card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#f7931a,#ffd700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#000;flex-shrink:0">${ini}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-weight:700;font-size:17px">${s.name}</span>
+            ${i<3?`<span>${medals[i]}</span>`:''}
+          </div>
+          <div style="font-size:12px;color:var(--muted)">${d} day${d!==1?'s':''} · ${pct}% attendance rate</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:26px;font-weight:900;color:#ffd700;font-family:'Syne',sans-serif">${(d*SATS).toLocaleString()}</div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1px">SATS EARNED</div>
+        </div>
+      </div>
+      <div class="pb" style="margin-bottom:16px"><div class="pf" style="width:${pct}%"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:${weeksHtml?'16px':'0'}">
+        <div class="st-mini"><div style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:#f7931a">${d}</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:4px">DAYS</div></div>
+        <div class="st-mini"><div style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:#ffd700">${(d*SATS).toLocaleString()}</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:4px">EARNED ⚡</div></div>
+        <div class="st-mini"><div style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:#00e676">${(s.paid||0).toLocaleString()}</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:4px">PAID ⚡</div></div>
+      </div>
+      ${weeksHtml?`<div style="font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;text-transform:uppercase">Weekly Breakdown</div>${weeksHtml}`:''}
+      <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--muted)">Outstanding:</span>
+        <span style="font-size:13px;font-weight:700;color:${Math.max(0,d*SATS-(s.paid||0))>0?'#ffd700':'#00e676'}">${Math.max(0,d*SATS-(s.paid||0)).toLocaleString()} sats ${Math.max(0,d*SATS-(s.paid||0))===0?'✅':''}</span>
+      </div>
+    </div>`;
+  }).join("")||`<div style="grid-column:1/-1;text-align:center;padding:80px 20px"><div style="font-size:64px;margin-bottom:20px">📊</div><div style="color:var(--muted);font-size:16px">No data yet — start marking attendance</div></div>`;
+}
+
+// ── Roster ──
+function renderRoster(){
+  document.getElementById("rosterCount").textContent=`Enrolled (${students.length})`;
+  document.getElementById("rosterList").innerHTML=students.length?students.map(s=>{
+    const d=Object.keys(s.att||{}).length;
+    const ini=s.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+    const dest=s.dest.length>40?s.dest.slice(0,40)+"…":s.dest;
+    return `<div class="r-card">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1e1e2e,#2e2e4e);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--orange);flex-shrink:0">${ini}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;margin-bottom:3px">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted);word-break:break-all;margin-bottom:3px">⚡ ${dest}</div>
+        <div style="font-size:11px;color:var(--muted2)">${d} days · ${(d*SATS).toLocaleString()} sats · ${(s.paid||0).toLocaleString()} paid</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button class="btn btn-red btn-sm" onclick="delStudent(${s.id})">🗑 Remove</button>
+        <button class="btn btn-purple btn-sm" onclick="resetPaid(${s.id})">↺ Reset</button>
+      </div>
+    </div>`;
+  }).join(""):`<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">👥</div><div style="color:var(--muted);font-size:14px">No students enrolled yet</div></div>`;
+}
+
+function addStudent(){
+  const name=document.getElementById("rName").value.trim();
+  const dest=document.getElementById("rDest").value.trim();
+  const err=document.getElementById("rErr");err.innerHTML="";
+  if(!name){err.innerHTML='<div class="err" style="margin-bottom:10px">Enter student name.</div>';return;}
+  if(!dest){err.innerHTML='<div class="err" style="margin-bottom:10px">Enter Lightning address.</div>';return;}
+  students.push({id:Date.now(),name,dest,att:{},paid:0});
+  save();document.getElementById("rName").value="";document.getElementById("rDest").value="";
+  renderAll();
+  err.innerHTML=`<div class="ok" style="margin-bottom:10px">✅ ${name} enrolled!</div>`;
+  setTimeout(()=>{err.innerHTML=""},3000);
+}
+function delStudent(id){
+  const s=students.find(x=>x.id===id);
+  if(!confirm(`Remove ${s?.name}?\n\nThis deletes all their attendance history.`))return;
+  students=students.filter(x=>x.id!==id);save();renderAll();
+}
+function resetPaid(id){
+  const s=students.find(x=>x.id===id);
+  if(!confirm(`Reset paid balance for ${s?.name} to zero?`))return;
+  students=students.map(x=>x.id===id?{...x,paid:0}:x);save();renderAll();
+}
+
+// ── Settings ──
+function updateKeyBadge(){
+  document.getElementById("keyBadge").innerHTML=apiKey?
+    '<span class="badge b-green" style="padding:8px 16px;font-size:11px">⚡ BLINK CONNECTED</span>':
+    '<span class="badge b-gray" style="padding:8px 16px;font-size:11px">⚠️ NO API KEY</span>';
+}
+function saveSettings(){
+  const k=document.getElementById("iKey").value.trim();
+  const p=document.getElementById("iPw").value.trim();
+  if(k){apiKey=k;localStorage.setItem("ek_key",k);}
+  if(p.length>=4){pw=p;localStorage.setItem("ek_pw",p);document.getElementById("curPw").textContent="Current: "+p;}
+  updateKeyBadge();
+  document.getElementById("setMsg").innerHTML='<div class="ok">✅ Settings saved!</div>';
+  setTimeout(()=>{document.getElementById("setMsg").innerHTML=""},4000);
+}
+async function testBlink(){
+  const k=document.getElementById("iKey").value.trim();
+  if(!k){document.getElementById("setMsg").innerHTML='<div class="err">Paste your Blink API key first.</div>';return;}
+  document.getElementById("setMsg").innerHTML='<div class="warn">🔌 Testing connection…</div>';
+  try{
+    const res=await fetch(BACKEND+"/test",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({apiKey:k})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||"Failed");
+    document.getElementById("setMsg").innerHTML=`<div class="ok">✅ Connected! Balance: ${data.balance.toLocaleString()} sats ⚡</div>`;
+  }catch(e){document.getElementById("setMsg").innerHTML=`<div class="err">❌ ${e.message}</div>`;}
+}
+
+// ── ALL CLASSES (Admin view of all teachers) ──
+function renderClasses(){
+  const el = document.getElementById("classesOverview");
+  const teachers = JSON.parse(localStorage.getItem("ek_teachers")||"{}");
+  const allData = JSON.parse(localStorage.getItem("ek_teacher_data")||"{}");
+  const teacherList = Object.values(teachers);
+
+  if (!teacherList.length) {
+    el.innerHTML = `<div style="text-align:center;padding:80px 20px">
+      <div style="font-size:64px;margin-bottom:20px">🏫</div>
+      <div style="color:var(--muted);font-size:16px;margin-bottom:8px">No teachers registered yet</div>
+      <div style="color:var(--muted2);font-size:13px">Teachers register on the Teacher Portal app</div>
+    </div>`;
+    return;
+  }
+
+  // Programme-wide totals
+  let totalStudents=0, totalEarned=0, totalPaid=0, totalPresent=0;
+  teacherList.forEach(t => {
+    const students = (allData[t.id]||{}).students||[];
+    totalStudents += students.length;
+    totalEarned += students.reduce((a,s)=>a+Object.keys(s.att||{}).length*SATS,0);
+    totalPaid += students.reduce((a,s)=>a+(s.paid||0),0);
+    totalPresent += students.filter(s=>s.att&&s.att[TODAY]).length;
+  });
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px">
+    ${[
+      {i:"🏫",l:"Teachers",v:teacherList.length,c:"#a78bfa"},
+      {i:"👥",l:"Total Students",v:totalStudents,c:"#f7931a"},
+      {i:"💰",l:"Total Earned",v:totalEarned.toLocaleString()+"⚡",c:"#ffd700"},
+      {i:"✅",l:"Total Paid",v:totalPaid.toLocaleString()+"⚡",c:"#00e676"},
+    ].map(x=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
+      <div style="font-size:26px;margin-bottom:8px">${x.i}</div>
+      <div style="font-size:22px;font-weight:700;color:${x.c};font-family:'Syne',sans-serif">${x.v}</div>
+      <div style="font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:5px">${x.l.toUpperCase()}</div>
+    </div>`).join("")}
+  </div>`;
+
+  teacherList.forEach(t => {
+    const students = (allData[t.id]||{}).students||[];
+    const earned = students.reduce((a,s)=>a+Object.keys(s.att||{}).length*SATS,0);
+    const paid = students.reduce((a,s)=>a+(s.paid||0),0);
+    const owed = Math.max(0,earned-paid);
+    const present = students.filter(s=>s.att&&s.att[TODAY]).length;
+    const allDays = [...new Set(students.flatMap(s=>Object.keys(s.att||{})))].length;
+    const ini = t.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+
+    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px">
+      <!-- Teacher header -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;flex-shrink:0">${ini}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:18px;margin-bottom:3px">${t.name}</div>
+          <div style="font-size:12px;color:var(--muted)">📚 ${t.className} · ${students.length} student${students.length!==1?'s':''}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <span style="background:#f7931a18;border:1px solid #f7931a33;border-radius:20px;padding:5px 12px;font-size:10px;color:#f7931a;font-weight:700">
+            ${present}/${students.length} today
+          </span>
+          <span style="background:#ffd70018;border:1px solid #ffd70033;border-radius:20px;padding:5px 12px;font-size:10px;color:#ffd700;font-weight:700">
+            ${owed.toLocaleString()} sats owed
+          </span>
+        </div>
+      </div>
+
+      <!-- Class stats -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+        ${[
+          {l:"Students",v:students.length,c:"#f7931a"},
+          {l:"Days Tracked",v:allDays,c:"#a78bfa"},
+          {l:"Sats Earned",v:earned.toLocaleString()+"⚡",c:"#ffd700"},
+          {l:"Sats Paid",v:paid.toLocaleString()+"⚡",c:"#00e676"},
+        ].map(x=>`<div style="background:#080810;border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:16px;font-weight:700;color:${x.c};font-family:'Syne',sans-serif">${x.v}</div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:1px;margin-top:3px">${x.l.toUpperCase()}</div>
+        </div>`).join("")}
+      </div>
+
+      <!-- Student roster -->
+      ${students.length ? `
+      <div style="font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px">Student Roster</div>
+      ${students.map(s => {
+        const d=Object.keys(s.att||{}).length;
+        const here=!!(s.att&&s.att[TODAY]);
+        const ini2=s.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+        const pct=allDays>0?Math.round(d/allDays*100):0;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#080810;border:1px solid var(--border);border-radius:12px;margin-bottom:8px">
+          <div style="width:36px;height:36px;border-radius:10px;background:${here?'linear-gradient(135deg,#f7931a,#ffd700)':'#1e1e2e'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:${here?'#000':'var(--muted)'};flex-shrink:0">${ini2}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px;margin-bottom:2px">${s.name}</div>
+            <div style="height:3px;background:#1e1e2e;border-radius:2px;overflow:hidden;margin-bottom:3px">
+              <div style="height:100%;background:linear-gradient(90deg,#f7931a,#ffd700);border-radius:2px;width:${pct}%;transition:width .8s"></div>
+            </div>
+            <div style="font-size:10px;color:var(--muted)">${d} days · ${(d*SATS).toLocaleString()} sats earned · ${(s.paid||0).toLocaleString()} paid</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:700;color:${here?'#f7931a':'var(--muted2)'}">${here?'PRESENT':'ABSENT'}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${Math.max(0,d*SATS-(s.paid||0))} owed</div>
+          </div>
+        </div>`;
+      }).join("")}` : `<div style="text-align:center;color:var(--muted2);padding:20px;font-size:12px">No students enrolled yet</div>`}
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+function renderAll(){updateStats();renderAttend();}
+renderAll();
+</script>
+</body>
+</html>
