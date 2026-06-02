@@ -1,0 +1,25 @@
+{
+  "name": "Bitcoin Ekasi Tracker",
+  "short_name": "BTC Ekasi",
+  "description": "Bitcoin Ekasi Diploma Tracker - Attendance & Lightning Payments",
+  "start_url": "/bitcoinekasi/ekasi-tracker.html",
+  "scope": "/bitcoinekasi/",
+  "display": "standalone",
+  "background_color": "#060609",
+  "theme_color": "#f7931a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
