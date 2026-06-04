@@ -931,7 +931,7 @@ function renderLeaderboard() {
     return { id: s.id, name: s.name, days: dayCounts[s.id] || 0 };
   }).sort(function(a, b) { return b.days - a.days; });
   var maxDays = data[0] ? data[0].days : 1;
-  var colors = ["#ffd700", "#c0c0c0", "#cd7f32"];
+  var colors  = ["#ffd700", "#c0c0c0", "#cd7f32"];
   var totalDays = data.reduce(function(sum, r) { return sum + r.days; }, 0);
   var rows = "";
   data.forEach(function(s, i) {
