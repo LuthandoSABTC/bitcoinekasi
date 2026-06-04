@@ -512,7 +512,7 @@ function doLogin() {
     updateKeyBadge();
     loadStudents();
   } else {
-    document.getElementById("pwErr").textContent = "❌ Incorrect password";
+    document.getElementById("pwErr").textContent = "X Incorrect password";
     document.getElementById("pwInput").value = "";
   }
 }
@@ -586,16 +586,16 @@ function updateStats() {
   var owing = students.filter(function(s) { return (Object.keys(s.att || {}).length * SATS - (s.paid || 0)) > 0; }).length;
   document.getElementById("sStudents").textContent = students.length;
   document.getElementById("sToday").textContent = present + "/" + students.length;
-  document.getElementById("sOwed").textContent = owed.toLocaleString() + "⚡";
+  document.getElementById("sOwed").textContent = owed.toLocaleString() + "sats";
   document.getElementById("sc-students").textContent = students.length;
   document.getElementById("sc-present").textContent = present;
   document.getElementById("sc-owed2").textContent = owed.toLocaleString();
   var no = document.getElementById("nb-owed");
   if (owing > 0) { no.textContent = owing; no.style.display = "block"; } else { no.style.display = "none"; }
   if (present === students.length && students.length > 0) {
-    document.getElementById("streakEl").textContent = "🔥 Full house today!";
+    document.getElementById("streakEl").textContent = " Full house today!";
   } else {
-    document.getElementById("streakEl").textContent = "📅 " + present + "/" + students.length + " present today";
+    document.getElementById("streakEl").textContent = " " + present + "/" + students.length + " present today";
   }
 }
 
@@ -603,7 +603,7 @@ function updateStats() {
 function renderAttend() {
   var el = document.getElementById("attendList");
   if (!students.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🎓</div><div class="empty-title">No students enrolled yet</div><div class="empty-sub">Add students in the Roster tab</div><br><button class="btn btn-primary" onclick="go(\'roster\')">Go to Roster</button></div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"></div><div class="empty-title">No students enrolled yet</div><div class="empty-sub">Add students in the Roster tab</div><br><button class="btn btn-primary" onclick="go(\'roster\')">Go to Roster</button></div>';
     return;
   }
   var html = "";
@@ -615,8 +615,8 @@ function renderAttend() {
       '<div class="avatar ' + (here ? "present" : "absent") + '">' + ini + '</div>' +
       '<button class="toggle ' + (here ? "on" : "off") + '" onclick="toggle(' + s.id + ')"></button>' +
       '<div class="student-info"><div class="student-name">' + s.name + '</div>' +
-      '<div class="student-sub">' + days + ' day' + (days !== 1 ? "s" : "") + ' · ' + (days * SATS).toLocaleString() + ' sats</div></div>' +
-      '<span class="status-badge ' + (here ? "status-present" : "status-absent") + '">' + (here ? "✓ PRESENT" : "ABSENT") + '</span></div>';
+      '<div class="student-sub">' + days + ' day' + (days !== 1 ? "s" : "") + ' - ' + (days * SATS).toLocaleString() + ' sats</div></div>' +
+      '<span class="status-badge ' + (here ? "status-present" : "status-absent") + '">' + (here ? "v PRESENT" : "ABSENT") + '</span></div>';
   });
   el.innerHTML = html;
 }
@@ -648,7 +648,7 @@ async function markAll() {
 // Payout
 function renderPayout() {
   var el = document.getElementById("payoutList");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">⚡</div><div class="empty-title">No students yet</div></div>'; return; }
+  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">sats</div><div class="empty-title">No students yet</div></div>'; return; }
   var rows = "";
   students.forEach(function(s) {
     var earned = Object.keys(s.att || {}).length * SATS;
@@ -658,13 +658,13 @@ function renderPayout() {
     var ini = s.name.split(" ").map(function(w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
     var dest = s.destination || s.dest || "";
     var action = "";
-    if (ps === "loading") action = '<span class="badge b-orange"><span class="spinner"></span> Sending…</span>';
-    else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge b-green">✅ Sent!</span>';
-    else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px">❌ ' + ps.slice(4).slice(0, 30) + '</span>';
-    else if (owed > 0) action = '<button class="btn btn-green btn-sm" onclick="paySingle(' + s.id + ')" ' + (!apiKey ? "disabled" : "") + '>⚡ ' + owed + ' sats</button>';
-    else if (owed <= 0 && earned > 0) action = '<span class="badge b-green">✅ All Paid</span>';
+    if (ps === "loading") action = '<span class="badge b-orange"><span class="spinner"></span> Sending...</span>';
+    else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge b-green">OK Sent!</span>';
+    else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px">X ' + ps.slice(4).slice(0, 30) + '</span>';
+    else if (owed > 0) action = '<button class="btn btn-green btn-sm" onclick="paySingle(' + s.id + ')" ' + (!apiKey ? "disabled" : "") + '>sats ' + owed + ' sats</button>';
+    else if (owed <= 0 && earned > 0) action = '<span class="badge b-green">OK All Paid</span>';
     else action = '<span class="badge b-gray">No attendance</span>';
-    rows += "<tr><td><div style='display:flex;align-items:center;gap:10px'><div style='width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff'>" + ini + "</div><span style='font-weight:600'>" + s.name + "</span></div></td><td class='mono' style='color:var(--text-3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>" + dest + "</td><td style='font-weight:600;color:var(--orange)'>" + earned.toLocaleString() + " ⚡</td><td style='color:var(--green)'>" + paid.toLocaleString() + " ⚡</td><td style='font-weight:700;color:" + (owed > 0 ? "#d97706" : "var(--green)") + "'>" + owed.toLocaleString() + " ⚡</td><td>" + action + "</td></tr>";
+    rows += "<tr><td><div style='display:flex;align-items:center;gap:10px'><div style='width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff'>" + ini + "</div><span style='font-weight:600'>" + s.name + "</span></div></td><td class='mono' style='color:var(--text-3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>" + dest + "</td><td style='font-weight:600;color:var(--orange)'>" + earned.toLocaleString() + " sats</td><td style='color:var(--green)'>" + paid.toLocaleString() + " sats</td><td style='font-weight:700;color:" + (owed > 0 ? "#d97706" : "var(--green)") + "'>" + owed.toLocaleString() + " sats</td><td>" + action + "</td></tr>";
   });
   el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Student</th><th>Lightning Address</th><th>Earned</th><th>Paid</th><th>Outstanding</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
@@ -700,10 +700,10 @@ async function payAll() {
   if (!apiKey) { el.innerHTML = '<div class="alert alert-err">Set your Blink API key in Settings first.</div>'; return; }
   var sent = 0;
   for (var i = 0; i < owing.length; i++) {
-    el.innerHTML = '<div class="alert alert-info">⚡ Sending ' + (sent+1) + ' of ' + owing.length + '…</div>';
+    el.innerHTML = '<div class="alert alert-info">sats Sending ' + (sent+1) + ' of ' + owing.length + '...</div>';
     await paySingle(owing[i].id); sent++;
   }
-  el.innerHTML = '<div class="alert alert-ok">🎉 Done! ' + sent + ' payment' + (sent!==1?"s":"") + ' sent! ⚡</div>';
+  el.innerHTML = '<div class="alert alert-ok"> Done! ' + sent + ' payment' + (sent!==1?"s":"") + ' sent! sats</div>';
   setTimeout(function(){el.innerHTML="";},6000);
 }
 
@@ -714,28 +714,28 @@ function renderStats() {
   var allDates = [];
   students.forEach(function(s){Object.keys(s.att||{}).forEach(function(d){if(allDates.indexOf(d)<0)allDates.push(d);});});
   var days = allDates.length;
-  var cards = [{l:"Total Earned",v:earned.toLocaleString()+" ⚡",c:"orange",i:"💰"},{l:"Total Paid",v:paid.toLocaleString()+" ⚡",c:"green",i:"✅"},{l:"Outstanding",v:Math.max(0,earned-paid).toLocaleString()+" ⚡",c:"blue",i:"⏳"},{l:"Class Days",v:days,c:"purple",i:"📅"}];
+  var cards = [{l:"Total Earned",v:earned.toLocaleString()+" sats",c:"orange",i:""},{l:"Total Paid",v:paid.toLocaleString()+" sats",c:"green",i:"OK"},{l:"Outstanding",v:Math.max(0,earned-paid).toLocaleString()+" sats",c:"blue",i:""},{l:"Class Days",v:days,c:"purple",i:""}];
   document.getElementById("statsCards").innerHTML = cards.map(function(x){return '<div class="stat-card '+x.c+'"><div class="stat-icon '+x.c+'">'+x.i+'</div><div class="stat-val">'+x.v+'</div><div class="stat-label">'+x.l+'</div></div>';}).join("");
   var sorted = students.slice().sort(function(a,b){return Object.keys(b.att||{}).length-Object.keys(a.att||{}).length;});
-  var medals = ["🥇","🥈","🥉"];
+  var medals = ["#1","#2","#3"];
   document.getElementById("statsList").innerHTML = sorted.map(function(s,i){
     var d = Object.keys(s.att||{}).length;
     var pct = days>0?Math.round(d/days*100):0;
     var ini = s.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
-    return '<div class="card card-pad" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:14px;margin-bottom:14px"><div style="width:46px;height:46px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0">'+ini+'</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-weight:700;font-size:15px">'+s.name+'</span>'+( i<3?'<span>'+medals[i]+'</span>':'')+'</div><div style="font-size:12px;color:var(--text-3)">'+d+' day'+( d!==1?"s":"")+' · '+pct+'% attendance</div></div><div style="text-align:right"><div style="font-size:22px;font-weight:800;color:var(--orange)">'+( d*SATS).toLocaleString()+'</div><div style="font-size:10px;color:var(--text-4)">SATS EARNED</div></div></div><div class="pb"><div class="pf" style="width:'+pct+'%"></div></div><div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px"><span style="color:var(--text-3)">Paid: '+( s.paid||0).toLocaleString()+' sats</span><span style="color:'+( Math.max(0,d*SATS-(s.paid||0))>0?"var(--orange)":"var(--green)")+';font-weight:600">Owed: '+Math.max(0,d*SATS-(s.paid||0))+' sats</span></div></div>';
-  }).join("") || '<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data yet</div></div>';
+    return '<div class="card card-pad" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:14px;margin-bottom:14px"><div style="width:46px;height:46px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0">'+ini+'</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-weight:700;font-size:15px">'+s.name+'</span>'+( i<3?'<span>'+medals[i]+'</span>':'')+'</div><div style="font-size:12px;color:var(--text-3)">'+d+' day'+( d!==1?"s":"")+' - '+pct+'% attendance</div></div><div style="text-align:right"><div style="font-size:22px;font-weight:800;color:var(--orange)">'+( d*SATS).toLocaleString()+'</div><div style="font-size:10px;color:var(--text-4)">SATS EARNED</div></div></div><div class="pb"><div class="pf" style="width:'+pct+'%"></div></div><div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px"><span style="color:var(--text-3)">Paid: '+( s.paid||0).toLocaleString()+' sats</span><span style="color:'+( Math.max(0,d*SATS-(s.paid||0))>0?"var(--orange)":"var(--green)")+';font-weight:600">Owed: '+Math.max(0,d*SATS-(s.paid||0))+' sats</span></div></div>';
+  }).join("") || '<div class="empty"><div class="empty-icon"></div><div class="empty-title">No data yet</div></div>';
 }
 
 // Roster
 function renderRoster() {
   document.getElementById("rosterLbl").textContent = "My Students (" + students.length + ")";
-  if (!students.length) { document.getElementById("rosterList").innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No students yet</div></div>'; return; }
+  if (!students.length) { document.getElementById("rosterList").innerHTML = '<div class="empty"><div class="empty-icon"></div><div class="empty-title">No students yet</div></div>'; return; }
   var rows = "";
   students.forEach(function(s) {
     var d = Object.keys(s.att||{}).length;
     var ini = s.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
     var dest = (s.destination||s.dest||"");
-    rows += "<tr><td><div style='display:flex;align-items:center;gap:10px'><div style='width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff'>" + ini + "</div><span style='font-weight:600'>" + s.name + "</span></div></td><td class='mono' style='color:var(--text-3);font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>" + dest + "</td><td style='font-weight:600'>" + d + "</td><td style='color:var(--green)'>" + (s.paid||0).toLocaleString() + " ⚡</td><td style='display:flex;gap:6px'><button class='btn btn-red btn-sm' onclick='delStudent(" + s.id + ")'>🗑</button><button class='btn btn-purple btn-sm' onclick='resetPaid(" + s.id + ")'>↺</button></td></tr>";
+    rows += "<tr><td><div style='display:flex;align-items:center;gap:10px'><div style='width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff'>" + ini + "</div><span style='font-weight:600'>" + s.name + "</span></div></td><td class='mono' style='color:var(--text-3);font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>" + dest + "</td><td style='font-weight:600'>" + d + "</td><td style='color:var(--green)'>" + (s.paid||0).toLocaleString() + " sats</td><td style='display:flex;gap:6px'><button class='btn btn-red btn-sm' onclick='delStudent(" + s.id + ")'>X</button><button class='btn btn-purple btn-sm' onclick='resetPaid(" + s.id + ")'></button></td></tr>";
   });
   document.getElementById("rosterList").innerHTML = '<div class="table-wrap"><table><thead><tr><th>Student</th><th>Lightning Address</th><th>Days</th><th>Paid</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
@@ -753,7 +753,7 @@ async function addStudent() {
     document.getElementById("rName").value = "";
     document.getElementById("rDest").value = "";
     await loadStudents();
-    err.innerHTML = '<div class="alert alert-ok">✅ ' + name + ' enrolled!</div>';
+    err.innerHTML = '<div class="alert alert-ok">OK ' + name + ' enrolled!</div>';
     setTimeout(function(){err.innerHTML="";},3000);
   } else {
     err.innerHTML = '<div class="alert alert-err">Failed to enroll student.</div>';
@@ -778,11 +778,11 @@ function resetPaid(id) {
 async function renderClasses(showLoader) {
   if (showLoader === undefined) showLoader = true;
   var el = document.getElementById("classesOverview");
-  if (showLoader) el.innerHTML = '<div class="empty"><div class="spinner" style="width:24px;height:24px;border-width:3px"></div><div class="empty-title" style="margin-top:16px">Loading all classes…</div></div>';
+  if (showLoader) el.innerHTML = '<div class="empty"><div class="spinner" style="width:24px;height:24px;border-width:3px"></div><div class="empty-title" style="margin-top:16px">Loading all classes...</div></div>';
   try {
     var teachers = await db.get("teachers", "?order=created_at.asc");
     if (!teachers.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">🏫</div><div class="empty-title">No teachers registered yet</div><div class="empty-sub">Teachers register on the Teacher Portal</div></div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon"></div><div class="empty-title">No teachers registered yet</div><div class="empty-sub">Teachers register on the Teacher Portal</div></div>';
       document.getElementById("nb-teachers").style.display = "none"; return;
     }
     document.getElementById("nb-teachers").textContent = teachers.length;
@@ -803,9 +803,9 @@ async function renderClasses(showLoader) {
     var totalPaid = studentsWithAtt.reduce(function(a,s){return a+(s.paid||0);},0);
     var totalPresent = studentsWithAtt.filter(function(s){return s.att&&s.att[TODAY];}).length;
     var html = '<div class="stats-grid" style="margin-bottom:24px">' +
-      [{i:"🏫",l:"Teachers",v:teachers.length,c:"purple"},{i:"👥",l:"Students",v:totalStudents,c:"orange"},{i:"📅",l:"Present Today",v:totalPresent+"/"+totalStudents,c:"green"},{i:"💰",l:"Total Paid",v:totalPaid.toLocaleString()+"⚡",c:"blue"}]
+      [{i:"",l:"Teachers",v:teachers.length,c:"purple"},{i:"",l:"Students",v:totalStudents,c:"orange"},{i:"",l:"Present Today",v:totalPresent+"/"+totalStudents,c:"green"},{i:"",l:"Total Paid",v:totalPaid.toLocaleString()+"sats",c:"blue"}]
       .map(function(x){return '<div class="stat-card '+x.c+'"><div class="stat-icon '+x.c+'">'+x.i+'</div><div class="stat-val">'+x.v+'</div><div class="stat-label">'+x.l+'</div></div>';}).join("") +
-      '</div><div class="section-header"><div><div class="section-title">All Teachers</div><div class="section-sub">Live · Updated ' + new Date().toLocaleTimeString("en-ZA") + '</div></div><div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="renderClasses()">🔄 Refresh</button><button class="btn btn-green btn-sm" onclick="exportToExcel()">📊 Export Excel</button><div class="live-badge"><span class="live-dot"></span>Live</div></div></div>';
+      '</div><div class="section-header"><div><div class="section-title">All Teachers</div><div class="section-sub">Live - Updated ' + new Date().toLocaleTimeString("en-ZA") + '</div></div><div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="renderClasses()"> Refresh</button><button class="btn btn-green btn-sm" onclick="exportToExcel()"> Export Excel</button><div class="live-badge"><span class="live-dot"></span>Live</div></div></div>';
     teachers.forEach(function(t) {
       var myStudents = studentsWithAtt.filter(function(s){return s.teacher_id===t.id;});
       var earned = myStudents.reduce(function(a,s){return a+Object.keys(s.att||{}).length*SATS;},0);
@@ -819,10 +819,10 @@ async function renderClasses(showLoader) {
         var d = Object.keys(s.att||{}).length;
         var here = !!(s.att&&s.att[TODAY]);
         var ini2 = s.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
-        studentRows += "<tr><td><div style='display:flex;align-items:center;gap:8px'><div style='width:28px;height:28px;border-radius:6px;background:"+(here?"linear-gradient(135deg,var(--orange),var(--gold))":"var(--bg)")+";display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:"+(here?"#fff":"var(--text-3)")+";border:1px solid var(--border)'>"+ ini2+"</div><span style='font-weight:500'>"+s.name+"</span></div></td><td style='font-weight:600'>"+d+"</td><td style='color:var(--orange)'>"+( d*SATS).toLocaleString()+" ⚡</td><td style='color:var(--green)'>"+( s.paid||0).toLocaleString()+" ⚡</td><td><span class='badge "+(here?"b-orange":"b-gray")+"'>"+(here?"✓ PRESENT":"ABSENT")+"</span></td></tr>";
+        studentRows += "<tr><td><div style='display:flex;align-items:center;gap:8px'><div style='width:28px;height:28px;border-radius:6px;background:"+(here?"linear-gradient(135deg,var(--orange),var(--gold))":"var(--bg)")+";display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:"+(here?"#fff":"var(--text-3)")+";border:1px solid var(--border)'>"+ ini2+"</div><span style='font-weight:500'>"+s.name+"</span></div></td><td style='font-weight:600'>"+d+"</td><td style='color:var(--orange)'>"+( d*SATS).toLocaleString()+" sats</td><td style='color:var(--green)'>"+( s.paid||0).toLocaleString()+" sats</td><td><span class='badge "+(here?"b-orange":"b-gray")+"'>"+(here?"v PRESENT":"ABSENT")+"</span></td></tr>";
       });
-      html += '<div class="teacher-card"><div class="teacher-header"><div style="display:flex;align-items:center;gap:14px"><div class="teacher-avatar">'+ini+'</div><div><div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:2px">'+t.name+'</div><div style="font-size:12px;color:#9ca3af">📚 '+t.class_name+' · '+myStudents.length+' student'+( myStudents.length!==1?"s":"")+'</div></div></div><div style="display:flex;gap:8px"><span class="badge b-orange" style="background:#f7931a22;color:#fed7aa;border-color:#f7931a33">'+present+'/'+myStudents.length+' today</span></div></div><div class="teacher-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
-        [{l:"Students",v:myStudents.length},{l:"Days",v:allDays.length},{l:"Earned",v:earned.toLocaleString()+"⚡"},{l:"Paid",v:paid.toLocaleString()+"⚡"}].map(function(x){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--text)">'+x.v+'</div><div style="font-size:10px;color:var(--text-4);margin-top:2px;text-transform:uppercase;letter-spacing:.5px">'+x.l+'</div></div>';}).join("") +
+      html += '<div class="teacher-card"><div class="teacher-header"><div style="display:flex;align-items:center;gap:14px"><div class="teacher-avatar">'+ini+'</div><div><div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:2px">'+t.name+'</div><div style="font-size:12px;color:#9ca3af"> '+t.class_name+' - '+myStudents.length+' student'+( myStudents.length!==1?"s":"")+'</div></div></div><div style="display:flex;gap:8px"><span class="badge b-orange" style="background:#f7931a22;color:#fed7aa;border-color:#f7931a33">'+present+'/'+myStudents.length+' today</span></div></div><div class="teacher-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
+        [{l:"Students",v:myStudents.length},{l:"Days",v:allDays.length},{l:"Earned",v:earned.toLocaleString()+"sats"},{l:"Paid",v:paid.toLocaleString()+"sats"}].map(function(x){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--text)">'+x.v+'</div><div style="font-size:10px;color:var(--text-4);margin-top:2px;text-transform:uppercase;letter-spacing:.5px">'+x.l+'</div></div>';}).join("") +
         '</div>' + (myStudents.length ? '<div class="table-wrap"><table><thead><tr><th>Student</th><th>Days</th><th>Earned</th><th>Paid</th><th>Today</th></tr></thead><tbody>' + studentRows + '</tbody></table></div>' : '<div style="text-align:center;padding:20px;color:var(--text-4);font-size:13px">No students enrolled yet</div>') +
         '</div></div>';
     });
@@ -835,8 +835,8 @@ async function renderClasses(showLoader) {
 // Settings
 function updateKeyBadge() {
   document.getElementById("keyBadge").innerHTML = apiKey ?
-    '<span class="badge b-green" style="padding:6px 14px;font-size:11px">⚡ Blink Connected</span>' :
-    '<span class="badge b-gray" style="padding:6px 14px;font-size:11px">⚠️ No API Key</span>';
+    '<span class="badge b-green" style="padding:6px 14px;font-size:11px">sats Blink Connected</span>' :
+    '<span class="badge b-gray" style="padding:6px 14px;font-size:11px">! No API Key</span>';
 }
 
 function saveSettings() {
@@ -850,21 +850,21 @@ function saveSettings() {
   }
   updateKeyBadge();
   var msg = document.getElementById("setMsg");
-  msg.innerHTML = '<div class="alert alert-ok">✅ Settings saved!</div>';
+  msg.innerHTML = '<div class="alert alert-ok">OK Settings saved!</div>';
   setTimeout(function(){msg.innerHTML="";},3000);
 }
 
 async function testBlink() {
   var k = document.getElementById("iKey").value.trim();
   if (!k) { document.getElementById("setMsg").innerHTML = '<div class="alert alert-err">Enter your Blink API key first.</div>'; return; }
-  document.getElementById("setMsg").innerHTML = '<div class="alert alert-warn">🔌 Testing…</div>';
+  document.getElementById("setMsg").innerHTML = '<div class="alert alert-warn"> Testing...</div>';
   try {
     var res = await fetch(BACKEND + "/test", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({apiKey:k})});
     var data = await res.json();
     if (!res.ok) throw new Error(data.error);
-    document.getElementById("setMsg").innerHTML = '<div class="alert alert-ok">✅ Connected! Balance: ' + data.balance.toLocaleString() + ' sats ⚡</div>';
+    document.getElementById("setMsg").innerHTML = '<div class="alert alert-ok">OK Connected! Balance: ' + data.balance.toLocaleString() + ' sats sats</div>';
   } catch(e) {
-    document.getElementById("setMsg").innerHTML = '<div class="alert alert-err">❌ ' + e.message + '</div>';
+    document.getElementById("setMsg").innerHTML = '<div class="alert alert-err">X ' + e.message + '</div>';
   }
 }
 
@@ -878,7 +878,7 @@ async function exportToExcel() {
       allAtt = await db.get("attendance", "?student_id=in.(" + ids + ")");
     }
     var wb = XLSX.utils.book_new();
-    var sumData = [["₿ BITCOIN EKASI — DIPLOMA TRACKER REPORT"],["Generated: " + new Date().toLocaleString("en-ZA")],[],["Teacher","Class","Student","Days","Earned (sats)","Paid (sats)","Outstanding","Status"]];
+    var sumData = [["BTC BITCOIN EKASI -- DIPLOMA TRACKER REPORT"],["Generated: " + new Date().toLocaleString("en-ZA")],[],["Teacher","Class","Student","Days","Earned (sats)","Paid (sats)","Outstanding","Status"]];
     teachers.forEach(function(t) {
       var myS = allStudents.filter(function(s){return s.teacher_id===t.id;});
       myS.forEach(function(s) {
@@ -931,7 +931,7 @@ function renderLeaderboard() {
     return { id: s.id, name: s.name, days: dayCounts[s.id] || 0 };
   }).sort(function(a, b) { return b.days - a.days; });
   var maxDays = data[0] ? data[0].days : 1;
-  var colors  = ["#ffd700", "#c0c0c0", "#cd7f32"];
+  var colors = ["#ffd700", "#c0c0c0", "#cd7f32"];
   var totalDays = data.reduce(function(sum, r) { return sum + r.days; }, 0);
   var rows = "";
   data.forEach(function(s, i) {
