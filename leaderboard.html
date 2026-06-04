@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitcoin Ekasi · Leaderboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #f7931a;
+    --orange-dim: #c4720d;
+    --orange-glow: rgba(247,147,26,0.3);
+    --black: #0a0a0a;
+    --black2: #111111;
+    --black3: #1a1a1a;
+    --black4: #222222;
+    --white: #ffffff;
+    --white2: #cccccc;
+    --white3: #888888;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+    --bronze: #cd7f32;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(247,147,26,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(247,147,26,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 40px 0 20px;
+    text-align: center;
+    position: relative;
+  }
+
+  .logo-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .logo-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--orange);
+    box-shadow: 0 0 20px var(--orange-glow);
+  }
+
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--white);
+  }
+
+  .logo-text span { color: var(--orange); }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(56px, 12vw, 100px);
+    line-height: 0.9;
+    letter-spacing: 4px;
+    color: var(--white);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .hero-title span {
+    color: var(--orange);
+    display: block;
+    text-shadow: 0 0 40px var(--orange-glow);
+  }
+
+  .hero-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--white3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  /* Live indicator */
+  .live-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--black3);
+    border: 1px solid var(--black4);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--white3);
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .live-time {
+    color: var(--orange);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Stats strip */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--black3);
+    border: 1px solid var(--black4);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+
+  .stat-card:hover { border-color: var(--orange-dim); }
+
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--orange);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--white3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Leaderboard */
+  .leaderboard {
+    background: var(--black2);
+    border: 1px solid var(--black4);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .lb-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 100px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--black4);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--white3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .lb-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 100px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--black4);
+    align-items: center;
+    transition: background 0.2s;
+    animation: slideIn 0.5s ease both;
+  }
+
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: var(--black3); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Rank */
+  .rank {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--white3);
+  }
+
+  .rank.gold { color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+  .rank.silver { color: var(--silver); }
+  .rank.bronze { color: var(--bronze); }
+
+  /* Student info */
+  .student-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--black);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .avatar.rank-1 {
+    background: var(--gold);
+    box-shadow: 0 0 20px rgba(255,215,0,0.4);
+  }
+  .avatar.rank-2 {
+    background: var(--silver);
+    box-shadow: 0 0 15px rgba(192,192,192,0.3);
+  }
+  .avatar.rank-3 {
+    background: var(--bronze);
+    box-shadow: 0 0 15px rgba(205,127,50,0.3);
+  }
+  .avatar.rank-other {
+    background: var(--black4);
+    color: var(--white2);
+    border: 1px solid var(--black4);
+  }
+
+  .crown {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+  }
+
+  .student-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--white);
+  }
+
+  .student-class {
+    font-size: 11px;
+    color: var(--white3);
+    margin-top: 2px;
+  }
+
+  /* Days bar */
+  .days-col {
+    text-align: right;
+  }
+
+  .days-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: var(--orange);
+    line-height: 1;
+  }
+
+  .days-label {
+    font-size: 10px;
+    color: var(--white3);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Progress bar */
+  .progress-col {
+    padding-right: 8px;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--black4);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--orange);
+    border-radius: 2px;
+    transition: width 1s ease;
+    box-shadow: 0 0 8px var(--orange-glow);
+  }
+
+  .progress-fill.gold-fill { background: var(--gold); box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+  .progress-fill.silver-fill { background: var(--silver); }
+  .progress-fill.bronze-fill { background: var(--bronze); }
+
+  .progress-pct {
+    font-size: 10px;
+    color: var(--white3);
+    font-family: 'Space Mono', monospace;
+    text-align: right;
+  }
+
+  /* Empty state */
+  .empty {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--white3);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+  .empty-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Loading */
+  .loading {
+    padding: 60px 24px;
+    text-align: center;
+  }
+
+  .loader {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--black4);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--white3);
+    letter-spacing: 2px;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 24px 0 40px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--white3);
+    letter-spacing: 2px;
+  }
+
+  footer span { color: var(--orange); }
+
+  /* Top 3 podium for mobile */
+  @media (max-width: 600px) {
+    .lb-header { grid-template-columns: 50px 1fr 70px; }
+    .lb-header .progress-col { display: none; }
+    .lb-row { grid-template-columns: 50px 1fr 70px; }
+    .lb-row .progress-col { display: none; }
+    .stats-strip { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat-val { font-size: 28px; }
+    .hero-title { font-size: 56px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-wrap">
+      <img src="logo.jpg" class="logo-img" onerror="this.style.display='none'">
+      <div class="logo-text">Bitcoin <span>Ekasi</span></div>
+    </div>
+    <div class="hero-title">
+      TOP
+      <span>Students</span>
+    </div>
+    <div class="hero-sub">Bitcoin Diploma Program · Mossel Bay 🇿🇦</div>
+    <div class="live-bar">
+      <div class="live-dot"></div>
+      LIVE &nbsp;·&nbsp; Updates every 60s &nbsp;·&nbsp; <span class="live-time" id="lastUpdate">--:--</span>
+    </div>
+  </header>
+
+  <div class="stats-strip" id="statsStrip">
+    <div class="stat-card">
+      <div class="stat-val" id="statStudents">-</div>
+      <div class="stat-label">Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statDays">-</div>
+      <div class="stat-label">Total Days</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statTop">-</div>
+      <div class="stat-label">Top Score</div>
+    </div>
+  </div>
+
+  <div class="leaderboard" id="leaderboard">
+    <div class="loading">
+      <div class="loader"></div>
+      <div class="loading-text">Loading leaderboard...</div>
+    </div>
+  </div>
+
+  <footer>
+    Powered by ⚡ Lightning Network &nbsp;·&nbsp; <span>500 sats/day</span> &nbsp;·&nbsp; Built by Bitcoin Ekasi
+  </footer>
+</div>
+
+<script>
+const BACKEND = "https://ekasi-backend.onrender.com";
+const SUPABASE_URL = "https://bnteowvyioptlvohyert.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
+
+async function fetchSupabase(table, params = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`
+    }
+  });
+  return res.json();
+}
+
+async function loadLeaderboard() {
+  try {
+    // Fetch students and attendance
+    const [students, attendance] = await Promise.all([
+      fetchSupabase('students', '?select=*'),
+      fetchSupabase('attendance', '?select=*')
+    ]);
+
+    if (!students.length) {
+      renderEmpty();
+      return;
+    }
+
+    // Count days per student
+    const dayCounts = {};
+    attendance.forEach(a => {
+      if (a.present) {
+        dayCounts[a.student_id] = (dayCounts[a.student_id] || 0) + 1;
+      }
+    });
+
+    // Build leaderboard data
+    const data = students.map(s => ({
+      id: s.id,
+      name: s.name,
+      class: s.class_name || 'Bitcoin Diploma',
+      days: dayCounts[s.id] || 0
+    }));
+
+    // Sort by days descending
+    data.sort((a, b) => b.days - a.days);
+
+    // Update stats
+    const totalDays = data.reduce((sum, s) => sum + s.days, 0);
+    const topDays = data[0]?.days || 0;
+    document.getElementById('statStudents').textContent = students.length;
+    document.getElementById('statDays').textContent = totalDays;
+    document.getElementById('statTop').textContent = topDays;
+
+    // Update time
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent =
+      now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+
+    // Render leaderboard
+    renderLeaderboard(data, topDays);
+
+  } catch(e) {
+    console.error(e);
+    renderEmpty();
+  }
+}
+
+function renderLeaderboard(data, maxDays) {
+  const lb = document.getElementById('leaderboard');
+
+  if (!data.length) { renderEmpty(); return; }
+
+  const rankClass = ['gold', 'silver', 'bronze'];
+  const medals = ['👑', '', ''];
+
+  let html = `
+    <div class="lb-header">
+      <div>#</div>
+      <div>Student</div>
+      <div class="progress-col" style="text-align:right">Progress</div>
+      <div class="days-col">Days</div>
+    </div>
+  `;
+
+  data.forEach((s, i) => {
+    const rank = i + 1;
+    const rc = rankClass[i] || 'other';
+    const pct = maxDays > 0 ? Math.round((s.days / maxDays) * 100) : 0;
+    const fillClass = i === 0 ? 'gold-fill' : i === 1 ? 'silver-fill' : i === 2 ? 'bronze-fill' : '';
+    const delay = i * 0.08;
+
+    html += `
+      <div class="lb-row" style="animation-delay:${delay}s">
+        <div class="rank ${rc}">${rank}</div>
+        <div class="student-info">
+          <div class="avatar rank-${rank <= 3 ? rank : 'other'}">
+            ${medals[i] ? `<div class="crown">${medals[i]}</div>` : ''}
+            ${s.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div class="student-name">${s.name}</div>
+            <div class="student-class">${s.class}</div>
+          </div>
+        </div>
+        <div class="progress-col">
+          <div class="progress-bar">
+            <div class="progress-fill ${fillClass}" style="width:${pct}%"></div>
+          </div>
+          <div class="progress-pct">${pct}%</div>
+        </div>
+        <div class="days-col">
+          <div class="days-val">${s.days}</div>
+          <div class="days-label">days</div>
+        </div>
+      </div>
+    `;
+  });
+
+  lb.innerHTML = html;
+}
+
+function renderEmpty() {
+  document.getElementById('leaderboard').innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">⚡</div>
+      <div class="empty-text">No data yet — classes starting soon</div>
+    </div>
+  `;
+  document.getElementById('statStudents').textContent = '0';
+  document.getElementById('statDays').textContent = '0';
+  document.getElementById('statTop').textContent = '0';
+}
+
+// Load on start
+loadLeaderboard();
+
+// Refresh every 60 seconds
+setInterval(loadLeaderboard, 60000);
+</script>
+</body>
+</html>
