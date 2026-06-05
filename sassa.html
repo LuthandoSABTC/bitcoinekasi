@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitcoin Ekasi - Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8f9fc;color:#111827;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:16px 20px;display:flex;align-items:center;justify-content:between;gap:12px}
+.topbar h1{font-size:18px;font-weight:700;color:#f7931a}
+.topbar span{font-size:12px;color:#6b7280;margin-left:8px}
+.live{display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:100px;padding:4px 10px;font-size:11px;font-weight:600;margin-left:auto}
+.live-dot{width:6px;height:6px;background:#16a34a;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#1a1a2e;padding:20px 0;z-index:100}
+.sidebar-logo{padding:0 20px 20px;border-bottom:1px solid #2d2d44}
+.sidebar-logo h2{color:#f7931a;font-size:16px;font-weight:700}
+.sidebar-logo p{color:#9ca3af;font-size:11px;margin-top:2px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;color:#9ca3af;font-size:14px;font-weight:500;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all 0.2s}
+.nav-btn:hover{background:#2d2d44;color:#fff}
+.nav-btn.active{background:#f7931a20;color:#f7931a;border-right:3px solid #f7931a}
+.main{margin-left:220px;padding:24px}
+.page{display:none}
+.page.show{display:block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;text-align:center}
+.stat-val{font-size:32px;font-weight:700;color:#f7931a}
+.stat-label{font-size:12px;color:#6b7280;margin-top:4px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:20px}
+.card-header{padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:16px;font-weight:600}
+.student-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:14px 20px;border-bottom:1px solid #f3f4f6;gap:16px}
+.student-row:last-child{border-bottom:none}
+.student-name{font-weight:600;font-size:15px}
+.student-sub{font-size:12px;color:#6b7280;margin-top:2px}
+.toggle{width:48px;height:26px;background:#e5e7eb;border-radius:13px;position:relative;cursor:pointer;border:none;transition:background 0.3s}
+.toggle.on{background:#f7931a}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.on::after{left:25px}
+.badge{display:inline-block;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:600}
+.badge-green{background:#f0fdf4;color:#16a34a}
+.badge-orange{background:#fff7ed;color:#ea580c}
+.badge-gray{background:#f9fafb;color:#6b7280}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s}
+.btn-primary{background:#f7931a;color:#fff}
+.btn-primary:hover{background:#e07d0a}
+.btn-outline{background:#fff;color:#374151;border:1px solid #e5e7eb}
+.btn-outline:hover{background:#f9fafb}
+.btn-green{background:#16a34a;color:#fff}
+.btn-green:hover{background:#15803d}
+.input-group{margin-bottom:16px}
+.input-label{font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;display:block}
+.input{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;font-family:inherit}
+.input:focus{border-color:#f7931a;box-shadow:0 0 0 3px rgba(247,147,26,0.1)}
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.section-title{font-size:18px;font-weight:700;margin-bottom:16px}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8f9fc}
+.login-box{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px;width:100%;max-width:400px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo h1{font-size:24px;font-weight:700;color:#f7931a}
+.login-logo p{color:#6b7280;font-size:14px;margin-top:4px}
+.payout-row{display:grid;grid-template-columns:1fr 80px 80px 80px auto;align-items:center;padding:14px 20px;border-bottom:1px solid #f3f4f6;gap:12px;font-size:14px}
+.payout-row:last-child{border-bottom:none}
+.empty{text-align:center;padding:48px 24px;color:#9ca3af}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:600;color:#374151}
+.empty-sub{font-size:13px;margin-top:4px}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform 0.3s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .stats{grid-template-columns:1fr}
+  .menu-btn{display:flex!important}
+}
+.menu-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;background:none;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:18px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+.overlay.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>Bitcoin Ekasi</h1>
+      <p>Teacher Portal</p>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Password</label>
+      <input class="input" type="password" id="pwInput" placeholder="Enter teacher password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="pwErr"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Sign In</button>
+    <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:16px">Bitcoin Ekasi - Mossel Bay</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h2>Bitcoin Ekasi</h2>
+      <p>TEACHER PORTAL</p>
+    </div>
+    <div style="padding:16px 0">
+      <div style="padding:8px 20px;font-size:10px;color:#4b5563;letter-spacing:2px;text-transform:uppercase">MAIN</div>
+      <button class="nav-btn active" id="nb-attend" onclick="go('attend')">Attendance</button>
+      <button class="nav-btn" id="nb-payout" onclick="go('payout')">Payouts</button>
+      <button class="nav-btn" id="nb-stats" onclick="go('stats')">Statistics</button>
+      <button class="nav-btn" id="nb-leaderboard" onclick="go('leaderboard')">Leaderboard</button>
+      <button class="nav-btn" id="nb-roster" onclick="go('roster')">My Roster</button>
+      <div style="padding:8px 20px;font-size:10px;color:#4b5563;letter-spacing:2px;text-transform:uppercase;margin-top:8px">SYSTEM</div>
+      <button class="nav-btn" id="nb-test" onclick="go('test')">Test Payment</button>
+      <button class="nav-btn" onclick="doLogout()" style="color:#ef4444">Sign Out</button>
+    </div>
+    <div style="position:absolute;bottom:20px;left:20px;right:20px">
+      <div id="dateEl" style="font-size:12px;color:#6b7280;text-align:center"></div>
+      <div id="streakEl" style="font-size:11px;color:#9ca3af;text-align:center;margin-top:4px"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Topbar -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <button class="menu-btn" onclick="openSidebar()">&#9776;</button>
+      <div>
+        <h2 id="pageTitle" style="font-size:20px;font-weight:700">Attendance</h2>
+        <p id="pageSub" style="font-size:13px;color:#6b7280">Mark today's class</p>
+      </div>
+      <div class="live" style="margin-left:auto">
+        <div class="live-dot"></div>Live
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-val" id="sStudents">0</div>
+        <div class="stat-label">My Students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="sToday">0/0</div>
+        <div class="stat-label">Present Today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="sOwed">0</div>
+        <div class="stat-label">Sats Owed</div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div id="p-attend" class="page show">
+      <div class="card">
+        <div class="card-header">
+          <h3>Today's Class</h3>
+          <button class="btn btn-outline" onclick="markAll()">Mark All Present</button>
+        </div>
+        <div id="attendList"></div>
+      </div>
+    </div>
+
+    <!-- PAYOUTS -->
+    <div id="p-payout" class="page">
+      <div id="payAlert"></div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Lightning Payouts</h3>
+          <button class="btn btn-primary" onclick="payAll()">Pay All Outstanding</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 80px 80px 80px auto;padding:10px 20px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px">
+          <div>Student</div><div>Earned</div><div>Paid</div><div>Owed</div><div>Action</div>
+        </div>
+        <div id="payoutList"></div>
+      </div>
+    </div>
+
+    <!-- STATISTICS -->
+    <div id="p-stats" class="page">
+      <div id="statsList"></div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="p-leaderboard" class="page">
+      <div id="lbList"></div>
+    </div>
+
+    <!-- TEST PAYMENT -->
+    <div id="p-test" class="page">
+      <div class="card" style="max-width:480px">
+        <div class="card-header"><h3>Test Payment</h3></div>
+        <div style="padding:20px">
+          <p style="font-size:13px;color:#6b7280;margin-bottom:20px">Send a small test payment (1-10 sats) to a student using their stored Lightning Address or LNURL.</p>
+          <div class="input-group">
+            <label class="input-label">Select Student</label>
+            <select class="input" id="testStudent">
+              <option value="">-- Choose student --</option>
+            </select>
+          </div>
+          <div id="testDestPreview" style="font-size:12px;color:#9ca3af;margin-top:-8px;margin-bottom:16px"></div>
+          <div class="input-group">
+            <label class="input-label">Amount (1-10 sats)</label>
+            <input class="input" type="number" id="testAmount" value="1" min="1" max="10">
+          </div>
+          <div id="testResult"></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="sendTestPayment()">Send Test Payment</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROSTER -->
+    <div id="p-roster" class="page">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h3>Add Student</h3></div>
+          <div style="padding:20px">
+            <div class="input-group">
+              <label class="input-label">Full Name</label>
+              <input class="input" id="rName" placeholder="Student full name">
+            </div>
+            <div class="input-group">
+              <label class="input-label">Lightning Address</label>
+              <input class="input" id="rDest" placeholder="name@blink.sv">
+              <p style="font-size:11px;color:#9ca3af;margin-top:4px">Enter Blink Lightning Address</p>
+            </div>
+            <div id="rErr"></div>
+            <button class="btn btn-primary" style="width:100%" onclick="addStudent()">+ Enroll Student</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>My Students</h3></div>
+          <div id="rosterList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SATS = 500;
+const BACKEND = "https://ekasi-backend.onrender.com";
+const SUPABASE_URL = "https://bnteowvyioptlvohyert.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
+const TEACHER_ID = "fee45b1a-c503-453e-9ae8-5c08f9b71a0f";
+const API_KEY = "blink_a7TNgW64uJu8ZldseAMGab1QN0x0ksL77rgi6QMJPYPhK8jINab5hTVi9WPSrMZW";
+const PW = "ekasi2024";
+const TODAY = new Date().toISOString().split("T")[0];
+
+let students = [];
+let attendance = [];
+let payStatus = {};
+
+// Supabase helper
+async function sb(method, table, body, params) {
+  params = params || "";
+  var url = SUPABASE_URL + "/rest/v1/" + table + params;
+  var headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+  };
+  var res = await fetch(url, {
+    method: method,
+    headers: headers,
+    body: body ? JSON.stringify(body) : null
+  });
+  var text = await res.text();
+  if (!text) return [];
+  try { return JSON.parse(text); } catch(e) { return []; }
+}
+
+// Auth
+function doLogin() {
+  var val = document.getElementById("pwInput").value;
+  if (val === PW) {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadStudents();
+    updateDate();
+  } else {
+    document.getElementById("pwErr").innerHTML = '<div class="alert alert-err">Incorrect password</div>';
+    document.getElementById("pwInput").value = "";
+  }
+}
+
+function doLogout() {
+  document.getElementById("loginPage").style.display = "flex";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("pwInput").value = "";
+  document.getElementById("pwErr").innerHTML = "";
+}
+
+// Navigation
+var pages = ["attend", "payout", "stats", "leaderboard", "roster", "test"];
+var pageTitles = {
+  attend: ["Attendance", "Mark today's class"],
+  payout: ["Payouts", "Send Lightning payments"],
+  stats: ["Statistics", "Class performance"],
+  leaderboard: ["Leaderboard", "Top students"],
+  roster: ["My Roster", "Manage students"],
+  test: ["Test Payment", "Send a test payment to verify connection"]
+};
+
+function go(name) {
+  pages.forEach(function(p) {
+    var page = document.getElementById("p-" + p);
+    var btn = document.getElementById("nb-" + p);
+    if (page) page.classList.toggle("show", p === name);
+    if (btn) btn.classList.toggle("active", p === name);
+  });
+  var t = pageTitles[name] || [name, ""];
+  document.getElementById("pageTitle").textContent = t[0];
+  document.getElementById("pageSub").textContent = t[1];
+  closeSidebar();
+  if (name === "payout") renderPayout();
+  if (name === "stats") renderStats();
+  if (name === "leaderboard") renderLeaderboard();
+  if (name === "roster") renderRoster();
+  if (name === "test") renderTest();
+}
+
+function openSidebar() {
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+// Date
+function updateDate() {
+  var d = new Date();
+  var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  document.getElementById("dateEl").textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()];
+}
+
+// Load data
+async function loadStudents() {
+  var raw = await sb("GET", "students", null, "?teacher_id=eq." + TEACHER_ID + "&order=created_at.asc");
+  if (!raw || !raw.length) { students = []; attendance = []; renderAll(); return; }
+  var ids = raw.map(function(s) { return s.id; }).join(",");
+  var attRaw = await sb("GET", "attendance", null, "?student_id=in.(" + ids + ")");
+  attendance = attRaw || [];
+  students = raw.map(function(s) {
+    var att = {};
+    attendance.filter(function(a) { return a.student_id === s.id && a.present; }).forEach(function(a) { att[a.date] = true; });
+    return Object.assign({}, s, { att: att });
+  });
+  renderAll();
+}
+
+function renderAll() {
+  updateStats();
+  renderAttend();
+}
+
+// Stats
+function updateStats() {
+  var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
+  var owed = students.reduce(function(a, s) {
+    var earned = Object.keys(s.att || {}).length * SATS;
+    return a + Math.max(0, earned - (s.paid || 0));
+  }, 0);
+  document.getElementById("sStudents").textContent = students.length;
+  document.getElementById("sToday").textContent = present + "/" + students.length;
+  document.getElementById("sOwed").textContent = owed + " sats";
+  var present2 = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
+  if (present2 === students.length && students.length > 0) {
+    document.getElementById("streakEl").textContent = "Full house today!";
+  } else {
+    document.getElementById("streakEl").textContent = present2 + "/" + students.length + " present today";
+  }
+}
+
+// Attendance
+function renderAttend() {
+  var el = document.getElementById("attendList");
+  if (!students.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No students enrolled yet</div><div class="empty-sub">Go to My Roster to add students</div></div>';
+    return;
+  }
+  var html = "";
+  students.forEach(function(s) {
+    var here = !!(s.att && s.att[TODAY]);
+    var days = Object.keys(s.att || {}).length;
+    html += '<div class="student-row">';
+    html += '<div><div class="student-name">' + s.name + '</div>';
+    html += '<div class="student-sub">' + days + ' day' + (days !== 1 ? 's' : '') + ' - ' + (days * SATS) + ' sats earned</div></div>';
+    html += '<button class="toggle ' + (here ? 'on' : '') + '" onclick="toggleAttend(\'' + s.id + '\')"></button>';
+    html += '<span class="badge ' + (here ? 'badge-green' : 'badge-gray') + '">' + (here ? 'PRESENT' : 'ABSENT') + '</span>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function toggleAttend(id) {
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s) return;
+  var isPresent = !!(s.att && s.att[TODAY]);
+  if (isPresent) {
+    await sb("DELETE", "attendance", null, "?student_id=eq." + id + "&date=eq." + TODAY);
+  } else {
+    await sb("POST", "attendance", { student_id: id, date: TODAY, present: true }, "");
+  }
+  await loadStudents();
+}
+
+async function markAll() {
+  for (var i = 0; i < students.length; i++) {
+    var s = students[i];
+    if (!(s.att && s.att[TODAY])) {
+      await sb("POST", "attendance", { student_id: s.id, date: TODAY, present: true }, "");
+    }
+  }
+  await loadStudents();
+}
+
+// Payouts
+function renderPayout() {
+  var el = document.getElementById("payoutList");
+  if (!students.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>';
+    return;
+  }
+  var html = "";
+  students.forEach(function(s) {
+    var earned = Object.keys(s.att || {}).length * SATS;
+    var paid = s.paid || 0;
+    var owed = Math.max(0, earned - paid);
+    var ps = payStatus[s.id];
+    var action = "";
+    if (ps === "loading") {
+      action = '<span class="badge badge-orange">Sending...</span>';
+    } else if (ps && ps.indexOf("ok:") === 0) {
+      action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
+    } else if (ps && ps.indexOf("err:") === 0) {
+      action = '<span style="color:#dc2626;font-size:12px">Error: ' + ps.slice(4) + '</span>';
+    } else if (owed > 0) {
+      action = '<button class="btn btn-green" style="padding:6px 12px;font-size:12px" onclick="paySingle(\'' + s.id + '\',' + owed + ')">Pay ' + owed + '</button>';
+    } else if (earned > 0) {
+      action = '<span class="badge badge-green">All paid</span>';
+    } else {
+      action = '<span class="badge badge-gray">No earnings</span>';
+    }
+    html += '<div class="payout-row">';
+    html += '<div><div class="student-name">' + s.name + '</div><div style="font-size:11px;color:#9ca3af">' + (s.destination || '') + '</div></div>';
+    html += '<div style="font-weight:600;color:#f7931a">' + earned + '</div>';
+    html += '<div style="color:#16a34a">' + paid + '</div>';
+    html += '<div style="font-weight:600;color:' + (owed > 0 ? '#f7931a' : '#16a34a') + '">' + owed + '</div>';
+    html += '<div>' + action + '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function paySingle(id, owed) {
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s) return;
+  payStatus[id] = "loading";
+  renderPayout();
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: API_KEY, destination: s.destination, amount: owed })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed");
+    await sb("PATCH", "students", { paid: (s.paid || 0) + owed }, "?id=eq." + id);
+    payStatus[id] = "ok:Sent " + owed + " sats!";
+    await loadStudents();
+  } catch(e) {
+    payStatus[id] = "err:" + e.message.slice(0, 40);
+  }
+  renderPayout();
+}
+
+async function payAll() {
+  var owing = students.filter(function(s) {
+    var earned = Object.keys(s.att || {}).length * SATS;
+    return Math.max(0, earned - (s.paid || 0)) > 0;
+  });
+  if (!owing.length) return;
+  var alert = document.getElementById("payAlert");
+  for (var i = 0; i < owing.length; i++) {
+    var s = owing[i];
+    var earned = Object.keys(s.att || {}).length * SATS;
+    var owed = Math.max(0, earned - (s.paid || 0));
+    alert.innerHTML = '<div class="alert alert-ok">Sending ' + (i+1) + ' of ' + owing.length + '...</div>';
+    await paySingle(s.id, owed);
+  }
+  alert.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length !== 1 ? 's' : '') + ' sent!</div>';
+  setTimeout(function() { alert.innerHTML = ""; }, 5000);
+}
+
+// Statistics
+function renderStats() {
+  var el = document.getElementById("statsList");
+  if (!students.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>';
+    return;
+  }
+  var html = '<div class="card"><div class="card-header"><h3>Student Performance</h3></div>';
+  students.forEach(function(s) {
+    var days = Object.keys(s.att || {}).length;
+    var earned = days * SATS;
+    var paid = s.paid || 0;
+    html += '<div class="student-row"><div>';
+    html += '<div class="student-name">' + s.name + '</div>';
+    html += '<div class="student-sub">' + days + ' days attended</div></div>';
+    html += '<div style="text-align:right"><div style="font-weight:700;color:#f7931a">' + earned + ' sats earned</div>';
+    html += '<div style="font-size:12px;color:#16a34a">' + paid + ' paid</div></div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// Leaderboard
+function renderLeaderboard() {
+  var el = document.getElementById("lbList");
+  var data = students.map(function(s) {
+    return { name: s.name, days: Object.keys(s.att || {}).length };
+  }).sort(function(a, b) { return b.days - a.days; });
+  var maxDays = data[0] ? data[0].days : 1;
+  var html = '<div class="card"><div class="card-header"><h3>Top Students by Attendance</h3></div>';
+  if (!data.length) {
+    html += '<div class="empty"><div class="empty-title">No data yet</div></div>';
+  } else {
+    data.forEach(function(s, i) {
+      var pct = maxDays > 0 ? Math.round((s.days / maxDays) * 100) : 0;
+      var rank = "#" + (i + 1);
+      html += '<div class="student-row"><div style="font-size:20px;font-weight:700;color:#f7931a;width:40px">' + rank + '</div>';
+      html += '<div><div class="student-name">' + s.name + '</div>';
+      html += '<div style="margin-top:6px;height:4px;background:#f3f4f6;border-radius:2px;overflow:hidden">';
+      html += '<div style="height:100%;width:' + pct + '%;background:#f7931a;border-radius:2px"></div></div></div>';
+      html += '<div style="text-align:right;font-weight:700;font-size:20px;color:#f7931a">' + s.days + '<div style="font-size:11px;color:#9ca3af;font-weight:400">days</div></div></div>';
+    });
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// Roster
+function renderRoster() {
+  var el = document.getElementById("rosterList");
+  if (!students.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>';
+    return;
+  }
+  var html = "";
+  students.forEach(function(s) {
+    html += '<div class="student-row"><div><div class="student-name">' + s.name + '</div>';
+    html += '<div class="student-sub">' + (s.destination || 'No address') + '</div></div>';
+    html += '<button class="btn btn-outline" style="padding:6px 10px;font-size:12px;color:#dc2626;border-color:#fecaca" onclick="delStudent(\'' + s.id + '\')">Remove</button></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function addStudent() {
+  var name = document.getElementById("rName").value.trim();
+  var dest = document.getElementById("rDest").value.trim();
+  var err = document.getElementById("rErr");
+  err.innerHTML = "";
+  if (!name) { err.innerHTML = '<div class="alert alert-err">Enter student name</div>'; return; }
+  if (!dest) { err.innerHTML = '<div class="alert alert-err">Enter Lightning address</div>'; return; }
+  err.innerHTML = '<div class="alert alert-ok">Enrolling...</div>';
+  var result = await sb("POST", "students", { name: name, destination: dest, teacher_id: TEACHER_ID, paid: 0 }, "");
+  if (result && result.length) {
+    document.getElementById("rName").value = "";
+    document.getElementById("rDest").value = "";
+    await loadStudents();
+    renderRoster();
+    err.innerHTML = '<div class="alert alert-ok">' + name + ' enrolled!</div>';
+    setTimeout(function() { err.innerHTML = ""; }, 3000);
+  } else {
+    err.innerHTML = '<div class="alert alert-err">Failed to enroll. Try again.</div>';
+  }
+}
+
+// Test Payment
+function renderTest() {
+  var sel = document.getElementById("testStudent");
+  sel.innerHTML = '<option value="">-- Choose student --</option>';
+  students.forEach(function(s) {
+    var opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.name + " (" + (s.destination || "no address") + ")";
+    sel.appendChild(opt);
+  });
+  sel.onchange = function() {
+    var s = students.find(function(x) { return x.id === sel.value; });
+    var prev = document.getElementById("testDestPreview");
+    prev.textContent = s ? "Address: " + (s.destination || "none") : "";
+  };
+  document.getElementById("testResult").innerHTML = "";
+}
+
+async function sendTestPayment() {
+  var studentId = document.getElementById("testStudent").value;
+  var amount = parseInt(document.getElementById("testAmount").value);
+  var result = document.getElementById("testResult");
+
+  if (!studentId) {
+    result.innerHTML = '<div class="alert alert-err">Please select a student</div>';
+    return;
+  }
+  if (!amount || amount < 1 || amount > 10) {
+    result.innerHTML = '<div class="alert alert-err">Amount must be between 1 and 10 sats</div>';
+    return;
+  }
+
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s || !s.destination) {
+    result.innerHTML = '<div class="alert alert-err">Student has no Lightning address</div>';
+    return;
+  }
+
+  result.innerHTML = '<div class="alert alert-ok">Sending ' + amount + ' sats to ' + s.name + '...</div>';
+
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: API_KEY, destination: s.destination, amount: amount })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Payment failed");
+    result.innerHTML = '<div class="alert alert-ok">Test payment of ' + amount + ' sats sent to ' + s.name + ' successfully!</div>';
+  } catch(e) {
+    result.innerHTML = '<div class="alert alert-err">Failed: ' + e.message + '</div>';
+  }
+}
+
+  var s = students.find(function(x) { return x.id === id; });
+  if (!confirm("Remove " + (s ? s.name : "") + "?")) return;
+  await sb("DELETE", "attendance", null, "?student_id=eq." + id);
+  await sb("DELETE", "students", null, "?id=eq." + id);
+  await loadStudents();
+  renderRoster();
+}
+</script>
+</body>
+</html>
