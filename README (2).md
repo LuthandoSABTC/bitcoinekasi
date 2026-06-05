@@ -4,7 +4,7 @@ A Lightning Network-powered attendance and payment system for the Bitcoin Ekasi 
 
 ## What It Does
 
-Students attend Bitcoin education classes and earn **500 sats per day** via the Lightning Network. Teachers mark attendance on their portal and pay students directly to their Bolt Cards or Blink wallets with one click.
+Students attend Bitcoin education classes and earn **500 sats per day** via the Lightning Network. Teachers mark attendance on their portal and pay students directly to their Bolt Cards with one click.
 
 ### Admin Portal
 - View all teachers and their classes in real time
@@ -24,7 +24,6 @@ Students attend Bitcoin education classes and earn **500 sats per day** via the 
 ## How Payments Work
 
 Each student receives **500 sats per day** they attend class. Payments are sent via the Blink Lightning wallet API directly to:
-- **Blink Lightning Addresses** (e.g. `student@blink.sv`)
 - **Bolt Card LNURL** (NFC cards linked to Lightning wallets)
 
 ## Tech Stack
