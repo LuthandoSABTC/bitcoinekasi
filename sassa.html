@@ -399,6 +399,18 @@ let API_KEY = localStorage.getItem("ek_key") || "";
 const PW = "ekasi2024";
 const TODAY = new Date().toISOString().split("T")[0];
 
+// Only Tuesday(2), Wednesday(3), Thursday(4), Friday(5) are class days
+function isClassDay() {
+  var day = new Date().getDay();
+  return day >= 2 && day <= 5;
+}
+
+function getClassDayMessage() {
+  var day = new Date().getDay();
+  var names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  return "No class on " + names[day] + ". Classes run Tuesday to Friday only.";
+}
+
 let students = [];
 let attendance = [];
 let payStatus = {};
@@ -514,7 +526,11 @@ function updateStats() {
 function renderAttend() {
   var el = document.getElementById("attendList");
   if (!students.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">&#9825;</div><div class="empty-title">No students enrolled</div><div class="empty-sub">Go to My Roster to add students</div></div>';
+    el.innerHTML = '<div class="empty"><div class="empty-title">No students enrolled</div><div class="empty-sub">Go to My Roster to add students</div></div>';
+    return;
+  }
+  if (!isClassDay()) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No Class Today</div><div class="empty-sub">' + getClassDayMessage() + '</div></div>';
     return;
   }
   var html = "";
@@ -532,6 +548,7 @@ function renderAttend() {
 }
 
 async function toggleAttend(id) {
+  if (!isClassDay()) return;
   var s = students.find(function(x) { return x.id === id; });
   if (!s) return;
   var isPresent = !!(s.att && s.att[TODAY]);
@@ -544,6 +561,7 @@ async function toggleAttend(id) {
 }
 
 async function markAll() {
+  if (!isClassDay()) { alert(getClassDayMessage()); return; }
   for (var i = 0; i < students.length; i++) {
     var s = students[i];
     if (!(s.att && s.att[TODAY])) {
