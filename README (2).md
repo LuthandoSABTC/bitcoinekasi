@@ -37,12 +37,6 @@ Each student receives **500 sats per day** they attend class. Payments are sent 
 | Admin Hosting | GitHub Pages |
 | Teacher Hosting | Vercel |
 
-## Live Apps
-
-- **Admin Portal:** https://luthandosabtc.github.io/bitcoinekasi/
-- **Teacher Portal:** https://bitcoinekasi.vercel.app/sassa.html
-- **Backend API:** https://ekasi-backend.onrender.com
-
 ## Database Schema
 
 ```
