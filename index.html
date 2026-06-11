@@ -1353,19 +1353,22 @@ function renderMonthly() {
   for (var w = 0; w >= -3; w--) {
     var r = getClassWeekRange(w);
     var startD = new Date(r.start + "T00:00:00");
-    var label = w===0?"This Week":(w===-1?"Last Week":startD.getDate()+" "+months[startD.getMonth()]);
+    var label = w===0 ? "This Week" : (w===-1 ? "Last Week" : startD.getDate()+" "+months[startD.getMonth()]);
     var totalAtt = 0;
-    students.forEach(function(s) { totalAtt += Object.keys(filterAttByWeek(s.att,w,"week")).length; });
-    var avgPct = students.length ? Math.round((totalAtt/(students.length*4))*100) : 0;
-    var color = avgPct>=80?"var(--green)":avgPct>=50?"var(--orange)":"var(--red)";
+    students.forEach(function(s) { totalAtt += Object.keys(filterAttByWeek(s.att, w, "week")).length; });
+    var avgPct = students.length ? Math.round((totalAtt / (students.length * 4)) * 100) : 0;
+    var color = avgPct >= 80 ? "var(--green)" : avgPct >= 50 ? "var(--orange)" : "var(--red)";
     html += '<div class="month-week-row">';
-    html += '<div style="font-size:12px;font-weight:600;color:var(--text);font-family:\'DM Mono\',monospace">'+label+'</div>';
-    html += '<div class="month-bar"><div class="month-bar-fill" style="width:'+avgPct+'%;background:'+color+'"></div></div>';
-    html += '<div style="font-size:14px;font-weight:800;color:'+color+';font-family:\'DM Mono\',monospace;text-align:right">'+avgPct+'%</div>';
-    html += '<div style="font-size:11px;color:var(--text3);font-family:\'DM Mono\',monospace;text-align:right">'+totalAtt+' days</div></div>';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace">' + label + '</div>';
+    html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + avgPct + '%;background:' + color + '"></div></div>';
+    html += '<div style="font-size:14px;font-weight:800;color:' + color + ';font-family:'DM Mono',monospace;text-align:right">' + avgPct + '%</div>';
+    html += '<div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;text-align:right">' + totalAtt + ' days</div>';
+    html += '</div>';
   }
-  html += '</div><div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">STUDENT BREAKDOWN — LAST 4 WEEKS</div>';
-  html += '<div class="card"><div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:\'DM Mono\',monospace;border-bottom:1px solid var(--border)"><div>Student</div>';
+  html += '</div>';
+  html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">STUDENT BREAKDOWN — LAST 4 WEEKS</div>';
+  html += '<div class="card">';
+  html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace;border-bottom:1px solid var(--border)"><div>Student</div>';
   for (var wi = 0; wi >= -3; wi--) {
     var wr = getClassWeekRange(wi);
     var wd = new Date(wr.start + "T00:00:00");
@@ -1373,14 +1376,14 @@ function renderMonthly() {
   }
   html += '</div>';
   students.forEach(function(s) {
-    html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:12px 20px;border-bottom:1px solid var(--border);align-items:center;font-size:13px;cursor:pointer;transition:background 0.15s" onclick="openProfile(\''+s.id+'\')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">';
-    html += '<div style="font-weight:600">'+s.name+' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
+    html += '<div class="attend-row" style="display:grid;grid-template-columns:1fr repeat(4,60px);cursor:pointer" onclick="openProfile('' + s.id + '')">';
+    html += '<div style="font-weight:600">' + s.name + ' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
     for (var wi2 = 0; wi2 >= -3; wi2--) {
-      var weekAtt = filterAttByWeek(s.att,wi2,"week");
+      var weekAtt = filterAttByWeek(s.att, wi2, "week");
       var days = Object.keys(weekAtt).length;
-      var pct = Math.round((days/4)*100);
-      var col = pct===100?"var(--green)":pct>=50?"var(--orange)":"var(--red)";
-      html += '<div style="text-align:center;font-weight:700;color:'+(days>0?col:"var(--text3)")+';font-family:\'DM Mono\',monospace">'+(days>0?days+"/4":"—")+'</div>';
+      var pct = Math.round((days / 4) * 100);
+      var col = pct===100 ? "var(--green)" : pct>=50 ? "var(--orange)" : "var(--red)";
+      html += '<div style="text-align:center;font-weight:700;color:' + (days>0?col:"var(--text3)") + ';font-family:'DM Mono',monospace">' + (days>0?days+"/4":"—") + '</div>';
     }
     html += '</div>';
   });
