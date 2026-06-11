@@ -57,17 +57,17 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .nb:hover{background:var(--bg3);color:var(--text)}
 .nb.on{background:var(--orange-glow);color:var(--orange);font-weight:600}
 .nb-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
-.nb-badge{margin-left:auto;background:var(--orange);color:#000;border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace}
+.nb-badge{margin-left:auto;background:var(--orange);color:#000;border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700;font-family:DM Mono,monospace}
 .sidebar-foot{margin-top:auto;padding:16px;border-top:1px solid var(--border)}
 .date-pill{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .date-pill-day{font-size:12px;font-weight:600;color:var(--text)}
-.date-pill-info{font-size:11px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace}
+.date-pill-info{font-size:11px;color:var(--text3);margin-top:2px;font-family:DM Mono,monospace}
 .main{margin-left:var(--sidebar-w);min-height:100vh}
 .topbar{display:flex;align-items:center;gap:12px;padding:20px 28px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
 .menu-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--text2);flex-shrink:0}
 .topbar-title h2{font-size:20px;font-weight:700;line-height:1}
-.topbar-title p{font-size:12px;color:var(--text2);margin-top:2px;font-family:'DM Mono',monospace}
-.live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--green);margin-left:auto;font-family:'DM Mono',monospace;letter-spacing:1px}
+.topbar-title p{font-size:12px;color:var(--text2);margin-top:2px;font-family:DM Mono,monospace}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--green);margin-left:auto;font-family:DM Mono,monospace;letter-spacing:1px}
 .live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:0.6;box-shadow:0 0 0 4px rgba(34,197,94,0)}}
 .content{padding:24px 28px}
@@ -75,7 +75,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:border-color 0.2s}
 .stat-card:hover{border-color:var(--border2)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--orange),transparent)}
-.stat-num{font-size:36px;font-weight:800;color:var(--orange);line-height:1;font-family:'DM Mono',monospace}
+.stat-num{font-size:36px;font-weight:800;color:var(--orange);line-height:1;font-family:DM Mono,monospace}
 .stat-label{font-size:11px;color:var(--text3);margin-top:6px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
 .page{display:none}
 .page.show{display:block}
@@ -88,23 +88,23 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .attend-row:last-child{border-bottom:none}
 .attend-row:hover{background:var(--bg3)}
 .attend-name{font-size:14px;font-weight:600}
-.attend-sub{font-size:11px;color:var(--text3);margin-top:3px;font-family:'DM Mono',monospace}
+.attend-sub{font-size:11px;color:var(--text3);margin-top:3px;font-family:DM Mono,monospace}
 .toggle{position:relative;width:44px;height:24px;background:var(--bg4);border:1px solid var(--border2);border-radius:12px;cursor:pointer;transition:all 0.3s;flex-shrink:0;outline:none}
 .toggle::after{content:'';position:absolute;width:18px;height:18px;background:var(--text3);border-radius:50%;top:2px;left:2px;transition:all 0.3s}
 .toggle.on{background:var(--orange);border-color:var(--orange)}
 .toggle.on::after{left:22px;background:#fff;box-shadow:0 2px 6px rgba(247,147,26,0.4)}
-.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace}
 .badge-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
 .badge-gray{background:var(--bg4);color:var(--text3);border:1px solid var(--border)}
 .badge-orange{background:var(--orange-glow);color:var(--orange);border:1px solid rgba(247,147,26,0.2)}
 .badge-blue{background:rgba(59,130,246,0.1);color:var(--blue);border:1px solid rgba(59,130,246,0.2)}
-.payout-cols{display:grid;grid-template-columns:1fr 90px 90px 90px 140px;align-items:center;padding:10px 20px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace}
+.payout-cols{display:grid;grid-template-columns:1fr 90px 90px 90px 140px;align-items:center;padding:10px 20px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);font-family:DM Mono,monospace}
 .payout-row{display:grid;grid-template-columns:1fr 90px 90px 90px 140px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);transition:background 0.15s;font-size:13px}
 .payout-row:last-child{border-bottom:none}
 .payout-row:hover{background:var(--bg3)}
-.payout-dest{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
-.num-orange{color:var(--orange);font-weight:700;font-family:'DM Mono',monospace}
-.num-green{color:var(--green);font-weight:600;font-family:'DM Mono',monospace}
+.payout-dest{font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.num-orange{color:var(--orange);font-weight:700;font-family:DM Mono,monospace}
+.num-green{color:var(--green);font-weight:600;font-family:DM Mono,monospace}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;border:none;transition:all 0.15s;letter-spacing:0.5px}
 .btn-primary{background:var(--orange);color:#000}
 .btn-primary:hover{background:var(--orange-light);box-shadow:0 4px 16px rgba(247,147,26,0.3)}
@@ -116,7 +116,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-sm{padding:5px 12px;font-size:11px}
 .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
 .inp-group{margin-bottom:16px}
-.inp-hint{font-size:11px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace}
+.inp-hint{font-size:11px;color:var(--text3);margin-top:4px;font-family:DM Mono,monospace}
 .alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
 .alert-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
 .alert-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
@@ -124,14 +124,14 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .empty{text-align:center;padding:48px 24px}
 .empty-title{font-size:15px;font-weight:700;color:var(--text2)}
-.empty-sub{font-size:12px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace}
+.empty-sub{font-size:12px;color:var(--text3);margin-top:4px;font-family:DM Mono,monospace}
 .lb-row{display:grid;grid-template-columns:48px 1fr 80px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);transition:background 0.15s}
 .lb-row:last-child{border-bottom:none}
 .lb-row:hover{background:var(--bg3)}
-.lb-rank{font-size:20px;font-weight:800;font-family:'DM Mono',monospace;color:var(--text3)}
+.lb-rank{font-size:20px;font-weight:800;font-family:DM Mono,monospace;color:var(--text3)}
 .lb-bar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:6px}
 .lb-fill{height:100%;background:var(--orange);border-radius:2px;transition:width 1s ease}
-.lb-days{font-size:24px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace;text-align:right;line-height:1}
+.lb-days{font-size:24px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace;text-align:right;line-height:1}
 .lb-days-label{font-size:10px;color:var(--text3);text-align:right;margin-top:2px;letter-spacing:1px}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:150;backdrop-filter:blur(4px)}
 .overlay.show{display:block}
@@ -143,22 +143,22 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .chapter-progress-item{display:grid;grid-template-columns:32px 1fr 60px;align-items:center;gap:12px;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;transition:border-color 0.2s}
 .chapter-progress-item.done{border-color:rgba(247,147,26,0.3);background:var(--orange-glow)}
 .chapter-progress-item.active{border-color:var(--orange);box-shadow:0 0 0 1px rgba(247,147,26,0.2)}
-.chapter-num{width:32px;height:32px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0}
+.chapter-num{width:32px;height:32px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:DM Mono,monospace;color:var(--text3);flex-shrink:0}
 .chapter-num.done{background:var(--orange);border-color:var(--orange);color:#000}
 .chapter-num.active{background:var(--orange-glow);border-color:var(--orange);color:var(--orange)}
 .chapter-title{font-size:13px;font-weight:600;color:var(--text2)}
 .chapter-title.done{color:var(--text)}
-.chapter-sessions{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
-.chapter-days-badge{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text3);text-align:right}
+.chapter-sessions{font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px}
+.chapter-days-badge{font-size:11px;font-weight:700;font-family:DM Mono,monospace;color:var(--text3);text-align:right}
 .chapter-days-badge.done{color:var(--orange)}
 .chapter-history-row{padding:14px 20px;border-bottom:1px solid var(--border);transition:background 0.15s}
 .chapter-history-row:last-child{border-bottom:none}
 .chapter-history-row:hover{background:var(--bg3)}
 .chapter-history-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.chapter-badge{display:inline-flex;align-items:center;gap:6px;background:var(--orange-glow);border:1px solid rgba(247,147,26,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--orange);font-family:'DM Mono',monospace}
-.chapter-history-date{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-left:auto}
-.chapter-history-notes{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.5}
-.topic-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);font-family:'DM Mono',monospace}
+.chapter-badge{display:inline-flex;align-items:center;gap:6px;background:var(--orange-glow);border:1px solid rgba(247,147,26,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--orange);font-family:DM Mono,monospace}
+.chapter-history-date{font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-left:auto}
+.chapter-history-notes{font-size:12px;color:var(--text2);font-family:DM Mono,monospace;line-height:1.5}
+.topic-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);font-family:DM Mono,monospace}
 /* Enhanced leaderboard */
 @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.3),0 0 40px rgba(255,215,0,0.1)}50%{box-shadow:0 0 30px rgba(255,215,0,0.6),0 0 60px rgba(255,215,0,0.2)}}
@@ -166,11 +166,11 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .star-banner{border-radius:16px;padding:28px 24px;margin-bottom:20px;position:relative;overflow:hidden;text-align:center;background:linear-gradient(135deg,#1a1200 0%,#2a1f00 50%,#1a1200 100%);border:1px solid rgba(255,215,0,0.4);animation:pulse-glow 3s ease-in-out infinite}
 .star-banner::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,215,0,0.05),transparent);background-size:200% 100%;animation:shimmer 3s linear infinite}
 .star-banner-crown{font-size:48px;display:block;animation:float 2s ease-in-out infinite;margin-bottom:8px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.6))}
-.star-banner-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,215,0,0.6);font-family:'DM Mono',monospace;margin-bottom:6px}
+.star-banner-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,215,0,0.6);font-family:DM Mono,monospace;margin-bottom:6px}
 .star-banner-name{font-size:28px;font-weight:800;background:linear-gradient(135deg,#ffd700,#ffed4a,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:8px}
 .star-banner-stats{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
 .star-stat{display:flex;flex-direction:column;align-items:center;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:8px 16px}
-.star-stat-val{font-size:20px;font-weight:800;color:#ffd700;font-family:'DM Mono',monospace}
+.star-stat-val{font-size:20px;font-weight:800;color:#ffd700;font-family:DM Mono,monospace}
 .star-stat-label{font-size:9px;color:rgba(255,215,0,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 .lb-row-new{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);gap:14px;transition:background 0.15s;position:relative}
 .lb-row-new:last-child{border-bottom:none}
@@ -179,28 +179,28 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .lb-row-new.rank2{background:linear-gradient(90deg,rgba(192,192,192,0.04),transparent)}
 .lb-row-new.rank3{background:linear-gradient(90deg,rgba(205,127,50,0.04),transparent)}
 .lb-medal{font-size:22px;width:36px;text-align:center;flex-shrink:0}
-.lb-rank-num{width:36px;height:36px;background:var(--bg4);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0}
+.lb-rank-num{width:36px;height:36px;background:var(--bg4);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:DM Mono,monospace;color:var(--text3);flex-shrink:0}
 .lb-student-name{font-size:14px;font-weight:700;color:var(--text)}
 .lb-progress-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:5px}
 .lb-progress-fill{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
-.lb-streak{display:inline-flex;align-items:center;gap:3px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:#ef4444;font-family:'DM Mono',monospace;margin-top:4px}
+.lb-streak{display:inline-flex;align-items:center;gap:3px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:#ef4444;font-family:DM Mono,monospace;margin-top:4px}
 .lb-right{margin-left:auto;text-align:right;flex-shrink:0}
-.lb-days-big{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1}
-.lb-sats-earned{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);margin-top:2px}
-.lb-perfect{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace;margin-top:4px}
+.lb-days-big{font-size:22px;font-weight:800;font-family:DM Mono,monospace;line-height:1}
+.lb-sats-earned{font-size:10px;font-family:DM Mono,monospace;color:var(--text3);margin-top:2px}
+.lb-perfect{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--green);font-family:DM Mono,monospace;margin-top:4px}
 /* Week filter */
 .week-filter{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:16px;flex-wrap:wrap}
 .week-filter-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
 .week-nav{display:flex;align-items:center;gap:6px}
 .week-nav-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:14px;cursor:pointer;transition:all 0.15s;font-family:'Syne',sans-serif}
 .week-nav-btn:hover{background:var(--bg4);color:var(--text)}
-.week-label{font-size:12px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;min-width:160px;text-align:center}
+.week-label{font-size:12px;font-weight:600;color:var(--text);font-family:DM Mono,monospace;min-width:160px;text-align:center}
 .week-mode-btns{display:flex;gap:4px;margin-left:auto}
 .week-mode-btn{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text3);transition:all 0.15s}
 .week-mode-btn.active{background:var(--orange-glow);color:var(--orange);border-color:rgba(247,147,26,0.3)}
 .week-summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
 .week-summary-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px}
-.week-summary-val{font-size:22px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace}
+.week-summary-val{font-size:22px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace}
 .week-summary-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -230,7 +230,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .profile-close:hover{background:var(--bg4);color:var(--text)}
 .profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
 .profile-stat{background:var(--bg2);padding:16px;text-align:center}
-.profile-stat-val{font-size:24px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace}
+.profile-stat-val{font-size:24px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace}
 .profile-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
 .profile-section{padding:20px 24px;border-bottom:1px solid var(--border)}
 .profile-section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
@@ -244,22 +244,22 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .contrib-day.future{background:var(--bg3);border:1px solid var(--border);opacity:0.3}
 .contrib-day.noclass{background:var(--bg3);border:1px solid var(--border);opacity:0.15}
 .contrib-labels{display:flex;gap:3px;margin-bottom:4px}
-.contrib-label{width:14px;font-size:8px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace}
+.contrib-label{width:14px;font-size:8px;color:var(--text3);text-align:center;font-family:DM Mono,monospace}
 /* Low attendance warning */
 .warn-banner{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
 .warn-icon{font-size:16px;flex-shrink:0;margin-top:1px}
 .warn-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px}
-.warn-list{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.8}
+.warn-list{font-size:11px;color:var(--text2);font-family:DM Mono,monospace;line-height:1.8}
 /* End of week modal */
 .eow-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
 .eow-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;padding:32px;text-align:center;position:relative}
 .eow-title{font-size:24px;font-weight:800;margin-bottom:4px}
-.eow-sub{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:24px}
+.eow-sub{font-size:12px;color:var(--text3);font-family:DM Mono,monospace;margin-bottom:24px}
 .eow-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
 .eow-stat{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px}
-.eow-stat-val{font-size:28px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace}
+.eow-stat-val{font-size:28px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace}
 .eow-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
-.eow-star{font-size:13px;color:var(--text2);margin-bottom:20px;font-family:'DM Mono',monospace}
+.eow-star{font-size:13px;color:var(--text2);margin-bottom:20px;font-family:DM Mono,monospace}
 /* Monthly overview */
 .month-week-row{display:grid;grid-template-columns:80px 1fr 60px 60px;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);font-size:13px}
 .month-week-row:last-child{border-bottom:none}
@@ -426,7 +426,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         <div class="section-title" style="margin-bottom:16px">Settings</div>
         <div class="form-card" style="max-width:480px">
           <div style="font-size:15px;font-weight:700;margin-bottom:4px">Blink API Key</div>
-          <p style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:20px">Get your key from dashboard.blink.sv — READ + WRITE permissions needed</p>
+          <p style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace;margin-bottom:20px">Get your key from dashboard.blink.sv — READ + WRITE permissions needed</p>
           <div class="inp-group"><label class="inp-label">API Key</label><input class="inp" type="password" id="tKey" placeholder="blink_..."></div>
           <div id="tKeyBadge" style="margin-bottom:16px"></div>
           <div id="tSettingsMsg"></div>
@@ -479,14 +479,14 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <div id="p-test" class="page">
         <div class="section-title" style="margin-bottom:16px">Test Payment</div>
         <div class="form-card" style="max-width:500px">
-          <p style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;font-family:'DM Mono',monospace">Send a small test payment (1–10 sats) to verify Lightning connectivity with a student's address.</p>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;font-family:DM Mono,monospace">Send a small test payment (1–10 sats) to verify Lightning connectivity with a student's address.</p>
           <div class="inp-group">
             <label class="inp-label">Select Student</label>
             <select class="inp" id="testStudent" onchange="previewTestDest()">
               <option value="">-- Choose student --</option>
             </select>
           </div>
-          <div id="testDestPreview" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:-8px;margin-bottom:16px;padding:0 4px"></div>
+          <div id="testDestPreview" style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:-8px;margin-bottom:16px;padding:0 4px"></div>
           <div class="inp-group">
             <label class="inp-label">Amount (1–10 sats)</label>
             <input class="inp" type="number" id="testAmount" value="1" min="1" max="10">
@@ -505,7 +505,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         <div class="profile-avatar-big" id="profileAvatar">?</div>
         <div>
           <div style="font-size:18px;font-weight:800" id="profileName">Student</div>
-          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:3px" id="profileDest"></div>
+          <div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:3px" id="profileDest"></div>
         </div>
         <div class="profile-close" onclick="closeProfile()">✕</div>
       </div>
@@ -1469,7 +1469,7 @@ function buildContribGraph(s) {
   var html = '<div style="display:flex;gap:3px;margin-bottom:4px;margin-left:20px">';
   weeks.forEach(function(w) {
     var d = new Date(w.label + "T00:00:00");
-    html += '<div style="width:66px;font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;text-align:center">' + d.getDate() + " " + months[d.getMonth()] + '</div>';
+    html += '<div style="width:66px;font-size:8px;color:var(--text3);font-family:DM Mono,monospace;text-align:center">' + d.getDate() + " " + months[d.getMonth()] + '</div>';
   });
   html += '</div>';
 
@@ -1478,7 +1478,7 @@ function buildContribGraph(s) {
   // Day labels
   html += '<div style="display:flex;flex-direction:column;gap:3px;margin-right:4px">';
   days.forEach(function(d) {
-    html += '<div style="width:14px;height:14px;font-size:8px;color:var(--text3);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace">' + d + '</div>';
+    html += '<div style="width:14px;height:14px;font-size:8px;color:var(--text3);display:flex;align-items:center;justify-content:center;font-family:DM Mono,monospace">' + d + '</div>';
   });
   html += '</div>';
 
@@ -1513,10 +1513,10 @@ function buildWeeklyBreakdown(s) {
     var label = w === 0 ? "This Week" : (w === -1 ? "Last Week" : d.getDate() + " " + months[d.getMonth()]);
     var color = pct === 100 ? "var(--green)" : pct >= 75 ? "var(--orange)" : pct >= 50 ? "var(--orange-dim)" : "var(--red)";
     html += '<div class="month-week-row">';
-    html += '<div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace">' + label + '</div>';
+    html += '<div style="font-size:12px;color:var(--text2);font-family:DM Mono,monospace">' + label + '</div>';
     html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
-    html += '<div style="font-size:12px;font-weight:700;color:' + color + ';font-family:'DM Mono',monospace;text-align:right">' + days + '/4</div>';
-    html += '<div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;text-align:right">' + pct + '%</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:' + color + ';font-family:DM Mono,monospace;text-align:right">' + days + '/4</div>';
+    html += '<div style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace;text-align:right">' + pct + '%</div>';
     html += '</div>';
   }
   el.innerHTML = html;
@@ -1573,7 +1573,7 @@ function showEowSummary() {
     '⭐ Star Student: <strong>' + top.name + '</strong> — ' + topDays + ' days' : '';
 
   document.getElementById("eowPerfect").innerHTML = perfectStudents.length ?
-    '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--green);font-family:'DM Mono',monospace">💯 Perfect Week: ' + perfectStudents.join(", ") + '</div>' : '';
+    '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--green);font-family:DM Mono,monospace">💯 Perfect Week: ' + perfectStudents.join(", ") + '</div>' : '';
 
   document.getElementById("eowModal").style.display = "flex";
   document.body.style.overflow = "hidden";
@@ -1603,16 +1603,16 @@ function renderMonthly() {
     var avgPct = students.length ? Math.round((totalAtt / (students.length * 4)) * 100) : 0;
     var color = avgPct >= 80 ? "var(--green)" : avgPct >= 50 ? "var(--orange)" : "var(--red)";
     html += '<div class="month-week-row">';
-    html += '<div style="font-size:12px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace">' + label + '</div>';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--text);font-family:DM Mono,monospace">' + label + '</div>';
     html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + avgPct + '%;background:' + color + '"></div></div>';
-    html += '<div style="font-size:14px;font-weight:800;color:' + color + ';font-family:'DM Mono',monospace;text-align:right">' + avgPct + '%</div>';
-    html += '<div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;text-align:right">' + totalAtt + ' days</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:' + color + ';font-family:DM Mono,monospace;text-align:right">' + avgPct + '%</div>';
+    html += '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;text-align:right">' + totalAtt + ' days</div>';
     html += '</div>';
   }
   html += '</div>';
   html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">STUDENT BREAKDOWN — LAST 4 WEEKS</div>';
   html += '<div class="card">';
-  html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace;border-bottom:1px solid var(--border)">';
+  html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace;border-bottom:1px solid var(--border)">';
   html += '<div>Student</div>';
   for (var wi = 0; wi >= -3; wi--) {
     var wr = getClassWeekRange(wi);
@@ -1621,14 +1621,14 @@ function renderMonthly() {
   }
   html += '</div>';
   students.forEach(function(s) {
-    html += '<div class="attend-row" style="display:grid;grid-template-columns:1fr repeat(4,60px);cursor:pointer" onclick="openProfile('' + s.id + '')">';
+    html += '<div class="attend-row" style="display:grid;grid-template-columns:1fr repeat(4,60px);cursor:pointer" onclick="openProfile(\"' + s.id + '\"">">';
     html += '<div style="font-weight:600">' + s.name + ' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
     for (var wi2 = 0; wi2 >= -3; wi2--) {
       var weekAtt = filterAttByWeek(s.att, wi2, "week");
       var days = Object.keys(weekAtt).length;
       var pct = Math.round((days / 4) * 100);
       var col = pct===100 ? "var(--green)" : pct>=50 ? "var(--orange)" : "var(--red)";
-      html += '<div style="text-align:center;font-weight:700;color:' + (days>0?col:"var(--text3)") + ';font-family:'DM Mono',monospace">' + (days>0?days+"/4":"—") + '</div>';
+      html += '<div style="text-align:center;font-weight:700;color:' + (days>0?col:"var(--text3)") + ';font-family:DM Mono,monospace">' + (days>0?days+"/4":"—") + '</div>';
     }
     html += '</div>';
   });
