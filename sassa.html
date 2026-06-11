@@ -546,6 +546,66 @@ const SATS = 500;
 const BONUS_SATS = 500;
 const PERFECT_DAYS = 4; // Tue-Fri
 
+// ═══════════════════════════════════════════════════════════════
+// FEATURE: South Africa School Holidays & Public Holidays 2026
+// ═══════════════════════════════════════════════════════════════
+var SA_PUBLIC_HOLIDAYS_2026 = [
+  "2026-01-01", // New Year's Day
+  "2026-03-21", // Human Rights Day
+  "2026-04-03", // Good Friday
+  "2026-04-06", // Family Day (Easter Monday)
+  "2026-04-27", // Freedom Day
+  "2026-05-01", // Workers Day
+  "2026-06-16", // Youth Day
+  "2026-08-10", // Women's Day (observed)
+  "2026-09-24", // Heritage Day
+  "2026-12-16", // Day of Reconciliation
+  "2026-12-25", // Christmas Day
+  "2026-12-26"  // Day of Goodwill
+];
+
+// Western Cape school term breaks 2026
+var SA_SCHOOL_HOLIDAYS_2026 = [
+  { start: "2026-04-02", end: "2026-04-12", name: "Term 1 Holiday" },
+  { start: "2026-06-27", end: "2026-07-19", name: "Term 2 Holiday" },
+  { start: "2026-10-03", end: "2026-10-12", name: "Term 3 Holiday" },
+  { start: "2026-12-10", end: "2026-12-31", name: "Summer Holiday" }
+];
+
+function getHolidayInfo(dateStr) {
+  // Check public holiday
+  if (SA_PUBLIC_HOLIDAYS_2026.indexOf(dateStr) !== -1) {
+    var names = {
+      "2026-01-01": "New Year's Day",
+      "2026-03-21": "Human Rights Day",
+      "2026-04-03": "Good Friday",
+      "2026-04-06": "Family Day",
+      "2026-04-27": "Freedom Day",
+      "2026-05-01": "Workers Day",
+      "2026-06-16": "Youth Day",
+      "2026-08-10": "Women's Day",
+      "2026-09-24": "Heritage Day",
+      "2026-12-16": "Day of Reconciliation",
+      "2026-12-25": "Christmas Day",
+      "2026-12-26": "Day of Goodwill"
+    };
+    return { type: "public", name: names[dateStr] || "Public Holiday" };
+  }
+  // Check school holiday
+  for (var i = 0; i < SA_SCHOOL_HOLIDAYS_2026.length; i++) {
+    var h = SA_SCHOOL_HOLIDAYS_2026[i];
+    if (dateStr >= h.start && dateStr <= h.end) {
+      return { type: "school", name: h.name };
+    }
+  }
+  return null;
+}
+
+function isHoliday(dateStr) {
+  return getHolidayInfo(dateStr) !== null;
+}
+
+
 function getWeekAttendance(s, offset) {
   // Returns attendance dates for a given week offset (Tue-Fri)
   var r = getClassWeekRange(offset || 0);
@@ -689,12 +749,18 @@ function setWeekMode(stateKey, mode) {
 // ── Core ─────────────────────────────────────────────────────
 function isClassDay() {
   var day = new Date().getDay();
-  return day >= 2 && day <= 5;
+  if (day < 2 || day > 5) return false;
+  if (isHoliday(TODAY)) return false;
+  return true;
 }
 
 function getClassDayMessage() {
   var day = new Date().getDay();
   var names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var holiday = getHolidayInfo(TODAY);
+  if (holiday) {
+    return "No class today — " + holiday.name + " 🇿🇦";
+  }
   return "No class on " + names[day] + ". Classes run Tuesday to Friday only.";
 }
 
