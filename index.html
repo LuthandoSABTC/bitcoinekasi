@@ -1348,9 +1348,23 @@ function renderMonthly() {
   if (!el) return;
   if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  var html = '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">LAST 4 WEEKS — CLASS AVERAGE</div>';
+
+  // Only show weeks with at least 1 attendance record
+  var activeWeeks = [];
+  for (var w = 0; w >= -11; w--) {
+    var totalAtt = 0;
+    students.forEach(function(s) { totalAtt += Object.keys(filterAttByWeek(s.att, w, "week")).length; });
+    if (totalAtt > 0) activeWeeks.push(w);
+  }
+
+  if (!activeWeeks.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No attendance recorded yet</div><div class="empty-sub">Data will appear once classes begin</div></div>';
+    return;
+  }
+
+  var html = '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">ACTIVE WEEKS — CLASS AVERAGE</div>';
   html += '<div class="card" style="margin-bottom:20px">';
-  for (var w = 0; w >= -3; w--) {
+  activeWeeks.forEach(function(w) {
     var r = getClassWeekRange(w);
     var startD = new Date(r.start + "T00:00:00");
     var label = w===0 ? "This Week" : (w===-1 ? "Last Week" : startD.getDate()+" "+months[startD.getMonth()]);
@@ -1359,32 +1373,34 @@ function renderMonthly() {
     var avgPct = students.length ? Math.round((totalAtt / (students.length * 4)) * 100) : 0;
     var color = avgPct >= 80 ? "var(--green)" : avgPct >= 50 ? "var(--orange)" : "var(--red)";
     html += '<div class="month-week-row">';
-    html += '<div style="font-size:12px;font-weight:600;color:var(--text);font-family:DM Mono,monospace">' + label + '</div>';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--text)">' + label + '</div>';
     html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + avgPct + '%;background:' + color + '"></div></div>';
-    html += '<div style="font-size:14px;font-weight:800;color:' + color + ';font-family:DM Mono,monospace;text-align:right">' + avgPct + '%</div>';
-    html += '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;text-align:right">' + totalAtt + ' days</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:' + color + ';text-align:right">' + avgPct + '%</div>';
+    html += '<div style="font-size:11px;color:var(--text3);text-align:right">' + totalAtt + ' days</div>';
     html += '</div>';
-  }
+  });
   html += '</div>';
-  html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">STUDENT BREAKDOWN — LAST 4 WEEKS</div>';
+
+  var cols = 'grid-template-columns:1fr repeat(' + activeWeeks.length + ',60px)';
+  html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">STUDENT BREAKDOWN</div>';
   html += '<div class="card">';
-  html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace;border-bottom:1px solid var(--border)"><div>Student</div>';
-  for (var wi = 0; wi >= -3; wi--) {
-    var wr = getClassWeekRange(wi);
+  html += '<div style="display:grid;' + cols + ';padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border)"><div>Student</div>';
+  activeWeeks.forEach(function(w) {
+    var wr = getClassWeekRange(w);
     var wd = new Date(wr.start + "T00:00:00");
-    html += '<div style="text-align:center">' + (wi===0?"This":(wi===-1?"Last":wd.getDate()+"/"+(wd.getMonth()+1))) + '</div>';
-  }
+    html += '<div style="text-align:center">' + (w===0?"This":(w===-1?"Last":wd.getDate()+"/"+(wd.getMonth()+1))) + '</div>';
+  });
   html += '</div>';
   students.forEach(function(s) {
-    html += '<div class="attend-row" style="display:grid;grid-template-columns:1fr repeat(4,60px);cursor:pointer" onclick="openProfile(\"' + s.id + '\"">">';
+    var sid = s.id;
+    html += '<div class="attend-row" style="display:grid;' + cols + ';cursor:pointer" onclick="openProfile(this.dataset.id)" data-id="' + sid + '">';
     html += '<div style="font-weight:600">' + s.name + ' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
-    for (var wi2 = 0; wi2 >= -3; wi2--) {
-      var weekAtt = filterAttByWeek(s.att, wi2, "week");
-      var days = Object.keys(weekAtt).length;
+    activeWeeks.forEach(function(w) {
+      var days = Object.keys(filterAttByWeek(s.att, w, "week")).length;
       var pct = Math.round((days / 4) * 100);
       var col = pct===100 ? "var(--green)" : pct>=50 ? "var(--orange)" : "var(--red)";
-      html += '<div style="text-align:center;font-weight:700;color:' + (days>0?col:"var(--text3)") + ';font-family:DM Mono,monospace">' + (days>0?days+"/4":"—") + '</div>';
-    }
+      html += '<div style="text-align:center;font-weight:700;color:' + (days>0?col:"var(--text3)") + '">' + (days>0?days+"/4":"—") + '</div>';
+    });
     html += '</div>';
   });
   html += '</div>';
