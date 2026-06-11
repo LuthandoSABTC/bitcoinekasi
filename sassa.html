@@ -220,6 +220,52 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   .week-summary-strip{grid-template-columns:1fr 1fr}
   .week-mode-btns{margin-left:0}
 }
+
+/* Student Profile */
+.profile-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.profile-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;position:relative}
+.profile-head{padding:24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;position:sticky;top:0;background:var(--bg2);z-index:10}
+.profile-avatar-big{width:56px;height:56px;border-radius:50%;background:var(--orange-glow);border:2px solid var(--orange);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:var(--orange);flex-shrink:0}
+.profile-close{position:absolute;right:16px;top:16px;width:32px;height:32px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text2)}
+.profile-close:hover{background:var(--bg4);color:var(--text)}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.profile-stat{background:var(--bg2);padding:16px;text-align:center}
+.profile-stat-val{font-size:24px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace}
+.profile-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+.profile-section{padding:20px 24px;border-bottom:1px solid var(--border)}
+.profile-section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+/* Contribution graph */
+.contrib-grid{display:flex;flex-direction:column;gap:3px}
+.contrib-week{display:flex;gap:3px}
+.contrib-day{width:14px;height:14px;border-radius:3px;flex-shrink:0;cursor:default;transition:transform 0.1s}
+.contrib-day:hover{transform:scale(1.3)}
+.contrib-day.empty{background:var(--bg4);border:1px solid var(--border)}
+.contrib-day.present{background:var(--orange);border:1px solid var(--orange-dim)}
+.contrib-day.future{background:var(--bg3);border:1px solid var(--border);opacity:0.3}
+.contrib-day.noclass{background:var(--bg3);border:1px solid var(--border);opacity:0.15}
+.contrib-labels{display:flex;gap:3px;margin-bottom:4px}
+.contrib-label{width:14px;font-size:8px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace}
+/* Low attendance warning */
+.warn-banner{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
+.warn-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.warn-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px}
+.warn-list{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.8}
+/* End of week modal */
+.eow-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.eow-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;padding:32px;text-align:center;position:relative}
+.eow-title{font-size:24px;font-weight:800;margin-bottom:4px}
+.eow-sub{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:24px}
+.eow-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.eow-stat{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px}
+.eow-stat-val{font-size:28px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace}
+.eow-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+.eow-star{font-size:13px;color:var(--text2);margin-bottom:20px;font-family:'DM Mono',monospace}
+/* Monthly overview */
+.month-week-row{display:grid;grid-template-columns:80px 1fr 60px 60px;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);font-size:13px}
+.month-week-row:last-child{border-bottom:none}
+.month-week-row:hover{background:var(--bg3)}
+.month-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.month-bar-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 0.8s ease}
 </style>
 </head>
 <body>
@@ -263,6 +309,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <button class="nb" id="nb-leaderboard" onclick="go('leaderboard')"><span class="nb-icon">&#9733;</span>Leaderboard</button>
       <button class="nb" id="nb-roster" onclick="go('roster')"><span class="nb-icon">&#9825;</span>My Roster</button>
       <button class="nb" id="nb-chapters" onclick="go('chapters')"><span class="nb-icon">&#128218;</span>Chapters</button>
+      <button class="nb" id="nb-monthly" onclick="go('monthly')"><span class="nb-icon">&#128200;</span>Monthly</button>
       <div class="nav-section">System</div>
       <button class="nb" id="nb-settings" onclick="go('settings')"><span class="nb-icon">&#9881;</span>Settings</button>
       <button class="nb" id="nb-test" onclick="go('test')"><span class="nb-icon">&#9654;</span>Test Payment</button>
@@ -295,6 +342,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
       <!-- ATTENDANCE -->
       <div id="p-attend" class="page show">
+        <div id="lowAttendWarn"></div>
         <div class="section-header">
           <div class="section-title">Today's Class</div>
           <button class="btn btn-outline" onclick="markAll()">Mark All Present</button>
@@ -362,6 +410,15 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
             <div id="rosterList"></div>
           </div>
         </div>
+      </div>
+
+      <!-- MONTHLY OVERVIEW -->
+      <div id="p-monthly" class="page">
+        <div class="section-header">
+          <div class="section-title">Monthly Overview</div>
+          <button class="btn btn-outline btn-sm" onclick="renderMonthly()">Refresh</button>
+        </div>
+        <div id="monthlyContent"></div>
       </div>
 
       <!-- SETTINGS -->
@@ -438,6 +495,47 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
           <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="sendTestPayment()">Send Test Payment</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Student Profile Modal -->
+  <div id="profileModal" class="profile-modal" style="display:none" onclick="if(event.target===this)closeProfile()">
+    <div class="profile-box">
+      <div class="profile-head">
+        <div class="profile-avatar-big" id="profileAvatar">?</div>
+        <div>
+          <div style="font-size:18px;font-weight:800" id="profileName">Student</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:3px" id="profileDest"></div>
+        </div>
+        <div class="profile-close" onclick="closeProfile()">✕</div>
+      </div>
+      <div class="profile-stats" id="profileStats"></div>
+      <div class="profile-section">
+        <div class="profile-section-title">Attendance Calendar</div>
+        <div id="profileCalendar"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+          <div class="contrib-day present"></div><span style="font-size:11px;color:var(--text3)">Present</span>
+          <div class="contrib-day empty" style="margin-left:8px"></div><span style="font-size:11px;color:var(--text3)">Absent</span>
+          <div class="contrib-day noclass" style="margin-left:8px"></div><span style="font-size:11px;color:var(--text3)">No class</span>
+        </div>
+      </div>
+      <div class="profile-section">
+        <div class="profile-section-title">Weekly Breakdown</div>
+        <div id="profileWeekly"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- End of Week Modal -->
+  <div id="eowModal" class="eow-modal" style="display:none">
+    <div class="eow-box">
+      <div style="font-size:36px;margin-bottom:8px">🎉</div>
+      <div class="eow-title">Week Complete!</div>
+      <div class="eow-sub" id="eowWeekLabel">Week of ...</div>
+      <div class="eow-stats" id="eowStats"></div>
+      <div class="eow-star" id="eowStar"></div>
+      <div id="eowPerfect" style="margin-bottom:16px"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="closeEow()">Continue to App</button>
     </div>
   </div>
 </div>
@@ -641,7 +739,7 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["attend","payout","stats","leaderboard","roster","chapters","settings","test"];
+var pages = ["attend","payout","stats","leaderboard","roster","chapters","monthly","settings","test"];
 var pageTitles = {
   attend:      ["Attendance","Mark today's class"],
   payout:      ["Payouts","Send Lightning payments to students"],
@@ -649,6 +747,7 @@ var pageTitles = {
   leaderboard: ["Leaderboard","Top students by attendance"],
   roster:      ["My Roster","Manage enrolled students"],
   chapters:    ["Chapters","Bitcoin Diploma chapter log"],
+  monthly:     ["Monthly Overview","Attendance trends across weeks"],
   settings:    ["Settings","Configure API key"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
@@ -669,6 +768,7 @@ function go(name) {
   if (name === "leaderboard") renderLeaderboard();
   if (name === "roster")      renderRoster();
   if (name === "chapters")    renderChaptersPage();
+  if (name === "monthly")     renderMonthly();
   if (name === "test")        renderTest();
   if (name === "settings") {
     updateTeacherKeyBadge();
@@ -700,7 +800,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -1262,6 +1362,293 @@ function renderChapterHistory() {
   });
   el.innerHTML = html;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE: Low Attendance Warning
+// ═══════════════════════════════════════════════════════════════
+function checkLowAttendance() {
+  var el = document.getElementById("lowAttendWarn");
+  if (!el) return;
+  // Only warn if we have at least 1 class day this week
+  var r = getClassWeekRange(0);
+  var classDaysHeld = [];
+  var cur = new Date(r.start + "T00:00:00");
+  var today = new Date(TODAY + "T00:00:00");
+  var end = new Date(r.end + "T00:00:00");
+  while (cur <= end && cur <= today) {
+    classDaysHeld.push(cur.toISOString().split("T")[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  if (!classDaysHeld.length) { el.innerHTML = ""; return; }
+
+  var lowStudents = students.filter(function(s) {
+    var weekAtt = filterAttByWeek(s.att, 0, "week");
+    var attended = Object.keys(weekAtt).length;
+    var pct = classDaysHeld.length > 0 ? (attended / classDaysHeld.length) * 100 : 100;
+    return pct < 50;
+  });
+
+  if (!lowStudents.length) { el.innerHTML = ""; return; }
+
+  el.innerHTML =
+    '<div class="warn-banner">' +
+    '<div class="warn-icon">⚠️</div>' +
+    '<div><div class="warn-title">Low Attendance Warning</div>' +
+    '<div class="warn-list">' +
+    lowStudents.map(function(s) {
+      var weekAtt = filterAttByWeek(s.att, 0, "week");
+      var attended = Object.keys(weekAtt).length;
+      var pct = Math.round((attended / classDaysHeld.length) * 100);
+      return s.name + " — " + attended + "/" + classDaysHeld.length + " days (" + pct + "%)";
+    }).join("<br>") +
+    "</div></div></div>";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE: Student Profile Modal
+// ═══════════════════════════════════════════════════════════════
+function openProfile(studentId) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+
+  var allDays = Object.keys(s.att || {}).sort();
+  var totalDays = allDays.length;
+  var totalSats = totalDays * SATS + (s.bonus || 0);
+  var paid = s.paid || 0;
+  var owed = Math.max(0, totalSats - paid);
+
+  // Attendance rate this week
+  var r = getClassWeekRange(0);
+  var weekAtt = filterAttByWeek(s.att, 0, "week");
+  var weekDays = Object.keys(weekAtt).length;
+
+  document.getElementById("profileAvatar").textContent = s.name.charAt(0).toUpperCase();
+  document.getElementById("profileName").textContent = s.name;
+  document.getElementById("profileDest").textContent = s.destination || "No Lightning address";
+
+  document.getElementById("profileStats").innerHTML =
+    '<div class="profile-stat"><div class="profile-stat-val">' + totalDays + '</div><div class="profile-stat-label">Total Days</div></div>' +
+    '<div class="profile-stat"><div class="profile-stat-val">⚡' + totalSats + '</div><div class="profile-stat-label">Sats Earned</div></div>' +
+    '<div class="profile-stat"><div class="profile-stat-val">' + weekDays + '/4</div><div class="profile-stat-label">This Week</div></div>';
+
+  // Build contribution graph — last 8 weeks (Tue-Fri only)
+  buildContribGraph(s);
+
+  // Weekly breakdown
+  buildWeeklyBreakdown(s);
+
+  document.getElementById("profileModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeProfile() {
+  document.getElementById("profileModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function buildContribGraph(s) {
+  var el = document.getElementById("profileCalendar");
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var days = ["T","W","T","F"]; // Tue Wed Thu Fri
+  var today = new Date(TODAY + "T00:00:00");
+
+  // Go back 8 weeks from current week
+  var weeks = [];
+  for (var w = -7; w <= 0; w++) {
+    var r = getClassWeekRange(w);
+    var weekDays = [];
+    for (var d = 0; d < 4; d++) {
+      var cur = new Date(r.start + "T00:00:00");
+      cur.setDate(cur.getDate() + d);
+      weekDays.push(cur.toISOString().split("T")[0]);
+    }
+    weeks.push({ offset: w, days: weekDays, label: r.start });
+  }
+
+  // Header labels (week starts)
+  var html = '<div style="display:flex;gap:3px;margin-bottom:4px;margin-left:20px">';
+  weeks.forEach(function(w) {
+    var d = new Date(w.label + "T00:00:00");
+    html += '<div style="width:66px;font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;text-align:center">' + d.getDate() + " " + months[d.getMonth()] + '</div>';
+  });
+  html += '</div>';
+
+  // Day rows (Tue, Wed, Thu, Fri)
+  html += '<div style="display:flex;gap:0">';
+  // Day labels
+  html += '<div style="display:flex;flex-direction:column;gap:3px;margin-right:4px">';
+  days.forEach(function(d) {
+    html += '<div style="width:14px;height:14px;font-size:8px;color:var(--text3);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace">' + d + '</div>';
+  });
+  html += '</div>';
+
+  // Week columns
+  weeks.forEach(function(w) {
+    html += '<div style="display:flex;flex-direction:column;gap:3px;margin-right:3px">';
+    w.days.forEach(function(date) {
+      var dateObj = new Date(date + "T00:00:00");
+      var isFuture = dateObj > today;
+      var isPresent = !!(s.att && s.att[date]);
+      var cls = isFuture ? "future" : (isPresent ? "present" : "empty");
+      var title = date + (isPresent ? " ✓" : (isFuture ? " (future)" : " ✗"));
+      html += '<div class="contrib-day ' + cls + '" title="' + title + '"></div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+function buildWeeklyBreakdown(s) {
+  var el = document.getElementById("profileWeekly");
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var html = "";
+  for (var w = 0; w >= -7; w--) {
+    var r = getClassWeekRange(w);
+    var weekAtt = filterAttByWeek(s.att, w, "week");
+    var days = Object.keys(weekAtt).length;
+    var pct = Math.round((days / 4) * 100);
+    var d = new Date(r.start + "T00:00:00");
+    var label = w === 0 ? "This Week" : (w === -1 ? "Last Week" : d.getDate() + " " + months[d.getMonth()]);
+    var color = pct === 100 ? "var(--green)" : pct >= 75 ? "var(--orange)" : pct >= 50 ? "var(--orange-dim)" : "var(--red)";
+    html += '<div class="month-week-row">';
+    html += '<div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace">' + label + '</div>';
+    html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+    html += '<div style="font-size:12px;font-weight:700;color:' + color + ';font-family:'DM Mono',monospace;text-align:right">' + days + '/4</div>';
+    html += '<div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;text-align:right">' + pct + '%</div>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE: End of Week Summary (Fridays only)
+// ═══════════════════════════════════════════════════════════════
+function checkEndOfWeek() {
+  var day = new Date().getDay();
+  if (day !== 5) return; // Only on Fridays
+  var shown = sessionStorage.getItem("eow_shown_" + TODAY);
+  if (shown) return; // Only show once per session per day
+  sessionStorage.setItem("eow_shown_" + TODAY, "1");
+  setTimeout(showEowSummary, 1500); // Wait for data to load
+}
+
+function showEowSummary() {
+  if (!students.length) return;
+  var r = getClassWeekRange(0);
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var startD = new Date(r.start + "T00:00:00");
+  var endD = new Date(r.end + "T00:00:00");
+
+  // Calculate week stats
+  var totalAttendances = 0;
+  var perfectStudents = [];
+  var totalSatsPaid = 0;
+
+  students.forEach(function(s) {
+    var weekAtt = filterAttByWeek(s.att, 0, "week");
+    var days = Object.keys(weekAtt).length;
+    totalAttendances += days;
+    if (days >= 4) perfectStudents.push(s.name);
+    totalSatsPaid += days * SATS;
+  });
+
+  var avgPct = students.length ? Math.round((totalAttendances / (students.length * 4)) * 100) : 0;
+  var weekLabel = startD.getDate() + " " + months[startD.getMonth()] + " – " + endD.getDate() + " " + months[endD.getMonth()];
+
+  document.getElementById("eowWeekLabel").textContent = "Week of " + weekLabel;
+  document.getElementById("eowStats").innerHTML =
+    '<div class="eow-stat"><div class="eow-stat-val">' + avgPct + '%</div><div class="eow-stat-label">Attendance Rate</div></div>' +
+    '<div class="eow-stat"><div class="eow-stat-val">' + totalAttendances + '</div><div class="eow-stat-label">Check-ins</div></div>' +
+    '<div class="eow-stat"><div class="eow-stat-val">⚡' + totalSatsPaid + '</div><div class="eow-stat-label">Sats Earned</div></div>';
+
+  // Top student this week
+  var topStudents = students.slice().sort(function(a,b) {
+    return Object.keys(filterAttByWeek(b.att,0,"week")).length - Object.keys(filterAttByWeek(a.att,0,"week")).length;
+  });
+  var top = topStudents[0];
+  var topDays = top ? Object.keys(filterAttByWeek(top.att,0,"week")).length : 0;
+  document.getElementById("eowStar").innerHTML = topDays > 0 ?
+    '⭐ Star Student: <strong>' + top.name + '</strong> — ' + topDays + ' days' : '';
+
+  document.getElementById("eowPerfect").innerHTML = perfectStudents.length ?
+    '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--green);font-family:'DM Mono',monospace">💯 Perfect Week: ' + perfectStudents.join(", ") + '</div>' : '';
+
+  document.getElementById("eowModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeEow() {
+  document.getElementById("eowModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE: Monthly Overview
+// ═══════════════════════════════════════════════════════════════
+function renderMonthly() {
+  var el = document.getElementById("monthlyContent");
+  if (!el) return;
+  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
+
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var html = "";
+
+  // Last 4 weeks summary
+  html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">LAST 4 WEEKS — CLASS AVERAGE</div>';
+  html += '<div class="card" style="margin-bottom:20px">';
+
+  for (var w = 0; w >= -3; w--) {
+    var r = getClassWeekRange(w);
+    var startD = new Date(r.start + "T00:00:00");
+    var label = w === 0 ? "This Week" : (w === -1 ? "Last Week" : startD.getDate() + " " + months[startD.getMonth()]);
+
+    var totalAtt = 0;
+    students.forEach(function(s) {
+      totalAtt += Object.keys(filterAttByWeek(s.att, w, "week")).length;
+    });
+    var avgPct = students.length ? Math.round((totalAtt / (students.length * 4)) * 100) : 0;
+    var color = avgPct >= 80 ? "var(--green)" : avgPct >= 50 ? "var(--orange)" : "var(--red)";
+
+    html += '<div class="month-week-row">';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace">' + label + '</div>';
+    html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + avgPct + '%;background:' + color + '"></div></div>';
+    html += '<div style="font-size:14px;font-weight:800;color:' + color + ';font-family:'DM Mono',monospace;text-align:right">' + avgPct + '%</div>';
+    html += '<div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;text-align:right">' + totalAtt + ' days</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Per student monthly breakdown
+  html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">STUDENT BREAKDOWN — LAST 4 WEEKS</div>';
+  html += '<div class="card">';
+  html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:10px 20px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace;border-bottom:1px solid var(--border)">';
+  html += '<div>Student</div>';
+  for (var wi = 0; wi >= -3; wi--) {
+    var wr = getClassWeekRange(wi);
+    var wd = new Date(wr.start + "T00:00:00");
+    html += '<div style="text-align:center">' + (wi === 0 ? "This" : (wi === -1 ? "Last" : wd.getDate() + "/" + (wd.getMonth()+1))) + '</div>';
+  }
+  html += '</div>';
+
+  students.forEach(function(s) {
+    html += '<div style="display:grid;grid-template-columns:1fr repeat(4,60px);padding:12px 20px;border-bottom:1px solid var(--border);align-items:center;font-size:13px;transition:background 0.15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">';
+    html += '<div style="font-weight:600">' + s.name + '</div>';
+    for (var wi2 = 0; wi2 >= -3; wi2--) {
+      var weekAtt = filterAttByWeek(s.att, wi2, "week");
+      var days = Object.keys(weekAtt).length;
+      var pct = Math.round((days/4)*100);
+      var col = pct===100?"var(--green)":pct>=50?"var(--orange)":"var(--red)";
+      html += '<div style="text-align:center;font-weight:700;color:' + (days>0?col:"var(--text3)") + ';font-family:'DM Mono',monospace">' + (days>0?days+"/4":"—") + '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
 </script>
 </body>
 </html>
