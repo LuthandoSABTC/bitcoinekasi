@@ -266,6 +266,11 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .month-week-row:hover{background:var(--bg3)}
 .month-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
 .month-bar-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 0.8s ease}
+
+/* Roster edit */
+.edit-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.edit-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:28px;position:relative}
+.edit-box-title{font-size:16px;font-weight:800;margin-bottom:20px}
 </style>
 </head>
 <body>
@@ -536,6 +541,27 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <div class="eow-star" id="eowStar"></div>
       <div id="eowPerfect" style="margin-bottom:16px"></div>
       <button class="btn btn-primary" style="width:100%" onclick="closeEow()">Continue to App</button>
+    </div>
+  </div>
+
+  <!-- Edit Student Modal -->
+  <div id="editModal" class="edit-modal" style="display:none" onclick="if(event.target===this)closeEdit()">
+    <div class="edit-box">
+      <div class="edit-box-title">✏️ Edit Student</div>
+      <input type="hidden" id="editStudentId">
+      <div class="inp-group">
+        <label class="inp-label">Full Name</label>
+        <input class="inp" id="editName" placeholder="Student full name">
+      </div>
+      <div class="inp-group">
+        <label class="inp-label">Lightning Address / Bolt Card LNURL</label>
+        <input class="inp" id="editDest" placeholder="name@blink.sv or lnurl...">
+      </div>
+      <div id="editMsg"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeEdit()">Cancel</button>
+        <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Changes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1173,7 +1199,7 @@ function renderRoster() {
   students.forEach(function(s) {
     html += '<div class="roster-row">';
     html += '<div class="roster-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
-    html += '<div style="flex:1;min-width:0;margin:0 12px"><div style="font-weight:600;font-size:14px">' + s.name + '</div>';
+    html += '<div style="flex:1;min-width:0;margin:0 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-weight:600;font-size:14px;flex-shrink:0">' + s.name + '</div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">' + (s.destination || '—') + '</div>';
     html += '<div style="font-size:11px;color:var(--text3);font-family:\'DM Mono\',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.destination||'No address') + '</div></div>';
     html += '<button class="btn btn-danger btn-sm" onclick="delStudent(\'' + s.id + '\')">Remove</button>';
     html += '</div>';
@@ -1715,6 +1741,43 @@ function renderMonthly() {
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+
+// ── Edit Student ──────────────────────────────────────────────
+function openEdit(studentId) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+  document.getElementById("editStudentId").value = s.id;
+  document.getElementById("editName").value = s.name;
+  document.getElementById("editDest").value = s.destination || "";
+  document.getElementById("editMsg").innerHTML = "";
+  document.getElementById("editModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeEdit() {
+  document.getElementById("editModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+async function saveEdit() {
+  var id = document.getElementById("editStudentId").value;
+  var name = document.getElementById("editName").value.trim();
+  var dest = document.getElementById("editDest").value.trim();
+  var msg = document.getElementById("editMsg");
+  if (!name) { msg.innerHTML = '<div class="alert alert-err">Name cannot be empty</div>'; return; }
+  if (!dest) { msg.innerHTML = '<div class="alert alert-err">Lightning address cannot be empty</div>'; return; }
+  msg.innerHTML = '<div class="alert alert-info">Saving...</div>';
+  var result = await sb("PATCH","students",{ name: name, destination: dest },"?id=eq." + id);
+  if (result !== null && result !== undefined) {
+    msg.innerHTML = '<div class="alert alert-ok">✓ Saved!</div>';
+    await loadStudents();
+    renderRoster();
+    setTimeout(function() { closeEdit(); }, 800);
+  } else {
+    msg.innerHTML = '<div class="alert alert-err">Failed to save. Try again.</div>';
+  }
 }
 
 </script>
