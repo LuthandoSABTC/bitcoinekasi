@@ -205,6 +205,11 @@ select.inp{appearance:none}
 .month-week-row:hover{background:var(--bg3)}
 .month-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
 .month-bar-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 0.8s ease}
+
+/* Roster edit */
+.edit-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.edit-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:28px;position:relative}
+.edit-box-title{font-size:16px;font-weight:800;margin-bottom:20px}
 </style>
 </head>
 <body>
@@ -1471,6 +1476,43 @@ function renderMonthly() {
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+
+// ── Edit Student ──────────────────────────────────────────────
+function openEdit(studentId) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+  document.getElementById("editStudentId").value = s.id;
+  document.getElementById("editName").value = s.name;
+  document.getElementById("editDest").value = s.destination || "";
+  document.getElementById("editMsg").innerHTML = "";
+  document.getElementById("editModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeEdit() {
+  document.getElementById("editModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+async function saveEdit() {
+  var id = document.getElementById("editStudentId").value;
+  var name = document.getElementById("editName").value.trim();
+  var dest = document.getElementById("editDest").value.trim();
+  var msg = document.getElementById("editMsg");
+  if (!name) { msg.innerHTML = '<div class="alert alert-err">Name cannot be empty</div>'; return; }
+  if (!dest) { msg.innerHTML = '<div class="alert alert-err">Lightning address cannot be empty</div>'; return; }
+  msg.innerHTML = '<div class="alert alert-info">Saving...</div>';
+  var result = await sb("PATCH","students",{ name: name, destination: dest },"?id=eq." + id);
+  if (result !== null && result !== undefined) {
+    msg.innerHTML = '<div class="alert alert-ok">✓ Saved!</div>';
+    await loadStudents();
+    renderRoster();
+    setTimeout(function() { closeEdit(); }, 800);
+  } else {
+    msg.innerHTML = '<div class="alert alert-err">Failed to save. Try again.</div>';
+  }
 }
 
 </script>
