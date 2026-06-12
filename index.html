@@ -1370,6 +1370,7 @@ function showEowSummary() {
     totalSats += days * SATS;
   });
   var avgPct = students.length ? Math.round((totalAtt/(students.length*4))*100) : 0;
+  var bestDays = students.reduce(function(max,s){ return Math.max(max, Object.keys(filterAttByWeek(s.att,0,"week")).length); }, 0);
   var weekLabel = startD.getDate()+" "+months[startD.getMonth()]+" – "+endD.getDate()+" "+months[endD.getMonth()];
   document.getElementById("eowWeekLabel").textContent = "Week of " + weekLabel;
   document.getElementById("eowStats").innerHTML =
