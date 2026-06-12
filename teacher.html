@@ -1310,14 +1310,25 @@ function saveTeacherPassword() {
 
 function renderTest() {
   var sel = document.getElementById("testStudent");
+  if (!sel) return;
+  var prev = sel.value;
   sel.innerHTML = '<option value="">-- Choose student --</option>';
+  if (!students.length) {
+    sel.innerHTML = '<option value="">Loading students...</option>';
+    // Retry after short delay if students not loaded yet
+    setTimeout(renderTest, 800);
+    return;
+  }
   students.forEach(function(s) {
     var opt = document.createElement("option");
     opt.value = s.id; opt.textContent = s.name;
     sel.appendChild(opt);
   });
-  document.getElementById("testResult").innerHTML = "";
-  document.getElementById("testDestPreview").textContent = "";
+  if (prev) sel.value = prev;
+  var res = document.getElementById("testResult");
+  var prev2 = document.getElementById("testDestPreview");
+  if (res) res.innerHTML = "";
+  if (prev2) prev2.textContent = "";
 }
 
 function previewTestDest() {
