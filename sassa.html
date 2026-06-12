@@ -178,7 +178,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .lb-row-new.rank1{background:linear-gradient(90deg,rgba(255,215,0,0.06),transparent)}
 .lb-row-new.rank2{background:linear-gradient(90deg,rgba(192,192,192,0.04),transparent)}
 .lb-row-new.rank3{background:linear-gradient(90deg,rgba(205,127,50,0.04),transparent)}
-.lb-medal{font-size:22px;width:36px;text-align:center;flex-shrink:0}
+.lb-medal{font-size:22px;width:36px;text-align:center;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
 .lb-rank-num{width:36px;height:36px;background:var(--bg4);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:DM Mono,monospace;color:var(--text3);flex-shrink:0}
 .lb-student-name{font-size:14px;font-weight:700;color:var(--text)}
 .lb-progress-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:5px}
@@ -188,6 +188,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .lb-days-big{font-size:22px;font-weight:800;font-family:DM Mono,monospace;line-height:1}
 .lb-sats-earned{font-size:10px;font-family:DM Mono,monospace;color:var(--text3);margin-top:2px}
 .lb-perfect{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--green);font-family:DM Mono,monospace;margin-top:4px}
+/* Enhanced leaderboard end */
 /* Week filter */
 .week-filter{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:16px;flex-wrap:wrap}
 .week-filter-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
@@ -439,8 +440,11 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
           <button class="btn btn-primary" style="width:100%;margin-bottom:24px" onclick="saveTeacherSettings()">Save API Key</button>
           <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px">
             <div style="font-size:15px;font-weight:700;margin-bottom:16px">Change Password</div>
-            <div class="inp-group"><label class="inp-label">New Password</label><input class="inp" type="password" id="tNewPw" placeholder="Min 4 characters"></div>
-            <div id="tPwMsg"></div>
+            <div class="inp-group">
+              <label class="inp-label">New Teacher Password</label>
+              <input class="inp" type="password" id="tNewPw" placeholder="Min 4 characters">
+              <div class="inp-hint" id="tCurPw">Current: ekasi2024</div>
+            </div>
             <button class="btn btn-outline" style="width:100%" onclick="saveTeacherPassword()">Update Password</button>
           </div>
         </div>
@@ -451,11 +455,12 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         <div class="section-header">
           <div class="section-title">Bitcoin Diploma — Chapter Log</div>
         </div>
+        <!-- Today's entry -->
         <div class="form-card" style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
             <div style="width:8px;height:8px;background:var(--orange);border-radius:50%;flex-shrink:0"></div>
-            <div style="font-size:14px;font-weight:700">Record Today\'s Class</div>
-            <span id="chapterTodayDate" style="font-size:11px;color:var(--text3);font-family:\'DM Mono\',monospace;margin-left:auto"></span>
+            <div style="font-size:14px;font-weight:700">Record Today's Class</div>
+            <span id="chapterTodayDate" style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-left:auto"></span>
           </div>
           <div class="inp-group">
             <label class="inp-label">Chapter</label>
@@ -464,18 +469,20 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
             </select>
           </div>
           <div id="chapterTopicsPreview" style="margin-top:-8px;margin-bottom:16px;display:none">
-            <div style="font-size:11px;color:var(--text3);font-family:\'DM Mono\',monospace;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase">Topics covered</div>
+            <div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase">Topics covered</div>
             <div id="chapterTopicsList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
           </div>
           <div class="inp-group">
             <label class="inp-label">Notes (optional)</label>
-            <textarea class="inp" id="chapterNotes" placeholder="What did the class cover today?" style="height:80px;resize:vertical;margin-bottom:0"></textarea>
+            <textarea class="inp" id="chapterNotes" placeholder="What did the class cover today? Any highlights or challenges?" style="height:80px;resize:vertical;margin-bottom:0"></textarea>
           </div>
           <div id="chapterSaveMsg"></div>
           <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveChapterEntry()">&#128218; Save Chapter Entry</button>
         </div>
+        <!-- Progress tracker -->
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">CURRICULUM PROGRESS</div>
         <div id="chapterProgress" style="margin-bottom:20px"></div>
+        <!-- History log -->
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">CLASS HISTORY</div>
         <div class="card"><div id="chapterHistory"></div></div>
       </div>
@@ -690,7 +697,7 @@ const SUPABASE_URL = "https://bnteowvyioptlvohyert.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
 const TEACHER_ID = "fee45b1a-c503-453e-9ae8-5c08f9b71a0f";
 let API_KEY = localStorage.getItem("ek_key") || "";
-let PW = localStorage.getItem("ek_sassa_pw") || "ekasi2024";
+let PW = localStorage.getItem("ek_pw") || "ekasi2024";
 const TODAY = new Date().toISOString().split("T")[0];
 
 // ── Week filter ───────────────────────────────────────────────
@@ -840,7 +847,6 @@ var pageTitles = {
   roster:      ["My Roster","Manage enrolled students"],
   chapters:    ["Chapters","Bitcoin Diploma chapter log"],
   monthly:     ["Monthly Overview","Attendance trends across weeks"],
-  settings:    ["Settings","Configure API key"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
 
@@ -861,10 +867,10 @@ function go(name) {
   if (name === "roster")      renderRoster();
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
-  if (name === "test")        renderTest();
   if (name === "settings") {
     updateTeacherKeyBadge();
     document.getElementById("tSettingsMsg").innerHTML = "";
+    document.getElementById("tCurPw").textContent = "Current: " + PW;
   }
 }
 
@@ -1154,6 +1160,7 @@ function renderLeaderboard() {
     return;
   }
 
+  // Star Student Banner
   var star = data[0];
   var isPerfect = maxPossible && star.days >= maxPossible;
   if (banner) {
@@ -1172,7 +1179,12 @@ function renderLeaderboard() {
 
   var medals = ['🥇','🥈','🥉'];
   var rankColors = ["#ffd700","#c0c0c0","#cd7f32"];
-  var gradients = ["linear-gradient(90deg,#ffd700,#ffed4a)","linear-gradient(90deg,#c0c0c0,#e8e8e8)","linear-gradient(90deg,#cd7f32,#e8a96a)","linear-gradient(90deg,var(--orange),var(--orange-light))"];
+  var gradients = [
+    "linear-gradient(90deg,#ffd700,#ffed4a)",
+    "linear-gradient(90deg,#c0c0c0,#e8e8e8)",
+    "linear-gradient(90deg,#cd7f32,#e8a96a)",
+    "linear-gradient(90deg,var(--orange),var(--orange-light))"
+  ];
   var html = "";
   data.forEach(function(s, i) {
     var barPct = maxPossible ? Math.round((s.days/maxPossible)*100) : Math.round((s.days/maxDays)*100);
@@ -1181,17 +1193,26 @@ function renderLeaderboard() {
     var rankClass = i < 3 ? " rank"+(i+1) : "";
     var isPerfectRow = maxPossible && s.days >= maxPossible;
     html += '<div class="lb-row-new' + rankClass + '">';
-    html += i < 3 ? '<div class="lb-medal">' + medals[i] + '</div>' : '<div class="lb-rank-num">' + (i+1) + '</div>';
-    html += '<div style="flex:1;min-width:0"><div class="lb-student-name">' + s.name + '</div>';
+    if (i < 3) {
+      html += '<div class="lb-medal">' + medals[i] + '</div>';
+    } else {
+      html += '<div class="lb-rank-num">' + (i+1) + '</div>';
+    }
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div class="lb-student-name">' + s.name + '</div>';
     html += '<div class="lb-progress-bar"><div class="lb-progress-fill" style="width:' + barPct + '%;background:' + gradient + '"></div></div>';
     html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">';
     if (isPerfectRow) html += '<span class="lb-perfect">✓ Perfect Week</span>';
     if (s.streak >= 2 && st.mode === 'week') html += '<span class="lb-streak">🔥 ' + s.streak + ' day streak</span>';
-    html += '</div></div><div class="lb-right"><div class="lb-days-big" style="color:' + fillColor + '">' + s.days + '<span style="font-size:12px;font-weight:500;color:var(--text3)"> days</span></div>';
-    html += '<div class="lb-sats-earned">⚡ ' + s.sats + ' sats</div></div></div>';
+    html += '</div></div>';
+    html += '<div class="lb-right">';
+    html += '<div class="lb-days-big" style="color:' + fillColor + '">' + s.days + '<span style="font-size:12px;font-weight:500;color:var(--text3)"> days</span></div>';
+    html += '<div class="lb-sats-earned">⚡ ' + s.sats + ' sats</div>';
+    html += '</div></div>';
   });
   el.innerHTML = html;
 }
+
 function renderRoster() {
   var el = document.getElementById("rosterList");
   if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; return; }
@@ -1276,39 +1297,31 @@ function saveTeacherSettings() {
   setTimeout(function() { document.getElementById("tSettingsMsg").innerHTML = ""; }, 3000);
 }
 
-
 function saveTeacherPassword() {
   var p = document.getElementById("tNewPw").value.trim();
-  var msg = document.getElementById("tPwMsg");
-  if (!p || p.length < 4) { msg.innerHTML = '<div class="alert alert-err">Password must be at least 4 characters</div>'; return; }
+  if (!p || p.length < 4) { document.getElementById("tSettingsMsg").innerHTML = '<div class="alert alert-err">Password must be at least 4 characters</div>'; return; }
   PW = p;
-  localStorage.setItem("ek_sassa_pw", p);
+  localStorage.setItem("ek_pw", p);
   document.getElementById("tNewPw").value = "";
-  msg.innerHTML = '<div class="alert alert-ok">Password updated!</div>';
-  setTimeout(function() { msg.innerHTML = ""; }, 3000);
+  document.getElementById("tCurPw").textContent = "Current: " + p;
+  document.getElementById("tSettingsMsg").innerHTML = '<div class="alert alert-ok">Password updated!</div>';
+  setTimeout(function() { document.getElementById("tSettingsMsg").innerHTML = ""; }, 3000);
 }
 
 function renderTest() {
   var sel = document.getElementById("testStudent");
   if (!sel) return;
-  var prev = sel.value;
   sel.innerHTML = '<option value="">-- Choose student --</option>';
-  if (!students.length) {
-    sel.innerHTML = '<option value="">Loading students...</option>';
-    // Retry after short delay if students not loaded yet
-    setTimeout(renderTest, 800);
-    return;
-  }
   students.forEach(function(s) {
     var opt = document.createElement("option");
-    opt.value = s.id; opt.textContent = s.name;
+    opt.value = s.id;
+    opt.textContent = s.name;
     sel.appendChild(opt);
   });
-  if (prev) sel.value = prev;
   var res = document.getElementById("testResult");
-  var prev2 = document.getElementById("testDestPreview");
+  var prev = document.getElementById("testDestPreview");
   if (res) res.innerHTML = "";
-  if (prev2) prev2.textContent = "";
+  if (prev) prev.textContent = "";
 }
 
 function previewTestDest() {
@@ -1356,7 +1369,7 @@ const CHAPTERS = [
   { num: 10, title: "Why Bitcoin?",                        topics: ["CBDCs", "Philosophy of Bitcoin", "Right to control your money"] }
 ];
 
-var chapterLog = [];
+var chapterLog = []; // loaded from Supabase
 
 async function loadChapterLog() {
   var raw = await sb("GET","chapters",null,"?teacher_id=eq." + TEACHER_ID + "&order=date.desc");
@@ -1364,10 +1377,14 @@ async function loadChapterLog() {
 }
 
 async function renderChaptersPage() {
+  // Set today's date label
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var d = new Date();
   document.getElementById("chapterTodayDate").textContent = d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+
   await loadChapterLog();
+
+  // Populate chapter select
   var sel = document.getElementById("chapterSelect");
   sel.innerHTML = '<option value="">— Select chapter —</option>';
   CHAPTERS.forEach(function(c) {
@@ -1376,12 +1393,15 @@ async function renderChaptersPage() {
     opt.textContent = "Chapter " + c.num + " — " + c.title;
     sel.appendChild(opt);
   });
+
+  // Pre-select if today already has an entry
   var todayEntry = chapterLog.find(function(e) { return e.date === TODAY; });
   if (todayEntry) {
     sel.value = todayEntry.chapter;
     document.getElementById("chapterNotes").value = todayEntry.notes || "";
     onChapterSelect();
   }
+
   renderChapterProgress();
   renderChapterHistory();
 }
@@ -1393,7 +1413,9 @@ function onChapterSelect() {
   if (!num) { preview.style.display = "none"; return; }
   var ch = CHAPTERS.find(function(c) { return c.num === num; });
   if (!ch) { preview.style.display = "none"; return; }
-  list.innerHTML = ch.topics.map(function(t) { return '<span class="topic-chip">' + t + '</span>'; }).join("");
+  list.innerHTML = ch.topics.map(function(t) {
+    return '<span class="topic-chip">' + t + '</span>';
+  }).join("");
   preview.style.display = "block";
 }
 
@@ -1403,6 +1425,8 @@ async function saveChapterEntry() {
   var msg = document.getElementById("chapterSaveMsg");
   if (!num) { msg.innerHTML = '<div class="alert alert-err">Please select a chapter</div>'; return; }
   msg.innerHTML = '<div class="alert alert-info">Saving...</div>';
+
+  // Check if today already has an entry — update it
   var existing = chapterLog.find(function(e) { return e.date === TODAY; });
   var result;
   if (existing) {
@@ -1410,7 +1434,8 @@ async function saveChapterEntry() {
   } else {
     result = await sb("POST","chapters",{ teacher_id: TEACHER_ID, date: TODAY, chapter: num, notes: notes },null);
   }
-  if (result !== null && result !== undefined) {
+
+  if (result && (result.length || result.id)) {
     msg.innerHTML = '<div class="alert alert-ok">&#10003; Chapter ' + num + ' saved for today!</div>';
     setTimeout(function() { msg.innerHTML = ""; }, 3000);
     await loadChapterLog();
@@ -1423,16 +1448,23 @@ async function saveChapterEntry() {
 
 function renderChapterProgress() {
   var el = document.getElementById("chapterProgress");
+  // Count sessions per chapter
   var counts = {};
   chapterLog.forEach(function(e) { counts[e.chapter] = (counts[e.chapter]||0) + 1; });
   var totalDone = Object.keys(counts).length;
+
+  var html = '';
+  // Progress bar
   var pct = Math.round((totalDone / 10) * 100);
-  var html = '<div style="margin-bottom:16px">';
+  html += '<div style="margin-bottom:16px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
   html += '<span style="font-size:12px;color:var(--text3);font-family:\'DM Mono\',monospace">' + totalDone + '/10 chapters started</span>';
   html += '<span style="font-size:12px;font-weight:700;color:var(--orange);font-family:\'DM Mono\',monospace">' + pct + '%</span>';
-  html += '</div><div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">';
-  html += '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 1s ease"></div></div></div>';
+  html += '</div>';
+  html += '<div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">';
+  html += '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 1s ease"></div>';
+  html += '</div></div>';
+
   CHAPTERS.forEach(function(c) {
     var sessions = counts[c.num] || 0;
     var isDone = sessions > 0;
@@ -1440,16 +1472,21 @@ function renderChapterProgress() {
     html += '<div class="chapter-progress-item' + (isDone?' done':'') + (isActive?' active':'') + '">';
     html += '<div class="chapter-num' + (isDone?' done':'') + (isActive&&!isDone?' active':'') + '">';
     html += isDone ? '&#10003;' : c.num;
-    html += '</div><div><div class="chapter-title' + (isDone?' done':'') + '">Chapter ' + c.num + ' — ' + c.title + '</div>';
+    html += '</div>';
+    html += '<div><div class="chapter-title' + (isDone?' done':'') + '">Chapter ' + c.num + ' — ' + c.title + '</div>';
     html += '<div class="chapter-sessions">' + (sessions > 0 ? sessions + ' session' + (sessions!==1?'s':'') + ' taught' : 'Not started') + '</div></div>';
-    html += '<div class="chapter-days-badge' + (isDone?' done':'') + '">' + (sessions>0?sessions+'×':'—') + '</div></div>';
+    html += '<div class="chapter-days-badge' + (isDone?' done':'') + '">' + (sessions>0?sessions+'×':'—') + '</div>';
+    html += '</div>';
   });
   el.innerHTML = html;
 }
 
 function renderChapterHistory() {
   var el = document.getElementById("chapterHistory");
-  if (!chapterLog.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No entries yet</div><div class="empty-sub">Record your first chapter above</div></div>'; return; }
+  if (!chapterLog.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No entries yet</div><div class="empty-sub">Record your first chapter above</div></div>';
+    return;
+  }
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var html = "";
   chapterLog.forEach(function(e) {
@@ -1457,11 +1494,15 @@ function renderChapterHistory() {
     var d = new Date(e.date + "T00:00:00");
     var days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     var dateStr = days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()];
-    html += '<div class="chapter-history-row"><div class="chapter-history-header">';
+    html += '<div class="chapter-history-row">';
+    html += '<div class="chapter-history-header">';
     html += '<span class="chapter-badge">Ch.' + e.chapter + '</span>';
     html += '<span style="font-size:13px;font-weight:600">' + (ch ? ch.title : 'Chapter ' + e.chapter) + '</span>';
-    html += '<span class="chapter-history-date">' + dateStr + '</span></div>';
-    if (e.notes) html += '<div class="chapter-history-notes">' + e.notes + '</div>';
+    html += '<span class="chapter-history-date">' + dateStr + '</span>';
+    html += '</div>';
+    if (e.notes) {
+      html += '<div class="chapter-history-notes">' + e.notes + '</div>';
+    }
     if (ch) {
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">';
       ch.topics.forEach(function(t) { html += '<span class="topic-chip">' + t + '</span>'; });
