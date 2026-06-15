@@ -359,6 +359,20 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   .date-pill { padding: 12px 14px; }
   .date-pill-day { font-size: 13px; }
 }
+
+/* This Week's Highlights */
+.highlights-banner{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px}
+.highlights-title{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.highlights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:14px}
+.highlight-stat{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.highlight-stat-val{font-size:24px;font-weight:800;color:var(--orange);font-family:'DM Mono',monospace;line-height:1}
+.highlight-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.highlights-text{font-size:14px;color:var(--text2);line-height:1.8;margin-bottom:14px}
+.highlights-text strong{color:var(--text)}
+.perfect-week-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.perfect-chip{display:inline-flex;align-items:center;gap:4px;background:var(--green-bg);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--green);font-family:'DM Mono',monospace}
+.btn-pdf{display:inline-flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.15s}
+.btn-pdf:hover{background:var(--orange);color:#000;border-color:var(--orange)}
 </style>
 </head>
 <body>
@@ -1261,22 +1275,57 @@ function renderLeaderboard() {
     return;
   }
 
-  // Star Student Banner
-  var star = data[0];
-  var isPerfect = maxPossible && star.days >= maxPossible;
+  // This Week's Highlights Summary
   if (banner) {
+    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var perfectStudents = data.filter(function(s) { return maxPossible && s.days >= maxPossible; });
+    var totalSats = data.reduce(function(a,s) { return a + s.sats; }, 0);
+    var totalDays = data.reduce(function(a,s) { return a + s.days; }, 0);
+    var activeCount = data.filter(function(s) { return s.days > 0; }).length;
+    var avgDays = students.length ? (totalDays / students.length).toFixed(1) : "0";
+    var bestDays = data[0] ? data[0].days : 0;
+
+    var periodLabel;
+    if (st.mode === 'all') {
+      periodLabel = "All Time";
+    } else {
+      var r = getClassWeekRange(st.offset);
+      var sD = new Date(r.start + "T00:00:00");
+      var eD = new Date(r.end + "T00:00:00");
+      periodLabel = sD.getDate() + " " + months[sD.getMonth()] + " \u2013 " + eD.getDate() + " " + months[eD.getMonth()];
+    }
+
+    var summaryText = "";
+    if (st.mode === 'all') {
+      summaryText = "Across all time, <strong>" + students.length + " students</strong> have earned a combined <strong>\u26A1" + totalSats + " sats</strong> for <strong>" + totalDays + " days</strong> of attendance.";
+    } else {
+      if (perfectStudents.length === students.length && students.length > 0) {
+        summaryText = "Amazing! <strong>All " + students.length + " students</strong> attended every class this week (" + maxPossible + "/" + maxPossible + " days) \uD83C\uDF89";
+      } else if (perfectStudents.length > 0) {
+        summaryText = "<strong>" + perfectStudents.length + " of " + students.length + " students</strong> attended all " + maxPossible + " days this week. <strong>" + activeCount + " of " + students.length + "</strong> attended at least once.";
+      } else if (activeCount > 0) {
+        summaryText = "<strong>" + activeCount + " of " + students.length + " students</strong> attended this week, with a best attendance of <strong>" + bestDays + "/" + maxPossible + " days</strong>.";
+      } else {
+        summaryText = "No attendance recorded yet for this week.";
+      }
+    }
+
     banner.innerHTML =
-      '<div class="star-banner">' +
-      '<span class="star-banner-crown">' + (isPerfect ? '👑' : '⭐') + '</span>' +
-      '<div class="star-banner-label">' + (st.mode==='all'?'All-Time Leader':'⭐ Star Student of the Week ⭐') + '</div>' +
-      '<div class="star-banner-name">' + star.name + '</div>' +
-      '<div class="star-banner-stats">' +
-      '<div class="star-stat"><div class="star-stat-val">' + star.days + '</div><div class="star-stat-label">Days</div></div>' +
-      '<div class="star-stat"><div class="star-stat-val">⚡' + star.sats + '</div><div class="star-stat-label">Sats Earned</div></div>' +
-      (star.streak > 1 ? '<div class="star-stat"><div class="star-stat-val">🔥' + star.streak + '</div><div class="star-stat-label">Day Streak</div></div>' : '') +
-      (isPerfect ? '<div class="star-stat"><div class="star-stat-val">💯</div><div class="star-stat-label">Perfect Week!</div></div>' : '') + (star.bonus > 0 ? '<div class="star-stat"><div class="star-stat-val" style="color:#ffd700">+' + star.bonus + '</div><div class="star-stat-label">Bonus Sats</div></div>' : '') +
-      '</div></div>';
+      '<div class="highlights-banner" id="pdfSummaryBlock">' +
+      '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights \u2014 ' + periodLabel + '</span>' +
+      '<button class="btn-pdf" onclick="downloadHighlightsPDF()">\u2B07\uFE0F Download PDF</button></div>' +
+      '<div class="highlights-grid">' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">' + students.length + '</div><div class="highlight-stat-label">Total Students</div></div>' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">' + activeCount + '/' + students.length + '</div><div class="highlight-stat-label">Attended</div></div>' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">' + avgDays + '</div><div class="highlight-stat-label">Avg Days</div></div>' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">\u26A1' + totalSats + '</div><div class="highlight-stat-label">Sats Earned</div></div>' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">' + perfectStudents.length + '</div><div class="highlight-stat-label">Perfect Week' + (perfectStudents.length!==1?'s':'') + '</div></div>' +
+      '</div>' +
+      '<div class="highlights-text">' + summaryText + '</div>' +
+      (perfectStudents.length > 0 ? '<div class="highlights-text" style="margin-bottom:0"><strong>\uD83C\uDFC6 Perfect Week:</strong><div class="perfect-week-list">' + perfectStudents.map(function(s){ return '<span class="perfect-chip">\u2713 ' + s.name + '</span>'; }).join('') + '</div></div>' : '') +
+      '</div>';
   }
+
 
   var medals = ['🥇','🥈','🥉'];
   var rankColors = ["#ffd700","#c0c0c0","#cd7f32"];
@@ -1952,6 +2001,175 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "6") go("chapters");
   if (e.key === "m") markAll();
 });
+
+
+// ── PDF Report Generation ───────────────────────────────────────
+function downloadHighlightsPDF() {
+  if (typeof window.jspdf === "undefined") {
+    var script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    script.onload = function() { generateHighlightsPDF(); };
+    document.head.appendChild(script);
+  } else {
+    generateHighlightsPDF();
+  }
+}
+
+function generateHighlightsPDF() {
+  var st = filterState.lb;
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var maxPossible = st.mode === 'all' ? null : 4;
+
+  var data = students.map(function(s) {
+    var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
+    var days = Object.keys(filtAtt).length;
+    return { name: s.name, days: days, sats: days * SATS + (s.bonus||0), bonus: s.bonus||0 };
+  }).sort(function(a,b) { return b.days - a.days; });
+
+  var perfectStudents = data.filter(function(s) { return maxPossible && s.days >= maxPossible; });
+  var totalSats = data.reduce(function(a,s) { return a + s.sats; }, 0);
+  var totalDays = data.reduce(function(a,s) { return a + s.days; }, 0);
+  var activeCount = data.filter(function(s) { return s.days > 0; }).length;
+  var avgDays = students.length ? (totalDays / students.length).toFixed(1) : "0";
+
+  var periodLabel;
+  if (st.mode === 'all') {
+    periodLabel = "All Time";
+  } else {
+    var r = getClassWeekRange(st.offset);
+    var sD = new Date(r.start + "T00:00:00");
+    var eD = new Date(r.end + "T00:00:00");
+    periodLabel = sD.getDate() + " " + months[sD.getMonth()] + " " + sD.getFullYear() + " - " + eD.getDate() + " " + months[eD.getMonth()] + " " + eD.getFullYear();
+  }
+
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF();
+  var y = 20;
+  var pageW = doc.internal.pageSize.getWidth();
+
+  // Header
+  doc.setFillColor(247, 147, 26);
+  doc.rect(0, 0, pageW, 8, "F");
+  doc.setFontSize(18);
+  doc.setFont(undefined, "bold");
+  doc.text("Bitcoin Ekasi - Attendance Report", 14, y);
+  y += 8;
+  doc.setFontSize(11);
+  doc.setFont(undefined, "normal");
+  doc.setTextColor(100);
+  doc.text("Period: " + periodLabel, 14, y);
+  y += 6;
+  doc.text("Generated: " + new Date().toLocaleDateString("en-GB"), 14, y);
+  y += 12;
+
+  // Summary stats box
+  doc.setDrawColor(220);
+  doc.setFillColor(245, 245, 245);
+  doc.roundedRect(14, y, pageW - 28, 28, 3, 3, "FD");
+  var statW = (pageW - 28) / 5;
+  var stats = [
+    [String(students.length), "Students"],
+    [activeCount + "/" + students.length, "Attended"],
+    [avgDays, "Avg Days"],
+    [String(totalSats), "Sats Earned"],
+    [String(perfectStudents.length), "Perfect Wk"]
+  ];
+  doc.setFontSize(14);
+  doc.setTextColor(247, 147, 26);
+  doc.setFont(undefined, "bold");
+  stats.forEach(function(s, i) {
+    doc.text(s[0], 14 + statW * i + statW/2, y + 12, { align: "center" });
+  });
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  doc.setFont(undefined, "normal");
+  stats.forEach(function(s, i) {
+    doc.text(s[1].toUpperCase(), 14 + statW * i + statW/2, y + 20, { align: "center" });
+  });
+  y += 38;
+
+  // Summary text
+  doc.setTextColor(40);
+  doc.setFontSize(11);
+  doc.setFont(undefined, "bold");
+  doc.text("Summary", 14, y);
+  y += 7;
+  doc.setFont(undefined, "normal");
+  doc.setFontSize(10);
+  var summaryText;
+  if (st.mode === 'all') {
+    summaryText = "Across all time, " + students.length + " students have earned a combined " + totalSats + " sats for " + totalDays + " days of attendance.";
+  } else if (perfectStudents.length === students.length && students.length > 0) {
+    summaryText = "All " + students.length + " students attended every class this week (" + maxPossible + "/" + maxPossible + " days).";
+  } else if (perfectStudents.length > 0) {
+    summaryText = perfectStudents.length + " of " + students.length + " students attended all " + maxPossible + " days this week. " + activeCount + " of " + students.length + " attended at least once.";
+  } else if (activeCount > 0) {
+    summaryText = activeCount + " of " + students.length + " students attended this week.";
+  } else {
+    summaryText = "No attendance recorded yet for this period.";
+  }
+  var lines = doc.splitTextToSize(summaryText, pageW - 28);
+  doc.text(lines, 14, y);
+  y += lines.length * 5 + 8;
+
+  // Perfect Week list
+  if (perfectStudents.length > 0) {
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(11);
+    doc.text("Perfect Week (" + perfectStudents.length + ")", 14, y);
+    y += 7;
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+    var perfectNames = perfectStudents.map(function(s){ return s.name; }).join(", ");
+    var pLines = doc.splitTextToSize(perfectNames, pageW - 28);
+    doc.text(pLines, 14, y);
+    y += pLines.length * 5 + 8;
+  }
+
+  // Table header
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(11);
+  doc.text("Attendance Detail", 14, y);
+  y += 8;
+
+  doc.setFillColor(247, 147, 26);
+  doc.rect(14, y - 5, pageW - 28, 8, "F");
+  doc.setTextColor(255);
+  doc.setFontSize(9);
+  doc.text("Student", 18, y);
+  doc.text("Days", pageW - 90, y);
+  doc.text("Sats Earned", pageW - 60, y);
+  doc.text("Bonus", pageW - 28, y);
+  y += 8;
+
+  doc.setTextColor(40);
+  doc.setFont(undefined, "normal");
+  data.forEach(function(s, i) {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+    if (i % 2 === 0) {
+      doc.setFillColor(250, 250, 250);
+      doc.rect(14, y - 5, pageW - 28, 7, "F");
+    }
+    doc.text(s.name, 18, y);
+    doc.text(String(s.days), pageW - 88, y);
+    doc.text(String(s.sats - s.bonus), pageW - 60, y);
+    doc.text(s.bonus > 0 ? "+" + s.bonus : "-", pageW - 28, y);
+    y += 7;
+  });
+
+  // Footer
+  y += 10;
+  if (y > 280) { doc.addPage(); y = 20; }
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text("Bitcoin Ekasi Attendance Tracker - Bitcoin Diploma Program, Mossel Bay", 14, 290);
+
+  var filename = "Bitcoin_Ekasi_Report_" + TODAY + ".pdf";
+  doc.save(filename);
+}
 
 </script>
 </body>
