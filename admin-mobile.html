@@ -717,6 +717,116 @@ function getClassDayMessage() {
 var students = [];
 var attendance = [];
 var payStatus = {};
+
+// ── Payouts ──────────────────────────────────────────────────
+function renderPayout() {
+  var st = filterState.payout;
+  buildWeekFilter("payoutWeekFilter", "payout");
+  var el = document.getElementById("payoutList");
+  var summaryEl = document.getElementById("payoutWeekSummary");
+  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
+
+  var totalEarned = 0, totalOwed = 0, activeCount = 0;
+  var html = "";
+
+  students.forEach(function(s) {
+    var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
+    var days = Object.keys(filtAtt).length;
+    var earned = days * SATS;
+    var allTimeDays = Object.keys(s.att||{}).length;
+    var allTimeEarned = allTimeDays * SATS;
+    var paid = s.paid || 0;
+    var ps = payStatus[s.id];
+    var actionBtn = "";
+
+    html += '<div class="payout-card">';
+    html += '<div class="payout-name">' + s.name + '</div>';
+    html += '<div class="payout-dest">' + (s.destination||'No address set') + '</div>';
+
+    if (st.mode === 'all') {
+      var realOwed = Math.max(0, allTimeEarned + (s.bonus||0) - paid);
+      totalEarned += allTimeEarned;
+      totalOwed += realOwed;
+      if (allTimeDays > 0) activeCount++;
+      var earnedDisplay = allTimeEarned + (s.bonus>0?' <span style="font-size:10px;color:#ffd700">+'+s.bonus+'</span>':'');
+      if (ps === "loading") actionBtn = '<div class="big-btn big-btn-outline" style="margin:0;padding:10px;font-size:13px;justify-content:center"><span class="spinner"></span> Sending...</div>';
+      else if (ps && ps.indexOf("ok:") === 0) actionBtn = '<div class="badge badge-green" style="width:100%;justify-content:center;padding:10px">' + ps.slice(3) + '</div>';
+      else if (ps && ps.indexOf("err:") === 0) actionBtn = '<div class="alert alert-err" style="margin:0;font-size:11px">' + ps.slice(4).slice(0,40) + '</div>';
+      else if (realOwed > 0) actionBtn = '<button class="big-btn big-btn-green" onclick="paySingle(\'' + s.id + '\',' + realOwed + ')" style="margin:0;padding:12px;font-size:13px">⚡ Pay ' + realOwed + ' sats</button>';
+      else if (allTimeEarned > 0) actionBtn = '<div class="badge badge-green" style="width:100%;justify-content:center;padding:10px">✓ All paid</div>';
+      else actionBtn = '<div class="badge badge-gray" style="width:100%;justify-content:center;padding:10px">No earnings</div>';
+
+      html += '<div class="payout-nums">';
+      html += '<div class="payout-num-cell"><div class="payout-num-val" style="color:var(--orange)">' + earnedDisplay + '</div><div class="payout-num-label">Earned</div></div>';
+      html += '<div class="payout-num-cell"><div class="payout-num-val" style="color:var(--green)">' + paid + '</div><div class="payout-num-label">Paid</div></div>';
+      html += '<div class="payout-num-cell"><div class="payout-num-val" style="color:' + (realOwed>0?'var(--orange)':'var(--green)') + '">' + realOwed + '</div><div class="payout-num-label">Owed</div></div>';
+      html += '</div>';
+    } else {
+      totalEarned += earned;
+      if (days > 0) activeCount++;
+      if (days === 0) actionBtn = '<div class="badge badge-gray" style="width:100%;justify-content:center;padding:10px">No sessions</div>';
+      else actionBtn = '<div class="badge badge-blue" style="width:100%;justify-content:center;padding:10px">' + days + ' day' + (days!==1?'s':'') + ' this week</div>';
+
+      html += '<div class="payout-nums" style="grid-template-columns:1fr">';
+      html += '<div class="payout-num-cell"><div class="payout-num-val" style="color:var(--orange)">' + earned + ' sats</div><div class="payout-num-label">Earned This Week</div></div>';
+      html += '</div>';
+    }
+    html += actionBtn;
+    html += '</div>';
+  });
+  el.innerHTML = html;
+
+  var label = st.mode === 'all' ? 'All Time' : formatWeekLabel(st.offset);
+  if (st.mode === 'all') {
+    summaryEl.innerHTML =
+      '<div class="week-summary-card"><div class="week-summary-val">' + activeCount + '</div><div class="week-summary-label">Active ' + label + '</div></div>' +
+      '<div class="week-summary-card"><div class="week-summary-val">' + totalEarned + '</div><div class="week-summary-label">Sats Earned</div></div>' +
+      '<div class="week-summary-card"><div class="week-summary-val">' + totalOwed + '</div><div class="week-summary-label">Sats Owed</div></div>';
+  } else {
+    summaryEl.innerHTML =
+      '<div class="week-summary-card"><div class="week-summary-val">' + activeCount + '</div><div class="week-summary-label">Active ' + label + '</div></div>' +
+      '<div class="week-summary-card"><div class="week-summary-val">' + totalEarned + '</div><div class="week-summary-label">Sats Earned</div></div>' +
+      '<div class="week-summary-card"><div class="week-summary-val" style="font-size:12px;color:var(--text3)">All Time</div><div class="week-summary-label">For Paid/Owed</div></div>';
+  }
+}
+
+async function paySingle(id, owed) {
+  if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s) return;
+  payStatus[id] = "loading"; renderPayout();
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: apiKey, destination: s.destination, amount: owed })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed");
+    await sb("PATCH","students",{ paid: (s.paid||0)+owed },"?id=eq." + id);
+    payStatus[id] = "ok:Sent " + owed;
+    await loadStudents();
+  } catch(e) { payStatus[id] = "err:" + e.message; }
+  renderPayout();
+}
+
+async function payAll() {
+  if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
+  var owing = students.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
+  if (!owing.length) return;
+  var alertEl = document.getElementById("payAlert");
+  for (var i = 0; i < owing.length; i++) {
+    var s = owing[i];
+    var owed = Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
+    alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + owing.length + '...</div>';
+    await paySingle(s.id, owed);
+  }
+  alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length!==1?'s':'') + ' sent!</div>';
+  setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
+}
+
 var apiKey = localStorage.getItem("ek_key") || "";
 var adminPw = localStorage.getItem("ek_admin_pw") || "ekasi_admin2024";
 var teacherPw = localStorage.getItem("ek_pw") || "ekasi2024";
