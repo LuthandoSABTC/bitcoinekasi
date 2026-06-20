@@ -285,6 +285,26 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .perfect-chip{display:inline-flex;align-items:center;gap:4px;background:var(--green-bg);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--green);font-family:'DM Mono',monospace}
 .btn-pdf{display:inline-flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.15s}
 .btn-pdf:hover{background:var(--orange);color:#000;border-color:var(--orange)}
+
+/* Attendance Tiers */
+.tier-section{margin-bottom:20px}
+.tier-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 4px}
+.tier-icon{font-size:18px}
+.tier-title{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.tier-count{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 10px}
+.tier-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.tier-row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.tier-row:last-child{border-bottom:none}
+.tier-row:hover{background:var(--bg3)}
+.tier-avatar{width:38px;height:38px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--text2);flex-shrink:0}
+.tier-perfect .tier-avatar{background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);color:var(--green)}
+.tier-good .tier-avatar{background:var(--orange-glow);border-color:rgba(247,147,26,0.3);color:var(--orange)}
+.tier-needs .tier-avatar{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:var(--red)}
+.tier-bar{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-top:6px}
+.tier-bar-fill{height:100%;border-radius:3px;transition:width 0.8s ease}
+.tier-right{text-align:right;flex-shrink:0}
+.tier-days{font-size:18px;font-weight:800;font-family:'DM Mono',monospace}
+.tier-sats{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
 </style>
 </head>
 <body>
@@ -1165,7 +1185,8 @@ function renderLeaderboard() {
         else break;
       }
     }
-    return { name: s.name, days: days, sats: days * SATS + (s.bonus||0), bonus: s.bonus||0, streak: streak };
+    var effBonus = st.mode === 'all' ? (s.bonus||0) : 0;
+    return { name: s.name, days: days, sats: days * SATS + effBonus, bonus: effBonus, streak: streak };
   }).sort(function(a,b) { return b.days - a.days || b.streak - a.streak; });
 
   var maxDays = data[0] ? data[0].days : 0;
@@ -1227,28 +1248,54 @@ function renderLeaderboard() {
   }
 
 
-  var medals = ['🥇','🥈','🥉'];
-  var rankColors = ["#ffd700","#c0c0c0","#cd7f32"];
-  var gradients = ["linear-gradient(90deg,#ffd700,#ffed4a)","linear-gradient(90deg,#c0c0c0,#e8e8e8)","linear-gradient(90deg,#cd7f32,#e8a96a)","linear-gradient(90deg,var(--orange),var(--orange-light))"];
-  var html = "";
-  data.forEach(function(s, i) {
-    var barPct = maxPossible ? Math.round((s.days/maxPossible)*100) : Math.round((s.days/maxDays)*100);
-    var fillColor = i < 3 ? rankColors[i] : "var(--orange)";
-    var gradient = i < 3 ? gradients[i] : gradients[3];
-    var rankClass = i < 3 ? " rank"+(i+1) : "";
-    var isPerfectRow = maxPossible && s.days >= maxPossible;
-    html += '<div class="lb-row-new' + rankClass + '">';
-    html += i < 3 ? '<div class="lb-medal">' + medals[i] + '</div>' : '<div class="lb-rank-num">' + (i+1) + '</div>';
-    html += '<div style="flex:1;min-width:0"><div class="lb-student-name">' + s.name + '</div>';
-    html += '<div class="lb-progress-bar"><div class="lb-progress-fill" style="width:' + barPct + '%;background:' + gradient + '"></div></div>';
-    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">';
-    if (isPerfectRow) html += '<span class="lb-perfect">✓ Perfect Week</span>';
-    if (s.streak >= 2 && st.mode === 'week') html += '<span class="lb-streak">🔥 ' + s.streak + ' day streak</span>';
-    html += '</div></div><div class="lb-right"><div class="lb-days-big" style="color:' + fillColor + '">' + s.days + '<span style="font-size:12px;font-weight:500;color:var(--text3)"> days</span></div>';
-    html += '<div class="lb-sats-earned">⚡ ' + s.sats + ' sats</div></div></div>';
-  });
-  el.innerHTML = html;
+  var tierHtml = "";
+  var maxForBar = maxPossible || maxDays || 1;
+
+  var perfectTier = data.filter(function(s) { return maxPossible ? s.days >= maxPossible : s.days === maxDays; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  var goodTier = data.filter(function(s) { return maxPossible ? (s.days >= Math.ceil(maxPossible/2) && s.days < maxPossible) : false; }).sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
+  var needsTier = data.filter(function(s) { return maxPossible ? (s.days > 0 && s.days < Math.ceil(maxPossible/2)) : false; }).sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
+  var absentTier = data.filter(function(s) { return s.days === 0; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+
+  function renderTierRow(s, colorVar) {
+    var pct = Math.round((s.days/maxForBar)*100);
+    var row = '<div class="tier-row">';
+    row += '<div class="tier-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
+    row += '<div style="flex:1;min-width:0">';
+    row += '<div style="font-weight:700;font-size:14px">' + s.name + '</div>';
+    row += '<div class="tier-bar"><div class="tier-bar-fill" style="width:' + pct + '%;background:' + colorVar + '"></div></div>';
+    row += '</div>';
+    row += '<div class="tier-right"><div class="tier-days" style="color:' + colorVar + '">' + s.days + (maxPossible ? '/' + maxPossible : '') + '</div><div class="tier-sats">⚡ ' + s.sats + ' sats</div></div>';
+    row += '</div>';
+    return row;
+  }
+
+  if (maxPossible) {
+    if (perfectTier.length) {
+      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">🏆</span><span class="tier-title" style="color:var(--green)">Perfect Attendance</span><span class="tier-count">' + perfectTier.length + ' student' + (perfectTier.length!==1?'s':'') + '</span></div>';
+      tierHtml += '<div class="tier-card tier-perfect">' + perfectTier.map(function(s){ return renderTierRow(s, "var(--green)"); }).join('') + '</div></div>';
+    }
+    if (goodTier.length) {
+      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">👍</span><span class="tier-title" style="color:var(--orange)">Good Attendance</span><span class="tier-count">' + goodTier.length + ' student' + (goodTier.length!==1?'s':'') + '</span></div>';
+      tierHtml += '<div class="tier-card tier-good">' + goodTier.map(function(s){ return renderTierRow(s, "var(--orange)"); }).join('') + '</div></div>';
+    }
+    if (needsTier.length) {
+      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">⚠️</span><span class="tier-title" style="color:var(--red)">Needs Improvement</span><span class="tier-count">' + needsTier.length + ' student' + (needsTier.length!==1?'s':'') + '</span></div>';
+      tierHtml += '<div class="tier-card tier-needs">' + needsTier.map(function(s){ return renderTierRow(s, "var(--red)"); }).join('') + '</div></div>';
+    }
+    if (absentTier.length) {
+      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">⬜</span><span class="tier-title" style="color:var(--text3)">No Attendance</span><span class="tier-count">' + absentTier.length + ' student' + (absentTier.length!==1?'s':'') + '</span></div>';
+      tierHtml += '<div class="tier-card">' + absentTier.map(function(s){ return renderTierRow(s, "var(--text3)"); }).join('') + '</div></div>';
+    }
+  } else {
+    // All Time mode — no fixed max, just sort by days descending, group isn't tier-based
+    var sortedAll = data.slice().sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
+    tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">📊</span><span class="tier-title">All Students — All Time</span><span class="tier-count">' + sortedAll.length + ' students</span></div>';
+    tierHtml += '<div class="tier-card">' + sortedAll.map(function(s){ return renderTierRow(s, "var(--orange)"); }).join('') + '</div></div>';
+  }
+
+  el.innerHTML = tierHtml;
 }
+
 function renderRoster() {
   var el = document.getElementById("rosterList");
   if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; return; }
@@ -1869,7 +1916,8 @@ function generateHighlightsPDF() {
   var data = students.map(function(s) {
     var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
     var days = Object.keys(filtAtt).length;
-    return { name: s.name, days: days, sats: days * SATS + (s.bonus||0), bonus: s.bonus||0 };
+    var effBonus = st.mode === 'all' ? (s.bonus||0) : 0;
+    return { name: s.name, days: days, sats: days * SATS + effBonus, bonus: effBonus };
   }).sort(function(a,b) { return b.days - a.days; });
 
   var perfectStudents = data.filter(function(s) { return maxPossible && s.days >= maxPossible; });
