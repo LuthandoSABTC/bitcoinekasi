@@ -1152,7 +1152,7 @@ function renderLeaderboard() {
 
     var summaryText = "";
     if (st.mode === 'all') {
-      summaryText = "Across all time, <strong>" + students.length + " students</strong> have earned a combined <strong>\u26A1" + totalSats + " sats</strong> for <strong>" + totalDays + " days</strong> of attendance.";
+      var avgDaysAll = students.length ? (totalDays/students.length).toFixed(1) : "0"; summaryText = "Since the program started, <strong>" + students.length + " students</strong> have earned a combined <strong>\u26A1" + totalSats + " sats</strong>, averaging <strong>" + avgDaysAll + " days attended</strong> per student.";
     } else {
       if (perfectStudents.length === students.length && students.length > 0) {
         summaryText = "Amazing! <strong>All " + students.length + " students</strong> attended every class this week (" + maxPossible + "/" + maxPossible + " days) \uD83C\uDF89";
@@ -1955,7 +1955,7 @@ function generateHighlightsPDF() {
   doc.setFontSize(10);
   var summaryText;
   if (st.mode === 'all') {
-    summaryText = "Across all time, " + students.length + " students have earned a combined " + totalSats + " sats for " + totalDays + " days of attendance.";
+    var avgDaysAllPdf = students.length ? (totalDays/students.length).toFixed(1) : "0"; summaryText = "Since the program started, " + students.length + " students have earned a combined " + totalSats + " sats, averaging " + avgDaysAllPdf + " days attended per student.";
   } else if (perfectStudents.length === students.length && students.length > 0) {
     summaryText = "All " + students.length + " students attended every class this week (" + maxPossible + "/" + maxPossible + " days).";
   } else if (perfectStudents.length > 0) {
