@@ -1586,14 +1586,19 @@ function renderMonthly() {
     var startD = new Date(r.start + "T00:00:00");
     var label = w===0 ? "This Week" : (w===-1 ? "Last Week" : startD.getDate()+" "+months[startD.getMonth()]);
     var totalAtt = 0;
-    students.forEach(function(s) { totalAtt += Object.keys(filterAttByWeek(s.att, w, "week")).length; });
+    var weekActiveCount = 0;
+    students.forEach(function(s) {
+      var d = Object.keys(filterAttByWeek(s.att, w, "week")).length;
+      totalAtt += d;
+      if (d > 0) weekActiveCount++;
+    });
     var avgPct = students.length ? Math.round((totalAtt / (students.length * 4)) * 100) : 0;
     var color = avgPct >= 80 ? "var(--green)" : avgPct >= 50 ? "var(--orange)" : "var(--red)";
     html += '<div class="month-week-row">';
     html += '<div style="font-size:12px;font-weight:600;color:var(--text)">' + label + '</div>';
     html += '<div class="month-bar"><div class="month-bar-fill" style="width:' + avgPct + '%;background:' + color + '"></div></div>';
     html += '<div style="font-size:14px;font-weight:800;color:' + color + ';text-align:right">' + avgPct + '%</div>';
-    html += '<div style="font-size:11px;color:var(--text3);text-align:right">' + totalAtt + ' days</div>';
+    html += '<div style="font-size:11px;color:var(--text3);text-align:right">' + weekActiveCount + '/' + students.length + ' attended</div>';
     html += '</div>';
   });
   html += '</div>';
