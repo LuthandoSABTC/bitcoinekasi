@@ -1030,7 +1030,9 @@ function renderPayout() {
       else if (allTimeEarned > 0) action = '<span class="badge badge-green">All paid</span>';
       else action = '<span class="badge badge-gray">No earnings</span>';
       html += '<div class="payout-row"><div><div style="font-weight:600;font-size:14px">' + s.name + '</div><div class="payout-dest">' + (s.destination||'No address set') + '</div></div>';
-      html += '<div style="text-align:right" class="num-orange">' + allTimeEarned + '</div>';
+      var allTimeBonus = s.bonus || 0;
+      var displayEarned = allTimeEarned + allTimeBonus;
+      html += '<div style="text-align:right"><div class="num-orange">' + allTimeEarned + '</div>' + (allTimeBonus > 0 ? '<div style="font-size:10px;color:#ffd700;font-family:\'DM Mono\',monospace">+' + allTimeBonus + ' bonus</div>' : '') + '</div>';
       html += '<div style="text-align:right" class="num-green">' + paid + '</div>';
       html += '<div style="text-align:right;font-weight:700;color:' + (realOwed>0?'var(--orange)':'var(--green)') + ';font-family:\'DM Mono\',monospace">' + realOwed + '</div>';
       html += '<div style="text-align:right">' + action + '</div></div>';
