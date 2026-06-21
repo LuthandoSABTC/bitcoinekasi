@@ -1585,6 +1585,60 @@ function generateHighlightsPDF() {
 }
 
 // ── Test Payment ────────────────────────────────────────────────
+async function loadAllClasses() {
+  var el = document.getElementById("classesList");
+  if (!el) return;
+  el.innerHTML = '<div class="empty"><div class="empty-title">Loading...</div></div>';
+  var teachers = await sb("GET","teachers",null,"?order=created_at.asc");
+  if (!teachers || !teachers.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No teachers found</div></div>'; return; }
+  var allStudents = await sb("GET","students",null,"?order=created_at.asc");
+  var allIds = (allStudents||[]).map(function(s) { return s.id; });
+  var allAtt = allIds.length ? await sb("GET","attendance",null,"?student_id=in.(" + allIds.join(",") + ")") : [];
+  var html = "";
+  teachers.forEach(function(t) {
+    var myStudents = (allStudents||[]).filter(function(s) { return s.teacher_id === t.id; });
+    var myAtt = {};
+    myStudents.forEach(function(s) {
+      var att = {};
+      (allAtt||[]).filter(function(a) { return a.student_id === s.id; }).forEach(function(a) { att[a.date] = true; });
+      myAtt[s.id] = att;
+    });
+    var totalDays = myStudents.reduce(function(a,s) { return a + Object.keys(myAtt[s.id]||{}).length; }, 0);
+    var avgDaysClass = myStudents.length ? (totalDays/myStudents.length).toFixed(1) : "0";
+    var totalEarned = totalDays * SATS;
+    var totalPaid = myStudents.reduce(function(a,s) { return a + (s.paid||0); }, 0);
+    var presentToday = myStudents.filter(function(s) { return myAtt[s.id] && myAtt[s.id][TODAY]; }).length;
+
+    html += '<div class="teacher-card-mobile">';
+    html += '<div class="teacher-card-head-mobile">';
+    html += '<div class="teacher-avatar">' + t.name.charAt(0).toUpperCase() + '</div>';
+    html += '<div style="flex:1"><div style="font-size:15px;font-weight:700">' + t.name + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px">' + (t.class_name||'Bitcoin Diploma') + ' · ' + myStudents.length + ' students</div></div>';
+    html += '<span class="badge badge-blue">' + presentToday + '/' + myStudents.length + ' today</span></div>';
+    html += '<div class="teacher-stats-mobile">';
+    html += '<div class="teacher-stat-mobile"><div class="teacher-stat-val">' + myStudents.length + '</div><div class="teacher-stat-label">Students</div></div>';
+    html += '<div class="teacher-stat-mobile"><div class="teacher-stat-val">' + avgDaysClass + '</div><div class="teacher-stat-label">Avg Days</div></div>';
+    html += '<div class="teacher-stat-mobile"><div class="teacher-stat-val">' + totalEarned + '</div><div class="teacher-stat-label">Earned</div></div>';
+    html += '<div class="teacher-stat-mobile"><div class="teacher-stat-val">' + totalPaid + '</div><div class="teacher-stat-label">Paid</div></div></div>';
+
+    if (myStudents.length) {
+      myStudents.forEach(function(s) {
+        var days = Object.keys(myAtt[s.id]||{}).length;
+        var here = myAtt[s.id] && myAtt[s.id][TODAY];
+        var hereClass3 = here ? "badge-green" : "badge-gray";
+        var hereMark3 = here ? "✓" : "✗";
+        html += '<div class="student-row-mobile"><div style="font-weight:600">' + s.name + '</div>';
+        html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:var(--orange);font-family:DM Mono,monospace">' + days + 'd</span>';
+        html += '<span class="badge ' + hereClass3 + '">' + hereMark3 + '</span></div></div>';
+      });
+    } else {
+      html += '<div class="empty" style="padding:16px"><div class="empty-sub">No students enrolled</div></div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
 function renderTest() {
   var sel = document.getElementById("testStudent");
   if (!sel) return;
