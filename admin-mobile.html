@@ -684,12 +684,36 @@ function formatWeekLabel(offset) {
 // Filter attendance keys by week range (or return all)
 function filterAttByWeek(att, offset, mode) {
   if (mode === 'all') return att;
-  var r = getWeekRange(offset);
+  var r = getClassWeekRange(offset);
   var filtered = {};
   Object.keys(att||{}).forEach(function(d) {
     if (d >= r.start && d <= r.end) filtered[d] = true;
   });
   return filtered;
+}
+
+function getClassWeekRange(offset) {
+  var now = new Date();
+  var day = now.getDay(); // 0=Sun,1=Mon,2=Tue,...,6=Sat
+  var diffToTue = (day === 0) ? -5 : (day === 1) ? -6 : -(day - 2);
+  var tue = new Date(now);
+  tue.setDate(now.getDate() + diffToTue + (offset * 7));
+  var fri = new Date(tue);
+  fri.setDate(tue.getDate() + 3);
+  return {
+    start: tue.toISOString().split("T")[0],
+    end:   fri.toISOString().split("T")[0]
+  };
+}
+
+function formatClassWeekLabel(offset) {
+  if (offset === 0) return "This Week";
+  if (offset === -1) return "Last Week";
+  var r = getClassWeekRange(offset);
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var s = new Date(r.start + "T00:00:00");
+  var e = new Date(r.end + "T00:00:00");
+  return s.getDate() + " " + months[s.getMonth()] + " – " + e.getDate() + " " + months[e.getMonth()];
 }
 
 // Build the week filter bar HTML and wire it up
@@ -701,7 +725,7 @@ function buildWeekFilter(containerId, stateKey, onChangeFn) {
     '<div class="week-nav">' +
       '<button class="week-nav-btn" onclick="weekStep(\'' + stateKey + '\',-1)">&#8249;</button>' +
       '<span class="week-label" id="wlabel-' + stateKey + '">' +
-        (st.mode === 'all' ? 'All Time' : formatWeekLabel(st.offset)) +
+        (st.mode === 'all' ? 'All Time' : formatClassWeekLabel(st.offset)) +
       '</span>' +
       '<button class="week-nav-btn" id="wnext-' + stateKey + '" onclick="weekStep(\'' + stateKey + '\',1)" ' +
         (st.mode === 'all' || st.offset >= 0 ? 'style="opacity:0.3;pointer-events:none"' : '') + '>&#8250;</button>' +
@@ -811,7 +835,7 @@ function renderPayout() {
   });
   el.innerHTML = html;
 
-  var label = st.mode === 'all' ? 'All Time' : formatWeekLabel(st.offset);
+  var label = st.mode === 'all' ? 'All Time' : formatClassWeekLabel(st.offset);
   if (st.mode === 'all') {
     summaryEl.innerHTML =
       '<div class="week-summary-card"><div class="week-summary-val">' + activeCount + '</div><div class="week-summary-label">Active ' + label + '</div></div>' +
