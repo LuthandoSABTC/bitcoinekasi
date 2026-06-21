@@ -349,6 +349,7 @@ select.inp{appearance:none}
       <button class="nb" id="nb-monthly" onclick="go('monthly')"><span class="nb-icon">&#128200;</span>Monthly</button>
       <div class="nav-section">System</div>
       <button class="nb" id="nb-settings" onclick="go('settings')"><span class="nb-icon">&#9881;</span>Settings</button>
+      <button class="nb" id="nb-test" onclick="go('test')"><span class="nb-icon">&#9654;</span>Test Payment</button>
       <button class="nb" onclick="doLogout()" style="color:#ef4444"><span class="nb-icon">&#8594;</span>Sign Out</button>
     </div>
     <div class="sidebar-foot">
@@ -529,6 +530,27 @@ select.inp{appearance:none}
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- TEST PAYMENT -->
+      <div id="p-test" class="page">
+        <div class="section-title" style="margin-bottom:16px">Test Payment</div>
+        <div class="form-card" style="max-width:500px">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;font-family:DM Mono,monospace">Send a small test payment (1–10 sats) to verify Lightning connectivity with a student's address.</p>
+          <div class="inp-group">
+            <label class="inp-label">Select Student</label>
+            <select class="inp" id="testStudent" onchange="previewTestDest()">
+              <option value="">-- Choose student --</option>
+            </select>
+          </div>
+          <div id="testDestPreview" style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:-8px;margin-bottom:16px;padding:0 4px"></div>
+          <div class="inp-group">
+            <label class="inp-label">Amount (1–10 sats)</label>
+            <input class="inp" type="number" id="testAmount" value="1" min="1" max="10">
+          </div>
+          <div id="testResult"></div>
+          <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="sendTestPayment()">Send Test Payment</button>
         </div>
       </div>
 
@@ -808,7 +830,7 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["attend","payout","stats","leaderboard","roster","classes","chapters","monthly","settings"];
+var pages = ["attend","payout","stats","leaderboard","roster","classes","chapters","monthly","settings","test"];
 var pageTitles = {
   attend:      ["Attendance","Mark today's class"],
   payout:      ["Payouts","Send Lightning payments"],
@@ -818,7 +840,8 @@ var pageTitles = {
   classes:     ["All Classes","Live view of all teachers"],
   chapters:    ["Chapters","Bitcoin Diploma chapter log by class"],
   monthly:     ["Monthly Overview","Attendance trends across weeks"],
-  settings:    ["Settings","Configure your account"]
+  settings:    ["Settings","Configure your account"],
+  test:        ["Test Payment","Verify Lightning connectivity"]
 };
 
 function go(name) {
@@ -839,6 +862,7 @@ function go(name) {
   if (name === "classes")     loadAllClasses();
   if (name === "chapters")    loadAllChapters();
   if (name === "monthly")     renderMonthly();
+  if (name === "test")        renderTest();
 }
 
 function openSidebar() { document.getElementById("sidebar").classList.add("open"); document.getElementById("overlay").classList.add("show"); }
@@ -877,7 +901,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -1915,6 +1939,54 @@ function generateHighlightsPDF() {
 
   var filename = "Bitcoin_Ekasi_Report_" + TODAY + ".pdf";
   doc.save(filename);
+}
+
+// ── Test Payment ────────────────────────────────────────────────
+function renderTest() {
+  var sel = document.getElementById("testStudent");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Choose student --</option>';
+  students.forEach(function(s) {
+    var opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  var res = document.getElementById("testResult");
+  var prev = document.getElementById("testDestPreview");
+  if (res) res.innerHTML = "";
+  if (prev) prev.textContent = "";
+}
+
+function previewTestDest() {
+  var id = document.getElementById("testStudent").value;
+  var s = students.find(function(x) { return x.id === id; });
+  document.getElementById("testDestPreview").textContent = s ? "Address: " + (s.destination || "none set") : "";
+}
+
+async function sendTestPayment() {
+  var id = document.getElementById("testStudent").value;
+  var amount = parseInt(document.getElementById("testAmount").value);
+  var result = document.getElementById("testResult");
+  if (!id) { result.innerHTML = '<div class="alert alert-err">Please select a student</div>'; return; }
+  if (!amount || amount < 1 || amount > 10) { result.innerHTML = '<div class="alert alert-err">Amount must be 1–10 sats</div>'; return; }
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s || !s.destination) { result.innerHTML = '<div class="alert alert-err">Student has no Lightning address</div>'; return; }
+  result.innerHTML = '<div class="alert alert-info">Sending ' + amount + ' sats to ' + s.name + '...</div>';
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: apiKey, destination: s.destination, amount: amount })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Payment failed");
+    result.innerHTML = '<div class="alert alert-ok">Test successful! Sent ' + amount + ' sats to ' + s.name + '</div>';
+  } catch(e) {
+    result.innerHTML = '<div class="alert alert-err">Test failed: ' + e.message + '</div>';
+  }
 }
 
 </script>
