@@ -334,6 +334,7 @@ textarea.inp{resize:vertical;min-height:80px}
         <div class="more-item" onclick="goInner('chapters')" style="display:flex;align-items:center;gap:14px;padding:16px;border-top:1px solid var(--border);cursor:pointer;font-size:15px;font-weight:600">📚 Chapters</div>
         <div class="more-item" onclick="goInner('monthly')" style="display:flex;align-items:center;gap:14px;padding:16px;border-top:1px solid var(--border);cursor:pointer;font-size:15px;font-weight:600">📊 Monthly</div>
         <div class="more-item" onclick="goInner('settings')" style="display:flex;align-items:center;gap:14px;padding:16px;border-top:1px solid var(--border);cursor:pointer;font-size:15px;font-weight:600">⚙️ Settings</div>
+        <div class="more-item" onclick="goInner('test')" style="display:flex;align-items:center;gap:14px;padding:16px;border-top:1px solid var(--border);cursor:pointer;font-size:15px;font-weight:600">▶️ Test Payment</div>
         <div onclick="doLogout()" style="display:flex;align-items:center;gap:14px;padding:16px;border-top:1px solid var(--border);cursor:pointer;font-size:15px;font-weight:600;color:#ef4444">→ Sign Out</div>
       </div>
     </div>
@@ -400,6 +401,19 @@ textarea.inp{resize:vertical;min-height:80px}
           <input class="inp" type="password" id="iTeacherPw" placeholder="New teacher password" style="margin-bottom:8px">
           <div class="inp-hint" id="curTeacherPw">Current: ekasi2024</div>
         </div>
+      </div>
+    </div>
+
+    <!-- TEST PAYMENT (inner) -->
+    <div id="p-test" class="page">
+      <button class="big-btn big-btn-outline" onclick="goBack()" style="margin-bottom:14px">← Back</button>
+      <div class="form-card">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:20px;font-family:DM Mono,monospace;line-height:1.6">Send a small test payment (1–10 sats) to verify Lightning connectivity.</p>
+        <div class="inp-group"><label class="inp-label">Select Student</label><select class="inp" id="testStudent" onchange="previewTestDest()"><option value="">— Choose student —</option></select></div>
+        <div id="testDestPreview" style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:-8px;margin-bottom:14px"></div>
+        <div class="inp-group"><label class="inp-label">Amount (1–10 sats)</label><input class="inp" type="number" id="testAmount" value="1" min="1" max="10"></div>
+        <div id="testResult"></div>
+        <button class="big-btn big-btn-orange" onclick="sendTestPayment()">Send Test Payment</button>
       </div>
     </div>
 
@@ -486,7 +500,7 @@ const TODAY = new Date().toISOString().split("T")[0];
 
 // Mobile nav
 var mainPages = ["attend","payout","classes","leaderboard","more"];
-var innerPages = ["stats","roster","chapters","monthly","settings"];
+var innerPages = ["stats","roster","chapters","monthly","settings","test"];
 var allPages = mainPages.concat(innerPages);
 
 function go(name) {
@@ -506,6 +520,7 @@ function go(name) {
   if (name === "chapters")    loadAllChapters();
   if (name === "monthly")     renderMonthly();
   if (name === "settings")    { updateKeyBadge(); }
+  if (name === "test")        renderTest();
 }
 
 function goInner(name) { go(name); }
@@ -927,7 +942,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -1545,131 +1560,54 @@ function generateHighlightsPDF() {
   doc.save(filename);
 }
 
-</script>
-</body>
-</htmlfunction renderLeaderboard() {
-  var st = filterState.lb;
-  buildWeekFilter("lbWeekFilter", "lb");
-
-  var el = document.getElementById("lbList");
-  var banner = document.getElementById("lbStarBanner");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; if(banner) banner.innerHTML=""; return; }
-
-  var maxPossible = st.mode === 'all' ? null : 4;
-
-  var data = students.map(function(s) {
-    var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
-    var days = Object.keys(filtAtt).length;
-    var effBonus = st.mode === 'all' ? (s.bonus||0) : 0;
-    return { name: s.name, days: days, sats: days * SATS + effBonus, bonus: effBonus };
-  }).sort(function(a,b) { return b.days - a.days; });
-
-  var maxDays = data[0] ? data[0].days : 1;
-  if (!data.length || maxDays === 0) {
-    el.innerHTML = '<div class="empty"><div class="empty-title">No attendance ' + (st.mode==='all'?'recorded':'this ' + (st.offset===0?'week':'period')) + '</div></div>';
-    if (banner) banner.innerHTML = "";
-    return;
-  }
-
-  // This Week's Highlights Summary
-  if (banner) {
-    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    var perfectStudents = data.filter(function(s) { return maxPossible && s.days >= maxPossible; });
-    var totalSats = data.reduce(function(a,s) { return a + s.sats; }, 0);
-    var totalDays = data.reduce(function(a,s) { return a + s.days; }, 0);
-    var activeCount = data.filter(function(s) { return s.days > 0; }).length;
-    var avgDays = students.length ? (totalDays / students.length).toFixed(1) : "0";
-    var bestDays = data[0] ? data[0].days : 0;
-
-    var periodLabel;
-    if (st.mode === 'all') {
-      periodLabel = "All Time";
-    } else {
-      var r = getClassWeekRange(st.offset);
-      var sD = new Date(r.start + "T00:00:00");
-      var eD = new Date(r.end + "T00:00:00");
-      periodLabel = sD.getDate() + " " + months[sD.getMonth()] + " \u2013 " + eD.getDate() + " " + months[eD.getMonth()];
-    }
-
-    var summaryText = "";
-    if (st.mode === 'all') {
-      var avgDaysAll = students.length ? (totalDays/students.length).toFixed(1) : "0"; summaryText = "Since the program started, <strong>" + students.length + " students</strong> have earned a combined <strong>\u26A1" + totalSats + " sats</strong>, averaging <strong>" + avgDaysAll + " days attended</strong> per student.";
-    } else {
-      if (perfectStudents.length === students.length && students.length > 0) {
-        summaryText = "Amazing! <strong>All " + students.length + " students</strong> attended every class this week (" + maxPossible + "/" + maxPossible + " days) \uD83C\uDF89";
-      } else if (perfectStudents.length > 0) {
-        summaryText = "<strong>" + perfectStudents.length + " of " + students.length + " students</strong> attended all " + maxPossible + " days this week. <strong>" + activeCount + " of " + students.length + "</strong> attended at least once.";
-      } else if (activeCount > 0) {
-        summaryText = "<strong>" + activeCount + " of " + students.length + " students</strong> attended this week, with a best attendance of <strong>" + bestDays + "/" + maxPossible + " days</strong>.";
-      } else {
-        summaryText = "No attendance recorded yet for this week.";
-      }
-    }
-
-    banner.innerHTML =
-      '<div class="highlights-banner" id="pdfSummaryBlock">' +
-      '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights \u2014 ' + periodLabel + '</span>' +
-      '<button class="btn-pdf" onclick="downloadHighlightsPDF()">\u2B07\uFE0F Download PDF</button></div>' +
-      '<div class="highlights-grid">' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">' + students.length + '</div><div class="highlight-stat-label">Total Students</div></div>' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">' + activeCount + '/' + students.length + '</div><div class="highlight-stat-label">Attended</div></div>' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">' + avgDays + '</div><div class="highlight-stat-label">Avg Days</div></div>' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">\u26A1' + totalSats + '</div><div class="highlight-stat-label">Sats Earned</div></div>' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">' + perfectStudents.length + '</div><div class="highlight-stat-label">Perfect Week' + (perfectStudents.length!==1?'s':'') + '</div></div>' +
-      '</div>' +
-      '<div class="highlights-text">' + summaryText + '</div>' +
-      (perfectStudents.length > 0 ? '<div class="highlights-text" style="margin-bottom:0"><strong>\uD83C\uDFC6 Perfect Week:</strong><div class="perfect-week-list">' + perfectStudents.map(function(s){ return '<span class="perfect-chip">\u2713 ' + s.name + '</span>'; }).join('') + '</div></div>' : '') +
-      '</div>';
-  }
-
-  var tierHtml = "";
-  var maxForBar = maxPossible || maxDays || 1;
-
-  var perfectTier = data.filter(function(s) { return maxPossible ? s.days >= maxPossible : s.days === maxDays; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
-  var goodTier = data.filter(function(s) { return maxPossible ? (s.days >= Math.ceil(maxPossible/2) && s.days < maxPossible) : false; }).sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
-  var needsTier = data.filter(function(s) { return maxPossible ? (s.days > 0 && s.days < Math.ceil(maxPossible/2)) : false; }).sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
-  var absentTier = data.filter(function(s) { return s.days === 0; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
-
-  function renderTierRow(s, colorVar) {
-    var pct = Math.round((s.days/maxForBar)*100);
-    var row = '<div class="tier-row">';
-    row += '<div class="tier-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
-    row += '<div style="flex:1;min-width:0">';
-    row += '<div style="font-weight:700;font-size:14px">' + s.name + '</div>';
-    row += '<div class="tier-bar"><div class="tier-bar-fill" style="width:' + pct + '%;background:' + colorVar + '"></div></div>';
-    row += '</div>';
-    row += '<div class="tier-right"><div class="tier-days" style="color:' + colorVar + '">' + s.days + (maxPossible ? '/' + maxPossible : '') + '</div><div class="tier-sats">⚡ ' + s.sats + ' sats</div></div>';
-    row += '</div>';
-    return row;
-  }
-
-  if (maxPossible) {
-    if (perfectTier.length) {
-      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">🏆</span><span class="tier-title" style="color:var(--green)">Perfect Attendance</span><span class="tier-count">' + perfectTier.length + ' student' + (perfectTier.length!==1?'s':'') + '</span></div>';
-      tierHtml += '<div class="tier-card tier-perfect">' + perfectTier.map(function(s){ return renderTierRow(s, "var(--green)"); }).join('') + '</div></div>';
-    }
-    if (goodTier.length) {
-      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">👍</span><span class="tier-title" style="color:var(--orange)">Good Attendance</span><span class="tier-count">' + goodTier.length + ' student' + (goodTier.length!==1?'s':'') + '</span></div>';
-      tierHtml += '<div class="tier-card tier-good">' + goodTier.map(function(s){ return renderTierRow(s, "var(--orange)"); }).join('') + '</div></div>';
-    }
-    if (needsTier.length) {
-      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">⚠️</span><span class="tier-title" style="color:var(--red)">Needs Improvement</span><span class="tier-count">' + needsTier.length + ' student' + (needsTier.length!==1?'s':'') + '</span></div>';
-      tierHtml += '<div class="tier-card tier-needs">' + needsTier.map(function(s){ return renderTierRow(s, "var(--red)"); }).join('') + '</div></div>';
-    }
-    if (absentTier.length) {
-      tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">⬜</span><span class="tier-title" style="color:var(--text3)">No Attendance</span><span class="tier-count">' + absentTier.length + ' student' + (absentTier.length!==1?'s':'') + '</span></div>';
-      tierHtml += '<div class="tier-card">' + absentTier.map(function(s){ return renderTierRow(s, "var(--text3)"); }).join('') + '</div></div>';
-    }
-  } else {
-    // All Time mode — no fixed max, just sort by days descending, group isn't tier-based
-    var sortedAll = data.slice().sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
-    tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">📊</span><span class="tier-title">All Students — All Time</span><span class="tier-count">' + sortedAll.length + ' students</span></div>';
-    tierHtml += '<div class="tier-card">' + sortedAll.map(function(s){ return renderTierRow(s, "var(--orange)"); }).join('') + '</div></div>';
-  }
-
-  el.innerHTML = tierHtml;
+// ── Test Payment ────────────────────────────────────────────────
+function renderTest() {
+  var sel = document.getElementById("testStudent");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Choose student --</option>';
+  students.forEach(function(s) {
+    var opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  var res = document.getElementById("testResult");
+  var prev = document.getElementById("testDestPreview");
+  if (res) res.innerHTML = "";
+  if (prev) prev.textContent = "";
 }
 
+function previewTestDest() {
+  var id = document.getElementById("testStudent").value;
+  var s = students.find(function(x) { return x.id === id; });
+  document.getElementById("testDestPreview").textContent = s ? "Address: " + (s.destination || "none set") : "";
+}
 
+async function sendTestPayment() {
+  var id = document.getElementById("testStudent").value;
+  var amount = parseInt(document.getElementById("testAmount").value);
+  var result = document.getElementById("testResult");
+  if (!id) { result.innerHTML = '<div class="alert alert-err">Please select a student</div>'; return; }
+  if (!amount || amount < 1 || amount > 10) { result.innerHTML = '<div class="alert alert-err">Amount must be 1–10 sats</div>'; return; }
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s || !s.destination) { result.innerHTML = '<div class="alert alert-err">Student has no Lightning address</div>'; return; }
+  result.innerHTML = '<div class="alert alert-info">Sending ' + amount + ' sats to ' + s.name + '...</div>';
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: apiKey, destination: s.destination, amount: amount })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Payment failed");
+    result.innerHTML = '<div class="alert alert-ok">Test successful! Sent ' + amount + ' sats to ' + s.name + '</div>';
+  } catch(e) {
+    result.innerHTML = '<div class="alert alert-err">Test failed: ' + e.message + '</div>';
+  }
+}
 
->
+</script>
+</body>
+</html>
