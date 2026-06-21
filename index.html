@@ -1287,7 +1287,8 @@ async function loadAllClasses() {
     html += '<span class="badge badge-blue">' + presentToday + '/' + myStudents.length + ' today</span></div>';
     html += '<div class="teacher-stats">';
     html += '<div class="teacher-stat"><div class="teacher-stat-val">' + myStudents.length + '</div><div class="teacher-stat-label">Students</div></div>';
-    html += '<div class="teacher-stat"><div class="teacher-stat-val">' + totalDays + '</div><div class="teacher-stat-label">Days</div></div>';
+    var avgDaysClass = myStudents.length ? (totalDays/myStudents.length).toFixed(1) : '0';
+    html += '<div class="teacher-stat"><div class="teacher-stat-val">' + avgDaysClass + '</div><div class="teacher-stat-label">Avg Days</div></div>';
     html += '<div class="teacher-stat"><div class="teacher-stat-val">' + totalEarned + '</div><div class="teacher-stat-label">Earned</div></div>';
     html += '<div class="teacher-stat"><div class="teacher-stat-val">' + totalPaid + '</div><div class="teacher-stat-label">Paid</div></div></div>';
     if (myStudents.length) {
