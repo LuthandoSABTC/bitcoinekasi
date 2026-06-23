@@ -908,7 +908,11 @@ function go(name) {
   if (name === "classes")     loadAllClasses();
   if (name === "chapters")    loadAllChapters();
   if (name === "monthly")     renderMonthly();
-  if (name === "profiles")    renderProfiles();
+  if (name === "profiles") {
+    renderProfiles();
+    // If students not loaded yet, retry after they arrive
+    if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
+  }
   if (name === "test")        renderTest();
 }
 
