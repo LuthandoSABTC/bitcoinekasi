@@ -1032,7 +1032,11 @@ function go(name) {
   if (name === "roster")      renderRoster();
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
-  if (name === "profiles")    renderProfiles();
+  if (name === "profiles") {
+    renderProfiles();
+    // If students not loaded yet, retry after they arrive
+    if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
+  }
   if (name === "settings") {
     updateTeacherKeyBadge();
     document.getElementById("tSettingsMsg").innerHTML = "";
