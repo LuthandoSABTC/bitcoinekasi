@@ -305,6 +305,17 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .tier-right{text-align:right;flex-shrink:0}
 .tier-days{font-size:18px;font-weight:800;font-family:'DM Mono',monospace}
 .tier-sats{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
+
+/* Enhanced profile */
+.profile-stats-wide{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.profile-info-row{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;border-bottom:1px solid var(--border);font-size:13px}
+.profile-info-label{color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.profile-info-val{font-family:DM Mono,monospace;font-weight:600;color:var(--text)}
+.attendance-history{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
+.att-day-chip{background:var(--orange-glow);border:1px solid rgba(247,147,26,0.3);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--orange);font-family:DM Mono,monospace}
+
+.profile-grid-card { transition: border-color 0.2s; }
+.profile-grid-card:hover { border-color: rgba(247,147,26,0.5) !important; }
 </style>
 </head>
 <body>
@@ -349,6 +360,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <button class="nb" id="nb-roster" onclick="go('roster')"><span class="nb-icon">&#9825;</span>My Roster</button>
       <button class="nb" id="nb-chapters" onclick="go('chapters')"><span class="nb-icon">&#128218;</span>Chapters</button>
       <button class="nb" id="nb-monthly" onclick="go('monthly')"><span class="nb-icon">&#128200;</span>Monthly</button>
+      <button class="nb" id="nb-profiles" onclick="go('profiles')"><span class="nb-icon">&#128100;</span>Student Profiles</button>
       <div class="nav-section">System</div>
       <button class="nb" id="nb-settings" onclick="go('settings')"><span class="nb-icon">&#9881;</span>Settings</button>
       <button class="nb" id="nb-test" onclick="go('test')"><span class="nb-icon">&#9654;</span>Test Payment</button>
@@ -460,6 +472,15 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         <div id="monthlyContent"></div>
       </div>
 
+      <!-- STUDENT PROFILES -->
+      <div id="p-profiles" class="page">
+        <div class="section-header">
+          <div class="section-title">Student Profiles</div>
+          <div style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace">Click any student to view their full history</div>
+        </div>
+        <div id="profilesGrid"></div>
+      </div>
+
       <!-- SETTINGS -->
       <div id="p-settings" class="page">
         <div class="section-title" style="margin-bottom:16px">Settings</div>
@@ -539,25 +560,35 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
   <!-- Student Profile Modal -->
   <div id="profileModal" class="profile-modal" style="display:none" onclick="if(event.target===this)closeProfile()">
-    <div class="profile-box">
+    <div class="profile-box" style="max-width:760px">
       <div class="profile-head">
         <div class="profile-avatar-big" id="profileAvatar">?</div>
-        <div>
-          <div style="font-size:18px;font-weight:800" id="profileName">Student</div>
+        <div style="flex:1">
+          <div style="font-size:20px;font-weight:800" id="profileName">Student</div>
           <div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:3px" id="profileDest"></div>
+          <div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px" id="profileJoined"></div>
         </div>
         <div class="profile-close" onclick="closeProfile()">✕</div>
       </div>
-      <div class="profile-stats" id="profileStats"></div>
+      <!-- 4-stat grid -->
+      <div class="profile-stats-wide" id="profileStats"></div>
+      <!-- Info rows -->
+      <div id="profileInfoRows"></div>
+      <!-- Calendar -->
       <div class="profile-section">
         <div class="profile-section-title">Attendance Calendar</div>
         <div id="profileCalendar"></div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
           <div class="contrib-day present"></div><span style="font-size:11px;color:var(--text3)">Present</span>
           <div class="contrib-day empty" style="margin-left:8px"></div><span style="font-size:11px;color:var(--text3)">Absent</span>
-          <div class="contrib-day noclass" style="margin-left:8px"></div><span style="font-size:11px;color:var(--text3)">No class</span>
         </div>
       </div>
+      <!-- Full attendance history -->
+      <div class="profile-section">
+        <div class="profile-section-title">All Sessions Attended</div>
+        <div id="profileAllDays"></div>
+      </div>
+      <!-- Weekly breakdown -->
       <div class="profile-section">
         <div class="profile-section-title">Weekly Breakdown</div>
         <div id="profileWeekly"></div>
@@ -874,6 +905,7 @@ var pageTitles = {
   roster:      ["My Roster","Manage enrolled students"],
   chapters:    ["Chapters","Bitcoin Diploma chapter log"],
   monthly:     ["Monthly Overview","Attendance trends across weeks"],
+  profiles:    ["Student Profiles","Individual attendance history and earnings"],
   settings:    ["Settings","Configure API key"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
@@ -895,6 +927,7 @@ function go(name) {
   if (name === "roster")      renderRoster();
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
+  if (name === "profiles")    renderProfiles();
   if (name === "test")        { setTimeout(renderTest, 100); }
   if (name === "settings") {
     updateTeacherKeyBadge();
@@ -1630,25 +1663,68 @@ function openProfile(studentId) {
   var totalSats = totalDays * SATS + (s.bonus || 0);
   var paid = s.paid || 0;
   var owed = Math.max(0, totalSats - paid);
-
-  // Attendance rate this week
-  var r = getClassWeekRange(0);
   var weekAtt = filterAttByWeek(s.att, 0, "week");
   var weekDays = Object.keys(weekAtt).length;
+
+  // Start date = earliest attendance record, or enrollment date
+  var startDate = allDays.length > 0 ? allDays[0] : null;
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  function fmtDate(d) {
+    if (!d) return "—";
+    var dt = new Date(d + "T00:00:00");
+    return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
+  }
+
+  // Days since program started
+  var daysSinceStart = 0;
+  if (startDate) {
+    var start = new Date(startDate + "T00:00:00");
+    var now = new Date();
+    daysSinceStart = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  }
+
+  // Attendance rate overall
+  var attendanceRate = daysSinceStart > 0
+    ? Math.round((totalDays / Math.ceil(daysSinceStart * 4 / 7)) * 100)
+    : 0;
+  attendanceRate = Math.min(attendanceRate, 100);
 
   document.getElementById("profileAvatar").textContent = s.name.charAt(0).toUpperCase();
   document.getElementById("profileName").textContent = s.name;
   document.getElementById("profileDest").textContent = s.destination || "No Lightning address";
+  document.getElementById("profileJoined").textContent = startDate ? "Started: " + fmtDate(startDate) : "No attendance recorded yet";
 
+  // 4-stat grid
   document.getElementById("profileStats").innerHTML =
-    '<div class="profile-stat"><div class="profile-stat-val">' + totalDays + '</div><div class="profile-stat-label">Total Days</div></div>' +
+    '<div class="profile-stat"><div class="profile-stat-val">' + totalDays + '</div><div class="profile-stat-label">Sessions</div></div>' +
     '<div class="profile-stat"><div class="profile-stat-val">⚡' + totalSats + '</div><div class="profile-stat-label">Sats Earned</div></div>' +
+    '<div class="profile-stat"><div class="profile-stat-val">⚡' + paid + '</div><div class="profile-stat-label">Sats Paid</div></div>' +
     '<div class="profile-stat"><div class="profile-stat-val">' + weekDays + '/4</div><div class="profile-stat-label">This Week</div></div>';
 
-  // Build contribution graph — last 8 weeks (Tue-Fri only)
-  buildContribGraph(s);
+  // Info rows
+  document.getElementById("profileInfoRows").innerHTML =
+    '<div class="profile-info-row"><span class="profile-info-label">Program Start Date</span><span class="profile-info-val">' + fmtDate(startDate) + '</span></div>' +
+    '<div class="profile-info-row"><span class="profile-info-label">Last Attended</span><span class="profile-info-val">' + (allDays.length ? fmtDate(allDays[allDays.length-1]) : "—") + '</span></div>' +
+    '<div class="profile-info-row"><span class="profile-info-label">Bonus Sats</span><span class="profile-info-val" style="color:#ffd700">+' + (s.bonus||0) + '</span></div>' +
+    '<div class="profile-info-row"><span class="profile-info-label">Sats Still Owed</span><span class="profile-info-val" style="color:' + (owed>0?"var(--orange)":"var(--green)") + '">⚡' + owed + '</span></div>';
 
-  // Weekly breakdown
+  // All sessions attended — chips
+  var allDaysEl = document.getElementById("profileAllDays");
+  if (allDays.length) {
+    var chipsHtml = '<div class="attendance-history">';
+    allDays.forEach(function(d) {
+      var dt = new Date(d + "T00:00:00");
+      var dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      chipsHtml += '<div class="att-day-chip">' + dayNames[dt.getDay()] + " " + dt.getDate() + " " + months[dt.getMonth()] + "</div>";
+    });
+    chipsHtml += "</div>";
+    allDaysEl.innerHTML = chipsHtml;
+  } else {
+    allDaysEl.innerHTML = "<div style=\"color:var(--text3);font-size:13px\">No sessions recorded yet.</div>";
+  }
+
+  buildContribGraph(s);
   buildWeeklyBreakdown(s);
 
   document.getElementById("profileModal").style.display = "flex";
@@ -2078,6 +2154,54 @@ function generateHighlightsPDF() {
   doc.save(filename);
 }
 
+
+// ── Student Profiles Page ─────────────────────────────────────
+function renderProfiles() {
+  var el = document.getElementById("profilesGrid");
+  if (!el) return;
+  if (!students.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>';
+    return;
+  }
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">';
+  students.forEach(function(s) {
+    var allDays = Object.keys(s.att || {}).sort();
+    var totalDays = allDays.length;
+    var totalSats = totalDays * SATS + (s.bonus || 0);
+    var paid = s.paid || 0;
+    var owed = Math.max(0, totalSats - paid);
+    var startDate = allDays.length > 0 ? allDays[0] : null;
+    var lastDate = allDays.length > 0 ? allDays[allDays.length-1] : null;
+    var weekDays = Object.keys(filterAttByWeek(s.att, 0, "week")).length;
+
+    function fmtShort(d) {
+      if (!d) return "—";
+      var dt = new Date(d + "T00:00:00");
+      return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
+    }
+
+    var sid2 = s.id;
+    html += '<div class="card profile-grid-card" style="cursor:pointer" onclick="openProfile(this.dataset.id)" data-id="' + sid2 + '">';
+    html += '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">';
+    html += '<div style="width:48px;height:48px;border-radius:50%;background:var(--orange-glow);border:2px solid rgba(247,147,26,0.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:var(--orange);flex-shrink:0">' + s.name.charAt(0).toUpperCase() + '</div>';
+    html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
+    html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.destination || "No address") + '</div></div>';
+    html += '<div style="font-size:10px;color:var(--orange);font-weight:700">↗ View</div></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)">';
+    html += '<div style="background:var(--bg2);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace">' + totalDays + '</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px">Sessions</div></div>';
+    html += '<div style="background:var(--bg2);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace">⚡' + totalSats + '</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px">Earned</div></div>';
+    html += '<div style="background:var(--bg2);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:' + (owed>0?"var(--orange)":"var(--green)") + ';font-family:DM Mono,monospace">⚡' + owed + '</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:3px">Owed</div></div>';
+    html += '</div>';
+    html += '<div style="padding:12px 20px;display:flex;flex-direction:column;gap:6px">';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">Started</span><span style="font-family:DM Mono,monospace;font-weight:600">' + fmtShort(startDate) + '</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">Last Attended</span><span style="font-family:DM Mono,monospace;font-weight:600">' + fmtShort(lastDate) + '</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">This Week</span><span style="font-family:DM Mono,monospace;font-weight:600;color:var(--orange)">' + weekDays + '/4 days</span></div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
 </script>
 </body>
 </html>
