@@ -956,7 +956,7 @@ function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); chec
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
-  var owed = students.reduce(function(a, s) { return a + Math.max(0, Object.keys(s.att||{}).length*SATS-(s.paid||0)); }, 0);
+  var owed = students.reduce(function(a, s) { return a + Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)); }, 0);
   document.getElementById("sStudents").textContent = students.length;
   document.getElementById("sToday").textContent = present + "/" + students.length;
   document.getElementById("sOwed").textContent = owed;
