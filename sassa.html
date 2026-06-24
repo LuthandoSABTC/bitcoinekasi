@@ -596,7 +596,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         <div class="card" style="padding:20px;margin-bottom:16px">
           <div style="font-size:15px;font-weight:700;margin-bottom:16px">Add Shack Owner</div>
           <div class="inp-group"><label class="inp-label">Owner Name</label><input class="inp" id="shackName" placeholder="Full name"></div>
-          <div class="inp-group"><label class="inp-label">Shack Number</label><input class="inp" id="shackNumber" placeholder="e.g. S-001"></div>
+          <div class="inp-group"><label class="inp-label">Sponsor Name</label><input class="inp" id="shackSponsor" placeholder="e.g. Fedi, Blockstream"></div>
           <div class="inp-group"><label class="inp-label">Lightning Address (Blink)</label><input class="inp" id="shackDest" placeholder="name@blink.sv"></div>
           <div id="shackRosterErr"></div>
           <button class="btn btn-primary" style="width:100%;padding:12px;background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="addShackOwner()">+ Add Shack Owner</button>
@@ -2573,7 +2573,7 @@ function getMonthLabel() {
 }
 
 async function loadShacks() {
-  var raw = await sb("GET","shack_owners",null,"?order=shack_number.asc");
+  var raw = await sb("GET","shack_owners",null,"?order=sponsor_name.asc");
   if (!raw) { shackOwners = []; renderShacks(); return; }
   var ids = raw.map(function(s) { return s.id; });
   var month = getCurrentMonth();
@@ -2616,7 +2616,7 @@ function renderShacks() {
   var html = "";
   shackOwners.forEach(function(s) {
     html += '<div class="shack-card">';
-    html += '<div class="shack-avatar">' + s.shack_number + '</div>';
+    html += '<div class="shack-avatar" style="font-size:10px;letter-spacing:0px">' + (s.sponsor_name ? s.sponsor_name.slice(0,6) : '?') + '</div>';
     html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
     html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.destination + '</div>';
     html += '<div style="font-size:11px;color:var(--text3);margin-top:3px">Total paid: ' + (s.paid_months||0) + ' month' + ((s.paid_months||0)!==1?'s':'') + '</div></div>';
@@ -2666,7 +2666,7 @@ function renderShackPayouts() {
     else action = '<span class="badge badge-gray">Not active</span>';
     html += '<div class="shack-payout-row">';
     html += '<div><div style="font-weight:600">' + s.name + '</div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">' + s.destination + '</div></div>';
-    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:#a855f7">' + s.shack_number + '</div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:#a855f7;font-size:12px">' + (s.sponsor_name||'—') + '</div>';
     html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:' + (s.checkedIn?"#a855f7":"var(--text3)") + '">' + (s.checkedIn?"⚡"+SHACK_SATS.toLocaleString():"—") + '</div>';
     html += '<div style="text-align:right;font-family:DM Mono,monospace;color:var(--green)">' + (s.paid_months||0) + ' months</div>';
     html += '<div style="text-align:right">' + action + '</div></div>';
@@ -2719,7 +2719,7 @@ function renderShackRoster() {
   var html = '<div class="card">';
   shackOwners.forEach(function(s) {
     html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">';
-    html += '<div class="shack-avatar">' + s.shack_number + '</div>';
+    html += '<div class="shack-avatar" style="font-size:10px;letter-spacing:0px">' + (s.sponsor_name ? s.sponsor_name.slice(0,6) : '?') + '</div>';
     html += '<div style="flex:1;min-width:0"><div style="font-weight:700">' + s.name + '</div>';
     html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.destination + '</div></div>';
     html += '<div style="text-align:right;flex-shrink:0">';
@@ -2732,18 +2732,18 @@ function renderShackRoster() {
 
 async function addShackOwner() {
   var name = document.getElementById("shackName").value.trim();
-  var number = document.getElementById("shackNumber").value.trim();
+  var number = document.getElementById("shackSponsor").value.trim();
   var dest = document.getElementById("shackDest").value.trim();
   var errEl = document.getElementById("shackRosterErr");
   if (!name) { errEl.innerHTML = '<div class="alert alert-err">Name is required</div>'; return; }
   if (!number) { errEl.innerHTML = '<div class="alert alert-err">Shack number is required</div>'; return; }
   if (!dest) { errEl.innerHTML = '<div class="alert alert-err">Lightning address is required</div>'; return; }
   errEl.innerHTML = '<div class="alert alert-info">Adding...</div>';
-  var result = await sb("POST","shack_owners",{ name: name, shack_number: number, destination: dest });
+  var result = await sb("POST","shack_owners",{ name: name, sponsor_name: number, destination: dest });
   if (result) {
     errEl.innerHTML = '<div class="alert alert-ok">✓ Added ' + name + '!</div>';
     document.getElementById("shackName").value = "";
-    document.getElementById("shackNumber").value = "";
+    document.getElementById("shackSponsor").value = "";
     document.getElementById("shackDest").value = "";
     await loadShacks();
     setTimeout(function() { errEl.innerHTML = ""; }, 2000);
