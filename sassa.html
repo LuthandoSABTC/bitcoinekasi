@@ -316,6 +316,16 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
 .profile-grid-card { transition: border-color 0.2s; }
 .profile-grid-card:hover { border-color: rgba(247,147,26,0.5) !important; }
+
+/* Staff section */
+.staff-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius,14px);padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.staff-avatar{width:44px;height:44px;border-radius:50%;background:rgba(59,130,246,0.15);border:2px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#3b82f6;flex-shrink:0}
+.staff-hours-input{width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:14px;font-weight:700;font-family:DM Mono,monospace;text-align:center;outline:none;transition:border-color 0.2s}
+.staff-hours-input:focus{border-color:#3b82f6}
+.badge-blue{background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace}
+.staff-payout-row{display:grid;grid-template-columns:1fr 90px 90px 90px 140px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;font-size:13px}
+.staff-payout-row:last-child{border-bottom:none}
+.staff-payout-row:hover{background:var(--bg3)}
 </style>
 </head>
 <body>
@@ -361,6 +371,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <button class="nb" id="nb-chapters" onclick="go('chapters')"><span class="nb-icon">&#128218;</span>Chapters</button>
       <button class="nb" id="nb-monthly" onclick="go('monthly')"><span class="nb-icon">&#128200;</span>Monthly</button>
       <button class="nb" id="nb-profiles" onclick="go('profiles')"><span class="nb-icon">&#128100;</span>Student Profiles</button>
+      <button class="nb" id="nb-staff" onclick="go('staff')"><span class="nb-icon">&#128105;</span>Staff</button>
       <div class="nav-section">System</div>
       <button class="nb" id="nb-settings" onclick="go('settings')"><span class="nb-icon">&#9881;</span>Settings</button>
       <button class="nb" id="nb-test" onclick="go('test')"><span class="nb-icon">&#9654;</span>Test Payment</button>
@@ -479,6 +490,56 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
           <div style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace">Click any student to view their full history</div>
         </div>
         <div id="profilesGrid"></div>
+      </div>
+
+      <!-- STAFF -->
+      <div id="p-staff" class="page">
+        <div class="section-header">
+          <div class="section-title">Teaching Assistants</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="go('staff-payouts')">⚡ Staff Payouts</button>
+            <button class="btn btn-outline btn-sm" onclick="go('staff-roster')">+ Manage Staff</button>
+          </div>
+        </div>
+        <div id="staffDateLabel" style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace;margin-bottom:14px"></div>
+        <div id="staffAlert"></div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:700;margin-bottom:16px" onclick="markAllStaffHours()">✓ Mark All Staff Present (Enter Hours)</button>
+        <div id="staffList"></div>
+      </div>
+
+      <!-- STAFF PAYOUTS -->
+      <div id="p-staff-payouts" class="page">
+        <div class="section-header">
+          <div class="section-title">Staff Payouts</div>
+          <button class="btn btn-primary btn-sm" onclick="payAllStaff()">⚡ Pay All Outstanding</button>
+        </div>
+        <div id="staffPayAlert" style="margin-bottom:12px"></div>
+        <div class="card">
+          <div class="staff-payout-row" style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace;background:var(--bg3)">
+            <div>Staff Member</div>
+            <div style="text-align:right">Hours</div>
+            <div style="text-align:right">Earned</div>
+            <div style="text-align:right">Paid</div>
+            <div style="text-align:right">Action</div>
+          </div>
+          <div id="staffPayoutList"></div>
+        </div>
+      </div>
+
+      <!-- STAFF ROSTER -->
+      <div id="p-staff-roster" class="page">
+        <div class="section-header">
+          <div class="section-title">Manage Staff</div>
+        </div>
+        <div class="card" style="padding:20px;margin-bottom:16px">
+          <div style="font-size:15px;font-weight:700;margin-bottom:16px">Add Staff Member</div>
+          <div class="inp-group"><label class="inp-label">Full Name</label><input class="inp" id="staffName" placeholder="Staff member name"></div>
+          <div class="inp-group"><label class="inp-label">Role</label><input class="inp" id="staffRole" placeholder="Teaching Assistant" value="Teaching Assistant"></div>
+          <div class="inp-group"><label class="inp-label">Lightning Address (Blink)</label><input class="inp" id="staffDest" placeholder="name@blink.sv"></div>
+          <div id="staffRosterErr"></div>
+          <button class="btn btn-primary" style="width:100%;padding:12px" onclick="addStaff()">+ Add Staff Member</button>
+        </div>
+        <div id="staffRosterList"></div>
       </div>
 
       <!-- SETTINGS -->
@@ -906,6 +967,9 @@ var pageTitles = {
   chapters:    ["Chapters","Bitcoin Diploma chapter log"],
   monthly:     ["Monthly Overview","Attendance trends across weeks"],
   profiles:    ["Student Profiles","Individual attendance history and earnings"],
+  staff:       ["Staff","Teaching assistant attendance and payments"],
+  "staff-payouts": ["Staff Payouts","Pay teaching assistants"],
+  "staff-roster":  ["Staff Roster","Manage teaching assistants"],
   settings:    ["Settings","Configure API key"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
@@ -927,7 +991,7 @@ function go(name) {
   if (name === "roster")      renderRoster();
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
-  if (name === "profiles") {
+  if (name === "profiles","staff","staff-payouts","staff-roster") {
     renderProfiles();
     // If students not loaded yet, retry after they arrive
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
@@ -963,7 +1027,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -2206,6 +2270,223 @@ function renderProfiles() {
   html += '</div>';
   el.innerHTML = html;
 }
+
+// ══════════════════════════════════════════════════════════════
+// STAFF MANAGEMENT — 1300 sats/hour, Mon-Fri
+// ══════════════════════════════════════════════════════════════
+const STAFF_SATS_PER_HOUR = 1300;
+var staffMembers = [];
+var staffPayStatus = {};
+
+function isStaffDay() {
+  var day = new Date().getDay();
+  return day >= 1 && day <= 5; // Mon-Fri
+}
+
+async function loadStaff() {
+  var raw = await sb("GET","staff",null,"?order=created_at.asc");
+  if (!raw) { staffMembers = []; renderStaff(); return; }
+  var ids = raw.map(function(s) { return s.id; });
+  var attRaw = ids.length ? await sb("GET","staff_attendance",null,"?staff_id=in.(" + ids.join(",") + ")") : [];
+  staffMembers = raw.map(function(s) {
+    var att = {};
+    (attRaw||[]).filter(function(a) { return a.staff_id === s.id; }).forEach(function(a) {
+      att[a.date] = parseFloat(a.hours) || 1;
+    });
+    return Object.assign({}, s, { att: att });
+  });
+  renderStaff();
+  renderStaffPayouts();
+  renderStaffRoster();
+}
+
+function renderStaff() {
+  var el = document.getElementById("staffList");
+  var dateEl = document.getElementById("staffDateLabel");
+  if (!el) return;
+  var today = new Date();
+  var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  if (dateEl) dateEl.textContent = days[today.getDay()] + ", " + today.getDate() + " " + months[today.getMonth()] + " " + today.getFullYear();
+
+  if (!staffMembers.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No staff added yet</div><div class="empty-sub">Go to Manage Staff to add teaching assistants</div></div>';
+    return;
+  }
+
+  var todayStr = today.toISOString().split("T")[0];
+  var workDay = isStaffDay();
+  var html = "";
+  staffMembers.forEach(function(s) {
+    var todayHours = s.att[todayStr] || 0;
+    var totalHours = Object.values(s.att).reduce(function(a,b){ return a+b; }, 0);
+    var totalEarned = Math.round(totalHours * STAFF_SATS_PER_HOUR);
+    html += '<div class="staff-card">';
+    html += '<div class="staff-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
+    html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
+    html += '<div style="font-size:11px;color:#3b82f6;margin-top:2px">' + s.role + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px">' + totalHours.toFixed(1) + ' hrs total · ⚡' + totalEarned + ' earned</div></div>';
+    if (workDay) {
+      var sid3 = s.id;
+      html += '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">';
+      html += '<div style="font-size:10px;color:var(--text3);text-align:center">Hours today</div>';
+      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (todayHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onchange="saveStaffHours(this.dataset.staffid)" onblur="saveStaffHours(this.dataset.staffid)">';
+      html += '<div style="font-size:9px;color:var(--text3)">⚡' + Math.round((todayHours||0)*STAFF_SATS_PER_HOUR) + ' sats</div></div>';
+    } else {
+      html += '<span class="badge badge-gray" style="opacity:0.4">NOT A WORK DAY</span>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function saveStaffHours(staffId) {
+  var input = document.getElementById("staff-hrs-" + staffId);
+  if (!input) return;
+  var hours = parseFloat(input.value);
+  if (isNaN(hours) || hours < 0) return;
+  var todayStr = new Date().toISOString().split("T")[0];
+  var s = staffMembers.find(function(x) { return x.id === staffId; });
+  if (!s) return;
+
+  var existing = await sb("GET","staff_attendance",null,"?staff_id=eq." + staffId + "&date=eq." + todayStr);
+  if (hours === 0) {
+    if (existing && existing.length) {
+      await sb("DELETE","staff_attendance",null,"?staff_id=eq." + staffId + "&date=eq." + todayStr);
+    }
+  } else if (existing && existing.length) {
+    await sb("PATCH","staff_attendance",{ hours: hours },"?staff_id=eq." + staffId + "&date=eq." + todayStr);
+  } else {
+    await sb("POST","staff_attendance",{ staff_id: staffId, date: todayStr, hours: hours });
+  }
+  input.style.borderColor = "#22c55e";
+  setTimeout(function() { input.style.borderColor = ""; loadStaff(); }, 800);
+}
+
+function markAllStaffHours() {
+  var hours = prompt("Enter hours worked today for ALL staff members:", "6");
+  if (!hours || isNaN(parseFloat(hours))) return;
+  var h = parseFloat(hours);
+  staffMembers.forEach(function(s) {
+    var input = document.getElementById("staff-hrs-" + s.id);
+    if (input) { input.value = h; saveStaffHours(s.id); }
+  });
+}
+
+function renderStaffPayouts() {
+  var el = document.getElementById("staffPayoutList");
+  if (!el) return;
+  if (!staffMembers.length) { el.innerHTML = '<div class="empty" style="padding:24px"><div class="empty-title">No staff added yet</div></div>'; return; }
+  var html = "";
+  staffMembers.forEach(function(s) {
+    var totalHours = Object.values(s.att).reduce(function(a,b){ return a+b; }, 0);
+    var totalEarned = Math.round(totalHours * STAFF_SATS_PER_HOUR);
+    var paid = s.paid || 0;
+    var owed = Math.max(0, totalEarned - paid);
+    var ps = staffPayStatus[s.id];
+    var action = "";
+    if (ps === "loading") action = '<span class="badge badge-orange"><span class="spinner"></span> Sending</span>';
+    else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
+    else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px">' + ps.slice(4).slice(0,30) + '</span>';
+    else if (owed > 0) { var staffOwed2 = owed; var staffId2 = s.id; action = '<button class="btn btn-green btn-sm" onclick="payStaffSingle(this.dataset.sid,this.dataset.owed|0)" data-sid="' + staffId2 + '" data-owed="' + staffOwed2 + '">Pay ' + staffOwed2 + '</button>'; }
+    else action = '<span class="badge badge-green">All paid</span>';
+    html += '<div class="staff-payout-row">';
+    html += '<div><div style="font-weight:600">' + s.name + '</div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace">' + s.role + ' · ' + s.destination + '</div></div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:#3b82f6">' + totalHours.toFixed(1) + 'h</div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:var(--orange)">' + totalEarned + '</div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:var(--green)">' + paid + '</div>';
+    html += '<div style="text-align:right">' + action + '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function payStaffSingle(staffId, owed) {
+  var s = staffMembers.find(function(x) { return x.id === staffId; });
+  if (!s) return;
+  staffPayStatus[staffId] = "loading"; renderStaffPayouts();
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var key = localStorage.getItem("ek_key") || "";
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: key, destination: s.destination, amount: owed })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed");
+    await sb("PATCH","staff",{ paid: (s.paid||0)+owed },"?id=eq." + staffId);
+    staffPayStatus[staffId] = "ok:Sent ⚡" + owed;
+    await loadStaff();
+  } catch(e) { staffPayStatus[staffId] = "err:" + e.message; }
+  renderStaffPayouts();
+}
+
+async function payAllStaff() {
+  var owing = staffMembers.filter(function(s) {
+    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
+    return Math.max(0, totalEarned - (s.paid||0)) > 0;
+  });
+  if (!owing.length) {
+    document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff are fully paid up!</div>';
+    return;
+  }
+  for (var i = 0; i < owing.length; i++) {
+    var s = owing[i];
+    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
+    var owed = Math.max(0, totalEarned - (s.paid||0));
+    await payStaffSingle(s.id, owed);
+    await new Promise(function(r) { setTimeout(r, 500); });
+  }
+  document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff payments sent!</div>';
+  setTimeout(function() { document.getElementById("staffPayAlert").innerHTML = ""; }, 4000);
+}
+
+function renderStaffRoster() {
+  var el = document.getElementById("staffRosterList");
+  if (!el) return;
+  if (!staffMembers.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No staff yet</div></div>'; return; }
+  var html = '<div class="card">';
+  staffMembers.forEach(function(s) {
+    var totalHours = Object.values(s.att).reduce(function(a,b){ return a+b; }, 0);
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">';
+    html += '<div class="staff-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
+    html += '<div style="flex:1"><div style="font-weight:700">' + s.name + '</div>';
+    html += '<div style="font-size:11px;color:#3b82f6">' + s.role + '</div>';
+    html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px">' + s.destination + '</div></div>';
+    html += '<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:#3b82f6;font-family:DM Mono,monospace">' + totalHours.toFixed(1) + ' hrs</div>';
+    html += '<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="deleteStaff(\'' + s.id + '\')" >Remove</button></div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function addStaff() {
+  var name = document.getElementById("staffName").value.trim();
+  var role = document.getElementById("staffRole").value.trim() || "Teaching Assistant";
+  var dest = document.getElementById("staffDest").value.trim();
+  var errEl = document.getElementById("staffRosterErr");
+  if (!name) { errEl.innerHTML = '<div class="alert alert-err">Name is required</div>'; return; }
+  if (!dest) { errEl.innerHTML = '<div class="alert alert-err">Lightning address is required</div>'; return; }
+  errEl.innerHTML = '<div class="alert alert-info">Adding...</div>';
+  var result = await sb("POST","staff",{ name: name, role: role, destination: dest });
+  if (result) {
+    errEl.innerHTML = '<div class="alert alert-ok">✓ Added ' + name + '!</div>';
+    document.getElementById("staffName").value = "";
+    document.getElementById("staffDest").value = "";
+    await loadStaff();
+    setTimeout(function() { errEl.innerHTML = ""; }, 2000);
+  } else {
+    errEl.innerHTML = '<div class="alert alert-err">Failed to add staff. Try again.</div>';
+  }
+}
+
+async function deleteStaff(staffId) {
+  if (!confirm("Remove this staff member? Their attendance history will be deleted.")) return;
+  await sb("DELETE","staff",null,"?id=eq." + staffId);
+  await loadStaff();
+}
+
 </script>
 </body>
 </html>
