@@ -957,7 +957,7 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["attend","payout","stats","leaderboard","roster","chapters","monthly","settings","test"];
+var pages = ["attend","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster"];
 var pageTitles = {
   attend:      ["Attendance","Mark today's class"],
   payout:      ["Payouts","Send Lightning payments to students"],
@@ -2226,9 +2226,10 @@ function generateHighlightsPDF() {
 // ── Student Profiles Page ─────────────────────────────────────
 function renderProfiles() {
   var el = document.getElementById("profilesGrid");
-  if (!el) return;
+  if (!el) { setTimeout(renderProfiles, 500); return; }
   if (!students.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>';
+    el.innerHTML = '<div class="empty"><div class="empty-title"><span class="spinner"></span> Loading students...</div></div>';
+    setTimeout(renderProfiles, 800);
     return;
   }
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2303,7 +2304,7 @@ async function loadStaff() {
 function renderStaff() {
   var el = document.getElementById("staffList");
   var dateEl = document.getElementById("staffDateLabel");
-  if (!el) return;
+  if (!el) { setTimeout(renderStaff, 500); return; }
   var today = new Date();
   var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
