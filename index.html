@@ -949,7 +949,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
