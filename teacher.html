@@ -1098,7 +1098,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -2790,6 +2790,72 @@ async function deleteShackOwner(shackId) {
   if (!confirm("Remove this shack owner?")) return;
   await sb("DELETE","shack_owners",null,"?id=eq." + shackId);
   await loadShacks();
+}
+
+
+// ── Staff Pay Day Reminder (Fridays) ──────────────────────────
+function checkStaffPayDay() {
+  var day = new Date().getDay();
+  if (day !== 5) return; // Only Fridays
+  var shown = sessionStorage.getItem("staff_reminder_" + TODAY);
+  if (shown) return;
+  sessionStorage.setItem("staff_reminder_" + TODAY, "1");
+  setTimeout(showStaffPayReminder, 2000);
+}
+
+function showStaffPayReminder() {
+  if (!staffMembers.length) return;
+  var totalOwed = staffMembers.reduce(function(a, s) {
+    var totalEarned = Math.round(Object.values(s.att).reduce(function(x,y){ return x+y; }, 0) * STAFF_SATS_PER_HOUR);
+    return a + Math.max(0, totalEarned - (s.paid||0));
+  }, 0);
+  if (totalOwed === 0) return;
+
+  var modal = document.createElement("div");
+  modal.id = "staffReminderModal";
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)";
+
+  var box = document.createElement("div");
+  box.style.cssText = "background:var(--bg2);border:1px solid rgba(59,130,246,0.4);border-radius:20px;width:100%;max-width:480px;padding:32px;text-align:center";
+
+  var icon = document.createElement("div");
+  icon.style.cssText = "font-size:40px;margin-bottom:12px";
+  icon.textContent = "💸";
+
+  var title = document.createElement("div");
+  title.style.cssText = "font-size:22px;font-weight:800;margin-bottom:6px";
+  title.textContent = "Staff Pay Day!";
+
+  var subtitle = document.createElement("div");
+  subtitle.style.cssText = "font-size:13px;color:var(--text2);font-family:DM Mono,monospace;margin-bottom:24px";
+  subtitle.textContent = "Friday — time to pay your teaching assistants";
+
+  var amtBox = document.createElement("div");
+  amtBox.style.cssText = "background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px";
+  amtBox.innerHTML = "<div style='font-size:32px;font-weight:800;color:#3b82f6;font-family:DM Mono,monospace'>⚡" + totalOwed.toLocaleString() + "</div><div style='font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px'>Total Owed to " + staffMembers.length + " Staff</div>";
+
+  var btnRow = document.createElement("div");
+  btnRow.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px";
+
+  var payBtn = document.createElement("button");
+  payBtn.style.cssText = "padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:Syne,sans-serif;cursor:pointer";
+  payBtn.textContent = "⚡ Pay Staff Now";
+  payBtn.onclick = function() { modal.remove(); go("staff-payouts"); };
+
+  var dismissBtn = document.createElement("button");
+  dismissBtn.style.cssText = "padding:14px;background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;font-size:14px;font-weight:700;font-family:Syne,sans-serif;cursor:pointer";
+  dismissBtn.textContent = "Remind Me Later";
+  dismissBtn.onclick = function() { modal.remove(); };
+
+  btnRow.appendChild(payBtn);
+  btnRow.appendChild(dismissBtn);
+  box.appendChild(icon);
+  box.appendChild(title);
+  box.appendChild(subtitle);
+  box.appendChild(amtBox);
+  box.appendChild(btnRow);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
 }
 
 </script>
