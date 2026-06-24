@@ -326,6 +326,16 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .staff-payout-row{display:grid;grid-template-columns:1fr 90px 90px 90px 140px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;font-size:13px}
 .staff-payout-row:last-child{border-bottom:none}
 .staff-payout-row:hover{background:var(--bg3)}
+
+/* Painted Shacks */
+.shack-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:border-color 0.2s}
+.shack-avatar{width:44px;height:44px;border-radius:8px;background:rgba(168,85,247,0.15);border:2px solid rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#a855f7;flex-shrink:0;font-family:DM Mono,monospace}
+.shack-checkin-btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Syne,sans-serif;border:none;transition:all 0.2s}
+.shack-checkin-btn.checked{background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.3)}
+.shack-checkin-btn.unchecked{background:var(--bg4);color:var(--text3);border:1px solid var(--border2)}
+.shack-payout-row{display:grid;grid-template-columns:1fr 80px 100px 100px 140px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border);gap:12px;font-size:13px}
+.shack-payout-row:last-child{border-bottom:none}
+.shack-payout-row:hover{background:var(--bg3)}
 </style>
 </head>
 <body>
@@ -372,6 +382,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <button class="nb" id="nb-monthly" onclick="go('monthly')"><span class="nb-icon">&#128200;</span>Monthly</button>
       <button class="nb" id="nb-profiles" onclick="go('profiles')"><span class="nb-icon">&#128100;</span>Student Profiles</button>
       <button class="nb" id="nb-staff" onclick="go('staff')"><span class="nb-icon">&#128105;</span>Staff</button>
+      <button class="nb" id="nb-shacks" onclick="go('shacks')" style="color:#a855f7"><span class="nb-icon">&#127968;</span>Painted Shacks</button>
       <div class="nav-section">System</div>
       <button class="nb" id="nb-settings" onclick="go('settings')"><span class="nb-icon">&#9881;</span>Settings</button>
       <button class="nb" id="nb-test" onclick="go('test')"><span class="nb-icon">&#9654;</span>Test Payment</button>
@@ -540,6 +551,57 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
           <button class="btn btn-primary" style="width:100%;padding:12px" onclick="addStaff()">+ Add Staff Member</button>
         </div>
         <div id="staffRosterList"></div>
+      </div>
+
+      <!-- PAINTED SHACKS -->
+      <div id="p-shacks" class="page">
+        <div class="section-header">
+          <div class="section-title">🏠 Painted Shacks</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="go('shacks-payouts')">⚡ Pay Monthly</button>
+            <button class="btn btn-outline btn-sm" onclick="go('shacks-roster')">+ Manage</button>
+          </div>
+        </div>
+        <div id="shackMonthLabel" style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace;margin-bottom:8px"></div>
+        <div id="shackSummaryStrip" style="margin-bottom:16px"></div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:700;margin-bottom:16px;background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="checkInAllShacks()">✓ Mark All Active This Month</button>
+        <div id="shackList"></div>
+      </div>
+
+      <!-- SHACK PAYOUTS -->
+      <div id="p-shacks-payouts" class="page">
+        <div class="section-header">
+          <div class="section-title">🏠 Shack Owner Payouts</div>
+          <button class="btn btn-primary btn-sm" style="background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="payAllShacks()">⚡ Pay All Active This Month</button>
+        </div>
+        <div id="shackPayAlert" style="margin-bottom:12px"></div>
+        <div class="card">
+          <div class="shack-payout-row" style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace;background:var(--bg3)">
+            <div>Shack Owner</div>
+            <div style="text-align:right">Shack #</div>
+            <div style="text-align:right">This Month</div>
+            <div style="text-align:right">Total Paid</div>
+            <div style="text-align:right">Action</div>
+          </div>
+          <div id="shackPayoutList"></div>
+        </div>
+      </div>
+
+      <!-- SHACK ROSTER -->
+      <div id="p-shacks-roster" class="page">
+        <div class="section-header">
+          <div class="section-title">🏠 Manage Shack Owners</div>
+          <div style="font-size:12px;color:var(--text3);font-family:DM Mono,monospace" id="shackCount">0 / 41 added</div>
+        </div>
+        <div class="card" style="padding:20px;margin-bottom:16px">
+          <div style="font-size:15px;font-weight:700;margin-bottom:16px">Add Shack Owner</div>
+          <div class="inp-group"><label class="inp-label">Owner Name</label><input class="inp" id="shackName" placeholder="Full name"></div>
+          <div class="inp-group"><label class="inp-label">Shack Number</label><input class="inp" id="shackNumber" placeholder="e.g. S-001"></div>
+          <div class="inp-group"><label class="inp-label">Lightning Address (Blink)</label><input class="inp" id="shackDest" placeholder="name@blink.sv"></div>
+          <div id="shackRosterErr"></div>
+          <button class="btn btn-primary" style="width:100%;padding:12px;background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="addShackOwner()">+ Add Shack Owner</button>
+        </div>
+        <div id="shackRosterList"></div>
       </div>
 
       <!-- SETTINGS -->
@@ -957,7 +1019,7 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["attend","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster"];
+var pages = ["attend","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"];
 var pageTitles = {
   attend:      ["Attendance","Mark today's class"],
   payout:      ["Payouts","Send Lightning payments to students"],
@@ -970,6 +1032,9 @@ var pageTitles = {
   staff:       ["Staff","Teaching assistant attendance and payments"],
   "staff-payouts": ["Staff Payouts","Pay teaching assistants"],
   "staff-roster":  ["Staff Roster","Manage teaching assistants"],
+  shacks:          ["Painted Shacks","Monthly check-in and payments"],
+  "shacks-payouts":["Shack Payouts","Pay shack owners monthly"],
+  "shacks-roster": ["Shack Roster","Manage shack owners"],
   settings:    ["Settings","Configure API key"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
@@ -991,7 +1056,7 @@ function go(name) {
   if (name === "roster")      renderRoster();
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
-  if (name === "profiles","staff","staff-payouts","staff-roster") {
+  if (name === "profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster") {
     renderProfiles();
     // If students not loaded yet, retry after they arrive
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
@@ -1027,7 +1092,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); checkEndOfWeek(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -2486,6 +2551,211 @@ async function deleteStaff(staffId) {
   if (!confirm("Remove this staff member? Their attendance history will be deleted.")) return;
   await sb("DELETE","staff",null,"?id=eq." + staffId);
   await loadStaff();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// PAINTED SHACKS — 28000 sats/month
+// ══════════════════════════════════════════════════════════════
+const SHACK_SATS = 28000;
+var shackOwners = [];
+var shackPayStatus = {};
+
+function getCurrentMonth() {
+  var now = new Date();
+  return now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+}
+
+function getMonthLabel() {
+  var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var now = new Date();
+  return months[now.getMonth()] + " " + now.getFullYear();
+}
+
+async function loadShacks() {
+  var raw = await sb("GET","shack_owners",null,"?order=shack_number.asc");
+  if (!raw) { shackOwners = []; renderShacks(); return; }
+  var ids = raw.map(function(s) { return s.id; });
+  var month = getCurrentMonth();
+  var checkins = ids.length ? await sb("GET","shack_checkins",null,"?shack_owner_id=in.(" + ids.join(",") + ")&month=eq." + month) : [];
+  var checkedIds = (checkins||[]).map(function(c) { return c.shack_owner_id; });
+  shackOwners = raw.map(function(s) {
+    return Object.assign({}, s, { checkedIn: checkedIds.indexOf(s.id) !== -1 });
+  });
+  renderShacks();
+  renderShackPayouts();
+  renderShackRoster();
+}
+
+function renderShacks() {
+  var el = document.getElementById("shackList");
+  var monthEl = document.getElementById("shackMonthLabel");
+  var summaryEl = document.getElementById("shackSummaryStrip");
+  if (!el) { setTimeout(renderShacks, 500); return; }
+
+  var month = getMonthLabel();
+  if (monthEl) monthEl.textContent = "Month: " + month + " · 28,000 sats per active shack owner";
+
+  var checkedCount = shackOwners.filter(function(s) { return s.checkedIn; }).length;
+  var totalSats = checkedCount * SHACK_SATS;
+
+  if (summaryEl) {
+    summaryEl.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
+      '<div class="card" style="padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#a855f7;font-family:DM Mono,monospace">' + checkedCount + '/' + shackOwners.length + '</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Active This Month</div></div>' +
+      '<div class="card" style="padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#a855f7;font-family:DM Mono,monospace">⚡' + totalSats.toLocaleString() + '</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Sats This Month</div></div>' +
+      '<div class="card" style="padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#a855f7;font-family:DM Mono,monospace">' + shackOwners.length + '/41</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Shacks Enrolled</div></div>' +
+      '</div>';
+  }
+
+  if (!shackOwners.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No shack owners added yet</div><div class="empty-sub">Go to Manage to add shack owners</div></div>';
+    return;
+  }
+
+  var html = "";
+  shackOwners.forEach(function(s) {
+    html += '<div class="shack-card">';
+    html += '<div class="shack-avatar">' + s.shack_number + '</div>';
+    html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
+    html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.destination + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3);margin-top:3px">Total paid: ' + (s.paid_months||0) + ' month' + ((s.paid_months||0)!==1?'s':'') + '</div></div>';
+    var checked = s.checkedIn;
+    html += '<button class="shack-checkin-btn ' + (checked?"checked":"unchecked") + '" onclick="toggleShackCheckin(this.dataset.id)" data-id="' + s.id + '">' + (checked?"✓ Active":"Mark Active") + '</button>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function toggleShackCheckin(shackId) {
+  var s = shackOwners.find(function(x) { return x.id === shackId; });
+  if (!s) return;
+  var month = getCurrentMonth();
+  if (s.checkedIn) {
+    await sb("DELETE","shack_checkins",null,"?shack_owner_id=eq." + shackId + "&month=eq." + month);
+  } else {
+    await sb("POST","shack_checkins",{ shack_owner_id: shackId, month: month, checked_in: true });
+  }
+  await loadShacks();
+}
+
+async function checkInAllShacks() {
+  var month = getCurrentMonth();
+  for (var i = 0; i < shackOwners.length; i++) {
+    var s = shackOwners[i];
+    if (!s.checkedIn) {
+      await sb("POST","shack_checkins",{ shack_owner_id: s.id, month: month, checked_in: true });
+    }
+  }
+  await loadShacks();
+}
+
+function renderShackPayouts() {
+  var el = document.getElementById("shackPayoutList");
+  if (!el) return;
+  if (!shackOwners.length) { el.innerHTML = '<div class="empty" style="padding:24px"><div class="empty-title">No shack owners added yet</div></div>'; return; }
+  var html = "";
+  shackOwners.forEach(function(s) {
+    var ps = shackPayStatus[s.id];
+    var owed = s.checkedIn ? SHACK_SATS : 0;
+    var action = "";
+    if (ps === "loading") action = '<span class="badge badge-orange"><span class="spinner"></span> Sending</span>';
+    else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
+    else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px">' + ps.slice(4).slice(0,30) + '</span>';
+    else if (s.checkedIn) action = '<button class="btn btn-sm" style="background:rgba(168,85,247,0.2);color:#a855f7;border:1px solid rgba(168,85,247,0.3)" onclick="payShackSingle(this.dataset.id,' + SHACK_SATS + ')" data-id="' + s.id + '">Pay ⚡' + SHACK_SATS.toLocaleString() + '</button>';
+    else action = '<span class="badge badge-gray">Not active</span>';
+    html += '<div class="shack-payout-row">';
+    html += '<div><div style="font-weight:600">' + s.name + '</div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">' + s.destination + '</div></div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:#a855f7">' + s.shack_number + '</div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;font-weight:700;color:' + (s.checkedIn?"#a855f7":"var(--text3)") + '">' + (s.checkedIn?"⚡"+SHACK_SATS.toLocaleString():"—") + '</div>';
+    html += '<div style="text-align:right;font-family:DM Mono,monospace;color:var(--green)">' + (s.paid_months||0) + ' months</div>';
+    html += '<div style="text-align:right">' + action + '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function payShackSingle(shackId, amount) {
+  var s = shackOwners.find(function(x) { return x.id === shackId; });
+  if (!s) return;
+  shackPayStatus[shackId] = "loading"; renderShackPayouts();
+  try {
+    var ctrl = new AbortController();
+    setTimeout(function() { ctrl.abort(); }, 30000);
+    var key = localStorage.getItem("ek_key") || "";
+    var res = await fetch(BACKEND + "/pay", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: key, destination: s.destination, amount: amount })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed");
+    await sb("PATCH","shack_owners",{ paid_months: (s.paid_months||0)+1, last_paid_month: getCurrentMonth() },"?id=eq." + shackId);
+    shackPayStatus[shackId] = "ok:Sent ⚡" + amount.toLocaleString();
+    await loadShacks();
+  } catch(e) { shackPayStatus[shackId] = "err:" + e.message; }
+  renderShackPayouts();
+}
+
+async function payAllShacks() {
+  var active = shackOwners.filter(function(s) { return s.checkedIn; });
+  var alertEl = document.getElementById("shackPayAlert");
+  if (!active.length) { alertEl.innerHTML = '<div class="alert alert-err">No shack owners marked active this month.</div>'; return; }
+  if (!confirm("Pay ⚡" + (active.length * SHACK_SATS).toLocaleString() + " sats to " + active.length + " active shack owners?")) return;
+  alertEl.innerHTML = '<div class="alert alert-info">Sending payments to ' + active.length + ' shack owners...</div>';
+  for (var i = 0; i < active.length; i++) {
+    await payShackSingle(active[i].id, SHACK_SATS);
+    await new Promise(function(r) { setTimeout(r, 600); });
+  }
+  alertEl.innerHTML = '<div class="alert alert-ok">✓ All ' + active.length + ' shack owner payments sent!</div>';
+  setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
+}
+
+function renderShackRoster() {
+  var el = document.getElementById("shackRosterList");
+  var countEl = document.getElementById("shackCount");
+  if (!el) return;
+  if (countEl) countEl.textContent = shackOwners.length + " / 41 added";
+  if (!shackOwners.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No shack owners yet</div></div>'; return; }
+  var html = '<div class="card">';
+  shackOwners.forEach(function(s) {
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">';
+    html += '<div class="shack-avatar">' + s.shack_number + '</div>';
+    html += '<div style="flex:1;min-width:0"><div style="font-weight:700">' + s.name + '</div>';
+    html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.destination + '</div></div>';
+    html += '<div style="text-align:right;flex-shrink:0">';
+    html += '<div style="font-size:12px;color:#a855f7;font-weight:700">' + (s.paid_months||0) + ' months paid</div>';
+    html += '<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="deleteShackOwner(this.dataset.id)" data-id="' + s.id + '">Remove</button></div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function addShackOwner() {
+  var name = document.getElementById("shackName").value.trim();
+  var number = document.getElementById("shackNumber").value.trim();
+  var dest = document.getElementById("shackDest").value.trim();
+  var errEl = document.getElementById("shackRosterErr");
+  if (!name) { errEl.innerHTML = '<div class="alert alert-err">Name is required</div>'; return; }
+  if (!number) { errEl.innerHTML = '<div class="alert alert-err">Shack number is required</div>'; return; }
+  if (!dest) { errEl.innerHTML = '<div class="alert alert-err">Lightning address is required</div>'; return; }
+  errEl.innerHTML = '<div class="alert alert-info">Adding...</div>';
+  var result = await sb("POST","shack_owners",{ name: name, shack_number: number, destination: dest });
+  if (result) {
+    errEl.innerHTML = '<div class="alert alert-ok">✓ Added ' + name + '!</div>';
+    document.getElementById("shackName").value = "";
+    document.getElementById("shackNumber").value = "";
+    document.getElementById("shackDest").value = "";
+    await loadShacks();
+    setTimeout(function() { errEl.innerHTML = ""; }, 2000);
+  } else {
+    errEl.innerHTML = '<div class="alert alert-err">Failed to add. Try again.</div>';
+  }
+}
+
+async function deleteShackOwner(shackId) {
+  if (!confirm("Remove this shack owner?")) return;
+  await sb("DELETE","shack_owners",null,"?id=eq." + shackId);
+  await loadShacks();
 }
 
 </script>
