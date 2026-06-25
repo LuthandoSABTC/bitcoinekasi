@@ -2514,25 +2514,52 @@ async function loadStaff() {
   renderStaffRoster();
 }
 
+var selectedStaffDate = new Date().toISOString().split("T")[0];
+
 function renderStaff() {
   var el = document.getElementById("staffList");
   var dateEl = document.getElementById("staffDateLabel");
   if (!el) { setTimeout(renderStaff, 500); return; }
-  var today = new Date();
+
   var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  if (dateEl) dateEl.textContent = days[today.getDay()] + ", " + today.getDate() + " " + months[today.getMonth()] + " " + today.getFullYear();
+  var selDate = new Date(selectedStaffDate + "T00:00:00");
+  var isToday = selectedStaffDate === new Date().toISOString().split("T")[0];
+  var dayNum = selDate.getDay();
+  var isWorkDay = dayNum >= 1 && dayNum <= 5;
+
+  // Build date picker showing Mon-Fri of current week
+  if (dateEl) {
+    var today = new Date();
+    var todayDay = today.getDay();
+    // Get Monday of this week
+    var monday = new Date(today);
+    monday.setDate(today.getDate() - (todayDay === 0 ? 6 : todayDay - 1));
+
+    var pickerHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+    pickerHtml += '<span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Log hours for:</span>';
+    var shortDays = ["Mon","Tue","Wed","Thu","Fri"];
+    for (var i = 0; i < 5; i++) {
+      var d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      var dStr = d.toISOString().split("T")[0];
+      var isPast = dStr <= new Date().toISOString().split("T")[0];
+      if (!isPast) continue;
+      var isSelected = dStr === selectedStaffDate;
+      pickerHtml += '<button onclick="selectStaffDate(\'' + dStr + '\')" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:DM Mono,monospace;border:1px solid ' + (isSelected ? "#3b82f6" : "var(--border2)") + ';background:' + (isSelected ? "rgba(59,130,246,0.2)" : "var(--bg3)") + ';color:' + (isSelected ? "#3b82f6" : "var(--text2)") + '">' + shortDays[i] + " " + d.getDate() + '</button>';
+    }
+    pickerHtml += '</div>';
+    dateEl.innerHTML = pickerHtml;
+  }
 
   if (!staffMembers.length) {
     el.innerHTML = '<div class="empty"><div class="empty-title">No staff added yet</div><div class="empty-sub">Go to Manage Staff to add teaching assistants</div></div>';
     return;
   }
 
-  var todayStr = today.toISOString().split("T")[0];
-  var workDay = isStaffDay();
   var html = "";
   staffMembers.forEach(function(s) {
-    var todayHours = s.att[todayStr] || 0;
+    var selHours = s.att[selectedStaffDate] || 0;
     var totalHours = Object.values(s.att).reduce(function(a,b){ return a+b; }, 0);
     var totalEarned = Math.round(totalHours * STAFF_SATS_PER_HOUR);
     html += '<div class="staff-card">';
@@ -2540,12 +2567,12 @@ function renderStaff() {
     html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
     html += '<div style="font-size:11px;color:#3b82f6;margin-top:2px">' + s.role + '</div>';
     html += '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace;margin-top:2px">' + totalHours.toFixed(1) + ' hrs total · ⚡' + totalEarned + ' earned</div></div>';
-    if (workDay) {
+    if (isWorkDay) {
       var sid3 = s.id;
       html += '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">';
-      html += '<div style="font-size:10px;color:var(--text3);text-align:center">Hours today</div>';
-      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (todayHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onchange="saveStaffHours(this.dataset.staffid)" onblur="saveStaffHours(this.dataset.staffid)">';
-      html += '<div style="font-size:9px;color:var(--text3)">⚡' + Math.round((todayHours||0)*STAFF_SATS_PER_HOUR) + ' sats</div></div>';
+      html += '<div style="font-size:10px;color:var(--text3);text-align:center">Hours</div>';
+      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (selHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onchange="saveStaffHours(this.dataset.staffid)" onblur="saveStaffHours(this.dataset.staffid)">';
+      html += '<div style="font-size:9px;color:var(--text3)">⚡' + Math.round((selHours||0)*STAFF_SATS_PER_HOUR) + ' sats</div></div>';
     } else {
       html += '<span class="badge badge-gray" style="opacity:0.4">NOT A WORK DAY</span>';
     }
@@ -2554,31 +2581,39 @@ function renderStaff() {
   el.innerHTML = html;
 }
 
+function selectStaffDate(dateStr) {
+  selectedStaffDate = dateStr;
+  renderStaff();
+}
+
 async function saveStaffHours(staffId) {
   var input = document.getElementById("staff-hrs-" + staffId);
   if (!input) return;
   var hours = parseFloat(input.value);
   if (isNaN(hours) || hours < 0) return;
-  var todayStr = new Date().toISOString().split("T")[0];
+  var dateStr = selectedStaffDate;
   var s = staffMembers.find(function(x) { return x.id === staffId; });
   if (!s) return;
 
-  var existing = await sb("GET","staff_attendance",null,"?staff_id=eq." + staffId + "&date=eq." + todayStr);
+  var existing = await sb("GET","staff_attendance",null,"?staff_id=eq." + staffId + "&date=eq." + dateStr);
   if (hours === 0) {
     if (existing && existing.length) {
-      await sb("DELETE","staff_attendance",null,"?staff_id=eq." + staffId + "&date=eq." + todayStr);
+      await sb("DELETE","staff_attendance",null,"?staff_id=eq." + staffId + "&date=eq." + dateStr);
     }
   } else if (existing && existing.length) {
-    await sb("PATCH","staff_attendance",{ hours: hours },"?staff_id=eq." + staffId + "&date=eq." + todayStr);
+    await sb("PATCH","staff_attendance",{ hours: hours },"?staff_id=eq." + staffId + "&date=eq." + dateStr);
   } else {
-    await sb("POST","staff_attendance",{ staff_id: staffId, date: todayStr, hours: hours });
+    await sb("POST","staff_attendance",{ staff_id: staffId, date: dateStr, hours: hours });
   }
   input.style.borderColor = "#22c55e";
   setTimeout(function() { input.style.borderColor = ""; loadStaff(); }, 800);
 }
 
 function markAllStaffHours() {
-  var hours = prompt("Enter hours worked today for ALL staff members:", "6");
+  var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var d = new Date(selectedStaffDate + "T00:00:00");
+  var dayName = days[d.getDay()];
+  var hours = prompt("Enter hours worked on " + dayName + " for ALL staff members:", "6");
   if (!hours || isNaN(parseFloat(hours))) return;
   var h = parseFloat(hours);
   staffMembers.forEach(function(s) {
