@@ -2445,7 +2445,12 @@ async function payStaffSingle(staffId, owed) {
     var res = await fetch(BACKEND + "/pay", {
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey: key, destination: s.destination, amount: owed })
+      body: JSON.stringify({
+          apiKey: key,
+          destination: s.destination,
+          amount: owed,
+          memo: "Bitcoin Ekasi ⚡ Your dedication inspires the next generation. Thank you for everything you do! 🙏"
+        })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed");
@@ -2667,7 +2672,12 @@ async function payShackSingle(shackId, amount) {
     var res = await fetch(BACKEND + "/pay", {
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey: key, destination: s.destination, amount: amount })
+      body: JSON.stringify({
+          apiKey: key,
+          destination: s.destination,
+          amount: amount,
+          memo: "Bitcoin Ekasi ⚡ Painted Shack Program — Thank you for being part of the Bitcoin Ekasi community! 🏠"
+        })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed");
