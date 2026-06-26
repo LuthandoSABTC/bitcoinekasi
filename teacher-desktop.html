@@ -2879,7 +2879,13 @@ function generateHighlightsPDF() {
   var data = students.map(function(s) {
     var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
     var days = Object.keys(filtAtt).length;
-    var effBonus = st.mode === 'all' ? (s.bonus||0) : 0;
+    var effBonus;
+    if (st.mode === 'all') {
+      effBonus = s.bonus || 0;
+    } else {
+      // Show 500 sats bonus for perfect week students in weekly view
+      effBonus = (days >= PERFECT_DAYS && (s.bonus||0) > 0) ? BONUS_SATS : 0;
+    }
     return { name: s.name, days: days, sats: days * SATS + effBonus, bonus: effBonus };
   }).sort(function(a,b) { return b.days - a.days; });
 
