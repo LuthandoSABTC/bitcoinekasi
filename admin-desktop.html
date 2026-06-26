@@ -331,6 +331,12 @@ select.inp{appearance:none}
 .shack-payout-row{display:grid;grid-template-columns:1fr 80px 100px 100px 140px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border);gap:12px;font-size:13px}
 .shack-payout-row:last-child{border-bottom:none}
 .shack-payout-row:hover{background:var(--bg3)}
+
+/* Alumni Wall */
+.alumni-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;transition:border-color 0.2s}
+.alumni-card:hover{border-color:rgba(247,147,26,0.4)}
+.alumni-avatar-big{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(247,147,26,0.2),rgba(255,215,0,0.15));border:2px solid rgba(247,147,26,0.4);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;color:var(--orange);margin:0 auto 12px}
+.alumni-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(247,147,26,0.1);border:1px solid rgba(247,147,26,0.2);color:var(--orange);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:DM Mono,monospace;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -1432,24 +1438,99 @@ function renderLeaderboard() {
 
 
 
+function switchRosterTab(tab) {
+  document.getElementById("rView-active").style.display = tab === "active" ? "" : "none";
+  document.getElementById("rView-alumni").style.display = tab === "alumni" ? "" : "none";
+  document.getElementById("rTab-active").style.borderBottomColor = tab === "active" ? "var(--orange)" : "transparent";
+  document.getElementById("rTab-active").style.color = tab === "active" ? "var(--orange)" : "var(--text3)";
+  document.getElementById("rTab-alumni").style.borderBottomColor = tab === "alumni" ? "var(--orange)" : "transparent";
+  document.getElementById("rTab-alumni").style.color = tab === "alumni" ? "var(--orange)" : "var(--text3)";
+  if (tab === "alumni") renderAlumniWall();
+}
+
 function renderRoster() {
   var el = document.getElementById("rosterList");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; return; }
+  var active = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!active.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No active students</div></div>'; return; }
   var html = "";
-  students.forEach(function(s) {
+  active.forEach(function(s) {
     var sid = s.id;
+    var totalDays = Object.keys(s.att||{}).length;
     html += '<div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px">';
     html += '<div class="roster-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
     html += '<div style="flex:1;min-width:0">';
     html += '<div style="font-weight:600;font-size:14px">' + s.name + '</div>';
-    html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;max-width:300px">' + (s.destination || 'No address set') + '</div>';
+    html += '<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;max-width:260px">' + (s.destination || 'No address set') + '</div>';
+    html += '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + totalDays + ' days · ⚡' + (totalDays*SATS+(s.bonus||0)) + ' sats</div>';
     html += '</div>';
     html += '<div style="display:flex;gap:6px;flex-shrink:0">';
     html += '<button class="btn btn-outline btn-sm" onclick="openEdit(this.dataset.id)" data-id="' + sid + '">&#9998; Edit</button>';
+    html += '<button class="btn btn-sm" style="background:rgba(247,147,26,0.1);color:var(--orange);border:1px solid rgba(247,147,26,0.3)" onclick="graduateStudent(this.dataset.id)" data-id="' + sid + '">🎓 Graduate</button>';
     html += '<button class="btn btn-danger btn-sm" onclick="delStudent(this.dataset.id)" data-id="' + sid + '">Remove</button>';
     html += '</div></div>';
   });
   el.innerHTML = html;
+}
+
+function renderAlumniWall() {
+  var el = document.getElementById("alumniWall");
+  if (!el) return;
+  var alumni = students.filter(function(s) { return s.status === "alumni"; });
+  if (!alumni.length) {
+    el.innerHTML = '<div class="empty"><div style="font-size:3rem;margin-bottom:12px">🎓</div><div class="empty-title">No alumni yet</div><div class="empty-sub">Graduated students will appear here</div></div>';
+    return;
+  }
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function fmtDate(d) {
+    if (!d) return "—";
+    var dt = new Date(d + "T00:00:00");
+    return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
+  }
+  // Group by cohort
+  var cohorts = {};
+  alumni.forEach(function(s) {
+    var c = s.cohort || "Cohort 5 - 2026";
+    if (!cohorts[c]) cohorts[c] = [];
+    cohorts[c].push(s);
+  });
+  var html = "";
+  Object.keys(cohorts).sort().reverse().forEach(function(cohort) {
+    var group = cohorts[cohort];
+    html += '<div style="margin-bottom:32px">';
+    html += '<div style="font-size:13px;font-weight:800;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px">';
+    html += '<span>Bitcoin Diploma · ' + cohort + '</span>';
+    html += '<span style="font-size:11px;background:var(--orange-glow);border:1px solid rgba(247,147,26,0.3);border-radius:20px;padding:2px 10px;font-weight:600">' + group.length + ' graduate' + (group.length!==1?"s":"") + '</span></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">';
+    group.sort(function(a,b){ return a.name.localeCompare(b.name); }).forEach(function(s) {
+      var totalDays = Object.keys(s.att||{}).length;
+      var totalSats = totalDays * SATS + (s.bonus||0);
+      html += '<div class="alumni-card">';
+      html += '<div class="alumni-avatar-big">' + s.name.charAt(0).toUpperCase() + '</div>';
+      html += '<div class="alumni-badge">🎓 Graduate</div>';
+      html += '<div style="font-weight:700;font-size:15px;margin-bottom:4px">' + s.name + '</div>';
+      html += '<div style="font-size:11px;color:var(--text3);margin-bottom:12px">Graduated: ' + fmtDate(s.graduated_at) + '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">';
+      html += '<div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace">' + totalDays + '</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Days</div></div>';
+      html += '<div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace">⚡' + totalSats + '</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Sats</div></div>';
+      html += '</div></div>';
+    });
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function graduateStudent(id) {
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s) return;
+  var cohort = s.cohort || "Cohort 5 - 2026";
+  if (!confirm("Graduate " + s.name + " from the Bitcoin Diploma Program? They will move to the Alumni Wall and no longer appear in active attendance.")) return;
+  var today = new Date().toISOString().split("T")[0];
+  await sb("PATCH","students",{ status: "alumni", graduated_at: today },"?id=eq." + id);
+  await loadStudents();
+  renderRoster();
+  renderAlumniWall();
+  renderProfiles();
+  alert("🎓 " + s.name + " has graduated! They have been moved to the Alumni Wall.");
 }
 
 
