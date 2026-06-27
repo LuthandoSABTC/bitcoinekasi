@@ -936,6 +936,92 @@ body {
 .staff-summary-cell { padding:16px;text-align:center;background:var(--bg3); }
 .staff-summary-val { font-size:20px;font-weight:800;font-family:JetBrains Mono,monospace; }
 .staff-summary-label { font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;font-family:Space Grotesk,sans-serif;font-weight:600; }
+
+/* Bitcoin Price Widget */
+.btc-price-widget {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1px solid var(--border3);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+.btc-price-widget::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(247,147,26,0.08), transparent 70%);
+  pointer-events: none;
+}
+.btc-price-logo {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.btc-price-main { flex: 1; min-width: 120px; }
+.btc-price-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: JetBrains Mono, monospace;
+  margin-bottom: 4px;
+}
+.btc-price-zar {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--orange);
+  font-family: JetBrains Mono, monospace;
+  line-height: 1;
+}
+.btc-price-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: JetBrains Mono, monospace;
+  padding: 2px 8px;
+  border-radius: 100px;
+  margin-top: 5px;
+}
+.btc-price-change.up { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+.btc-price-change.down { background: var(--red-bg); color: var(--red); border: 1px solid rgba(244,63,94,0.2); }
+.btc-price-divider { width: 1px; height: 48px; background: var(--border); flex-shrink: 0; }
+.btc-price-stat { text-align: center; }
+.btc-price-stat-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  font-family: JetBrains Mono, monospace;
+}
+.btc-price-stat-label {
+  font-size: 9px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 3px;
+  font-family: Space Grotesk, sans-serif;
+  font-weight: 600;
+}
+.btc-price-sats {
+  background: rgba(247,147,26,0.06);
+  border: 1px solid rgba(247,147,26,0.15);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--text2);
+  font-family: JetBrains Mono, monospace;
+  flex-shrink: 0;
+}
+.btc-price-sats span { color: var(--orange); font-weight: 700; }
+.btc-price-loading { color: var(--text3); font-size: 12px; font-family: JetBrains Mono, monospace; }
 </style>
 </head>
 <body>
@@ -1715,7 +1801,7 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay(); }
+function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay(); fetchBitcoinPrice(); setTimeout(updateWeekSatsValue, 2000); setInterval(fetchBitcoinPrice, 300000); }
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
