@@ -3129,7 +3129,17 @@ function renderStaff() {
     html += '<div class="staff-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
     html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
     html += '<div style="font-size:11px;color:#3b82f6;margin-top:2px">' + s.role + '</div>';
-    html += '<div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px">' + totalHours.toFixed(1) + ' hrs total · ⚡' + totalEarned + ' earned</div></div>';
+    // Calculate this week's hours
+    var todayD = new Date();
+    var todayDayNum = todayD.getDay();
+    var monD = new Date(todayD);
+    monD.setDate(todayD.getDate() - (todayDayNum === 0 ? 6 : todayDayNum - 1));
+    var monStr2 = monD.toISOString().split("T")[0];
+    var friStr2 = new Date(monD.getTime() + 4*86400000).toISOString().split("T")[0];
+    var weekHours2 = 0;
+    Object.keys(s.att).forEach(function(d) { if (d >= monStr2 && d <= friStr2) weekHours2 += s.att[d]; });
+    var weekEarned2 = Math.round(weekHours2 * STAFF_SATS_PER_HOUR);
+    html += '<div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px">This week: <span style="color:#3b82f6;font-weight:700">' + weekHours2.toFixed(1) + ' hrs · ⚡' + weekEarned2.toLocaleString() + '</span> · All time: ' + totalHours.toFixed(1) + ' hrs</div></div>';
     if (isWorkDay) {
       var sid3 = s.id;
       html += '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">';
