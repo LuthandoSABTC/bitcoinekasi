@@ -1064,6 +1064,25 @@ body {
 .chip-doctor { background:rgba(16,185,129,0.08);color:#34D399;border:1px solid rgba(16,185,129,0.15); }
 .chip-transport { background:rgba(234,179,8,0.08);color:#FCD34D;border:1px solid rgba(234,179,8,0.15); }
 .chip-other { background:rgba(156,163,175,0.08);color:#9CA3AF;border:1px solid rgba(156,163,175,0.15); }
+
+/* Dashboard */
+.dash-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+.dash-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+.dash-card:hover { transform: translateY(-2px); }
+.dash-card-icon { font-size: 24px; margin-bottom: 10px; }
+.dash-card-val { font-size: 26px; font-weight: 800; font-family: JetBrains Mono, monospace; line-height: 1; }
+.dash-card-label { font-size: 10px; color: var(--text3); margin-top: 6px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; font-family: Space Grotesk, sans-serif; }
+.dash-section { margin-bottom: 28px; }
+.dash-section-title { font-family: Space Grotesk, sans-serif; font-size: 13px; font-weight: 700; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.dash-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.dash-row:last-child { border-bottom: none; }
+.dash-row-label { font-size: 13px; color: var(--text2); }
+.dash-row-val { font-family: JetBrains Mono, monospace; font-weight: 700; color: var(--orange); }
+.dash-quick-actions { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+.dash-action-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.dash-action-btn:hover { border-color: var(--border3); background: var(--bg3); }
+.dash-action-icon { font-size: 22px; margin-bottom: 6px; }
+.dash-action-label { font-size: 11px; font-weight: 600; color: var(--text2); font-family: Space Grotesk, sans-serif; }
 </style>
 </head>
 <body>
@@ -1102,7 +1121,8 @@ body {
     </div>
     <div style="flex:1;overflow-y:auto;padding-bottom:8px">
       <div class="nav-section">Main</div>
-      <button class="nb on" id="nb-attend" onclick="go('attend')"><span class="nb-icon">&#10003;</span>Attendance</button>
+      <button class="nb on" id="nb-dashboard" onclick="go('dashboard')"><span class="nb-icon">&#127968;</span>Dashboard</button>
+      <button class="nb" id="nb-attend" onclick="go('attend')"><span class="nb-icon">&#10003;</span>Attendance</button>
       <button class="nb" id="nb-payout" onclick="go('payout')"><span class="nb-icon">&#9889;</span>Payouts<span class="nb-badge" id="nb-owed" style="display:none">0</span></button>
       <button class="nb" id="nb-stats" onclick="go('stats')"><span class="nb-icon">&#9998;</span>Statistics</button>
       <button class="nb" id="nb-leaderboard" onclick="go('leaderboard')"><span class="nb-icon">&#9733;</span>Leaderboard</button>
@@ -1180,8 +1200,55 @@ body {
       </div>
 
 
+      <!-- DASHBOARD -->
+      <div id="p-dashboard" class="page show">
+        <div class="dash-grid">
+          <div class="dash-card"><div class="dash-card-icon">🎓</div><div class="dash-card-val" id="dashStudents" style="color:var(--orange)">0</div><div class="dash-card-label">Active Students</div></div>
+          <div class="dash-card"><div class="dash-card-icon">👩‍🏫</div><div class="dash-card-val" id="dashStaff" style="color:#6366F1">0</div><div class="dash-card-label">Teaching Assistants</div></div>
+          <div class="dash-card"><div class="dash-card-icon">🏠</div><div class="dash-card-val" id="dashShacks" style="color:#a855f7">0</div><div class="dash-card-label">Shack Owners</div></div>
+          <div class="dash-card"><div class="dash-card-icon">🎓</div><div class="dash-card-val" id="dashAlumni" style="color:var(--green)">0</div><div class="dash-card-label">Alumni</div></div>
+        </div>
+
+        <div class="dash-section">
+          <div class="dash-section-title">⚡ Quick Actions</div>
+          <div class="dash-quick-actions">
+            <div class="dash-action-btn" onclick="go('attend')"><div class="dash-action-icon">✓</div><div class="dash-action-label">Mark Attendance</div></div>
+            <div class="dash-action-btn" onclick="go('payout')"><div class="dash-action-icon">⚡</div><div class="dash-action-label">Pay Students</div></div>
+            <div class="dash-action-btn" onclick="go('staff-payouts')"><div class="dash-action-icon">👩‍🏫</div><div class="dash-action-label">Pay Staff</div></div>
+            <div class="dash-action-btn" onclick="go('shacks-payouts')"><div class="dash-action-icon">🏠</div><div class="dash-action-label">Pay Shacks</div></div>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <div class="dash-section-title">💰 Sats Owed Across the Program</div>
+          <div class="card">
+            <div class="dash-row"><span class="dash-row-label">🎓 Students</span><span class="dash-row-val" id="dashStudentOwed">⚡0</span></div>
+            <div class="dash-row"><span class="dash-row-label">👩‍🏫 Teaching Assistants</span><span class="dash-row-val" id="dashStaffOwed">⚡0</span></div>
+            <div class="dash-row"><span class="dash-row-label">🏠 Shack Owners</span><span class="dash-row-val" id="dashShackOwed">⚡0</span></div>
+            <div class="dash-row" style="background:var(--bg3)"><span class="dash-row-label" style="font-weight:700;color:var(--text)">Total Owed</span><span class="dash-row-val" id="dashTotalOwed" style="font-size:16px">⚡0</span></div>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <div class="dash-section-title">📊 This Week</div>
+          <div class="card">
+            <div class="dash-row"><span class="dash-row-label">Present Today</span><span class="dash-row-val" id="dashPresentToday">0/0</span></div>
+            <div class="dash-row"><span class="dash-row-label">Attendance Rate This Week</span><span class="dash-row-val" id="dashAttRate">0%</span></div>
+            <div class="dash-row"><span class="dash-row-label">Sats Paid All Time</span><span class="dash-row-val" id="dashTotalPaid">⚡0</span></div>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <div class="dash-section-title">🛠️ Tools</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="exportAllDataCSV()">📥 Export All Data (CSV)</button>
+            <button class="btn btn-outline" onclick="backupAllData()">💾 Backup Database (JSON)</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ATTENDANCE -->
-      <div id="p-attend" class="page show">
+      <div id="p-attend" class="page">
         <div id="lowAttendWarn"></div>
         <div class="section-header">
           <div class="section-title">Today's Class</div>
@@ -1704,8 +1771,9 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["attend","payout","stats","leaderboard","roster","classes","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"];
+var pages = ["dashboard","attend","payout","stats","leaderboard","roster","classes","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"];
 var pageTitles = {
+  dashboard:   ["Dashboard","Your program at a glance"],
   attend:      ["Attendance","Mark today's class"],
   payout:      ["Payouts","Send Lightning payments"],
   stats:       ["Statistics","Class performance overview"],
@@ -1743,9 +1811,9 @@ function go(name) {
   if (name === "classes")     loadAllClasses();
   if (name === "chapters")    loadAllChapters();
   if (name === "monthly")     renderMonthly();
-  if (name === "profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster") {
+  if (name === "dashboard")   renderDashboard();
+  if (["profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"].indexOf(name) !== -1) {
     renderProfiles();
-    // If students not loaded yet, retry after they arrive
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
   }
   if (name === "test")        renderTest();
@@ -1791,6 +1859,7 @@ async function loadStudents() {
 function renderAll() {
   updateStats(); renderAttend(); checkLowAttendance(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay();
   try { fetchBitcoinPrice(); } catch(e) { console.log("Price widget error (non-fatal):", e.message); }
+  try { renderDashboard(); } catch(e) {}
   setTimeout(updateWeekSatsValue, 2000);
   if (!window._btcPriceIntervalSet) { window._btcPriceIntervalSet = true; setInterval(function(){ try { fetchBitcoinPrice(); } catch(e){} }, 300000); }
 }
@@ -3819,6 +3888,119 @@ function updateWeekSatsValue() {
   } else {
     el.innerHTML = "Today&#39;s " + SATS + " sats ≈ <span>R" + (satPrice * SATS).toFixed(2) + "</span> per student";
   }
+}
+
+
+// ── Dashboard ──────────────────────────────────────────────────
+function renderDashboard() {
+  var el = document.getElementById("dashStudents");
+  if (!el) { setTimeout(renderDashboard, 500); return; }
+
+  var activeStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  var alumniStudents = students.filter(function(s) { return s.status === "alumni"; });
+
+  document.getElementById("dashStudents").textContent = activeStudents.length;
+  document.getElementById("dashStaff").textContent = staffMembers.length;
+  document.getElementById("dashShacks").textContent = shackOwners.length;
+  document.getElementById("dashAlumni").textContent = alumniStudents.length;
+
+  // Sats owed across all categories
+  var studentOwed = activeStudents.reduce(function(a, s) {
+    return a + Math.max(0, Object.keys(s.att||{}).length*SATS + (s.bonus||0) - (s.paid||0));
+  }, 0);
+  var staffOwed = staffMembers.reduce(function(a, s) {
+    var totalHours = Object.values(s.att||{}).reduce(function(x,y){ return x+y; }, 0);
+    var earned = Math.round(totalHours * STAFF_SATS_PER_HOUR);
+    return a + Math.max(0, earned - (s.paid||0));
+  }, 0);
+  var shackOwed = shackOwners.reduce(function(a, s) {
+    return a + (s.checkedIn ? SHACK_SATS : 0);
+  }, 0);
+
+  document.getElementById("dashStudentOwed").textContent = "⚡" + studentOwed.toLocaleString();
+  document.getElementById("dashStaffOwed").textContent = "⚡" + staffOwed.toLocaleString();
+  document.getElementById("dashShackOwed").textContent = "⚡" + shackOwed.toLocaleString();
+  document.getElementById("dashTotalOwed").textContent = "⚡" + (studentOwed + staffOwed + shackOwed).toLocaleString();
+
+  // This week stats
+  var present = activeStudents.filter(function(s) { return s.att && s.att[TODAY]; }).length;
+  document.getElementById("dashPresentToday").textContent = present + "/" + activeStudents.length;
+
+  var weekTotal = 0, weekPossible = activeStudents.length * 4;
+  activeStudents.forEach(function(s) {
+    weekTotal += Object.keys(filterAttByWeek(s.att, 0, "week")).length;
+  });
+  var attRate = weekPossible > 0 ? Math.round((weekTotal / weekPossible) * 100) : 0;
+  document.getElementById("dashAttRate").textContent = attRate + "%";
+
+  var totalPaid = activeStudents.reduce(function(a,s){ return a + (s.paid||0); }, 0) +
+                   staffMembers.reduce(function(a,s){ return a + (s.paid||0); }, 0) +
+                   shackOwners.reduce(function(a,s){ return a + ((s.paid_months||0) * SHACK_SATS); }, 0);
+  document.getElementById("dashTotalPaid").textContent = "⚡" + totalPaid.toLocaleString();
+}
+
+// ── Export All Data (CSV) ─────────────────────────────────────
+function exportAllDataCSV() {
+  var rows = [["Type","Name","Role/Sponsor","Lightning Address","Days/Hours","Sats Earned","Sats Paid","Status"]];
+
+  students.forEach(function(s) {
+    var days = Object.keys(s.att||{}).length;
+    var earned = days * SATS + (s.bonus||0);
+    rows.push(["Student", s.name, "", s.destination||"", days + " days", earned, s.paid||0, s.status||"active"]);
+  });
+
+  staffMembers.forEach(function(s) {
+    var hours = Object.values(s.att||{}).reduce(function(a,b){ return a+b; }, 0);
+    var earned = Math.round(hours * STAFF_SATS_PER_HOUR);
+    rows.push(["Staff", s.name, s.role||"", s.destination||"", hours.toFixed(1) + " hrs", earned, s.paid||0, "active"]);
+  });
+
+  shackOwners.forEach(function(s) {
+    var earned = (s.paid_months||0) * SHACK_SATS;
+    rows.push(["Shack Owner", s.name, s.sponsor_name||"", s.destination||"", (s.paid_months||0) + " months", earned, earned, "active"]);
+  });
+
+  var csv = rows.map(function(r) {
+    return r.map(function(cell) {
+      var str = String(cell);
+      if (str.indexOf(",") !== -1 || str.indexOf('"') !== -1) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }).join(",");
+  }).join("\n");
+
+  var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  var link = document.createElement("a");
+  var url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", "Bitcoin_Ekasi_Export_" + TODAY + ".csv");
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ── Backup All Data (JSON) ────────────────────────────────────
+function backupAllData() {
+  var backup = {
+    exported_at: new Date().toISOString(),
+    teacher_id: typeof TEACHER_ID !== "undefined" ? TEACHER_ID : null,
+    students: students,
+    staff: staffMembers,
+    shack_owners: shackOwners,
+    excuses: excusesMap
+  };
+  var json = JSON.stringify(backup, null, 2);
+  var blob = new Blob([json], { type: "application/json" });
+  var link = document.createElement("a");
+  var url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", "Bitcoin_Ekasi_Backup_" + TODAY + ".json");
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 </script>
