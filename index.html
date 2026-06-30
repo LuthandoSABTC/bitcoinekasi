@@ -1513,7 +1513,13 @@ async function checkAndGrantBonuses() {
 const BACKEND = "https://ekasi-backend.onrender.com";
 const SUPABASE_URL = "https://bnteowvyioptlvohyert.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
-const TODAY = new Date().toISOString().split("T")[0];
+function toLocalDateStr(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, "0");
+  var day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+const TODAY = toLocalDateStr(new Date());
 
 // ── Week filter state ─────────────────────────────────────────
 // weekOffset: 0 = current week, -1 = last week, etc.
@@ -1536,8 +1542,8 @@ function getWeekRange(offset) {
   var sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
   return {
-    start: mon.toISOString().split("T")[0],
-    end:   sun.toISOString().split("T")[0]
+    start: toLocalDateStr(mon),
+    end:   toLocalDateStr(sun)
   };
 }
 
@@ -1571,8 +1577,8 @@ function getClassWeekRange(offset) {
   var fri = new Date(tue);
   fri.setDate(tue.getDate() + 3);
   return {
-    start: tue.toISOString().split("T")[0],
-    end:   fri.toISOString().split("T")[0]
+    start: toLocalDateStr(tue),
+    end:   toLocalDateStr(fri)
   };
 }
 
@@ -2224,7 +2230,7 @@ async function graduateStudent(id) {
   if (!s) return;
   var cohort = s.cohort || "Cohort 5 - 2026";
   if (!confirm("Graduate " + s.name + " from the Bitcoin Diploma Program? They will move to the Alumni Wall and no longer appear in active attendance.")) return;
-  var today = new Date().toISOString().split("T")[0];
+  var today = toLocalDateStr(new Date());
   await sb("PATCH","students",{ status: "alumni", graduated_at: today },"?id=eq." + id);
   await loadStudents();
   renderRoster();
@@ -2538,7 +2544,7 @@ function buildContribGraph(s) {
     for (var d = 0; d < 4; d++) {
       var cur = new Date(r.start + "T00:00:00");
       cur.setDate(cur.getDate() + d);
-      weekDays.push(cur.toISOString().split("T")[0]);
+      weekDays.push(toLocalDateStr(cur));
     }
     weeks.push({ offset: w, days: weekDays, label: r.start });
   }
@@ -2645,7 +2651,7 @@ function checkLowAttendance() {
   var today = new Date(TODAY + "T00:00:00");
   var end = new Date(r.end + "T00:00:00");
   while (cur <= end && cur <= today) {
-    classDaysHeld.push(cur.toISOString().split("T")[0]);
+    classDaysHeld.push(toLocalDateStr(cur));
     cur.setDate(cur.getDate() + 1);
   }
   if (!classDaysHeld.length) { el.innerHTML = ""; return; }
@@ -3079,7 +3085,7 @@ async function loadStaff() {
   renderStaffRoster();
 }
 
-var selectedStaffDate = new Date().toISOString().split("T")[0];
+var selectedStaffDate = toLocalDateStr(new Date());
 
 function renderStaff() {
   var el = document.getElementById("staffList");
@@ -3089,7 +3095,7 @@ function renderStaff() {
   var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var selDate = new Date(selectedStaffDate + "T00:00:00");
-  var isToday = selectedStaffDate === new Date().toISOString().split("T")[0];
+  var isToday = selectedStaffDate === toLocalDateStr(new Date());
   var dayNum = selDate.getDay();
   var isWorkDay = dayNum >= 1 && dayNum <= 5;
 
@@ -3107,8 +3113,8 @@ function renderStaff() {
     for (var i = 0; i < 5; i++) {
       var d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      var dStr = d.toISOString().split("T")[0];
-      var isPast = dStr <= new Date().toISOString().split("T")[0];
+      var dStr = toLocalDateStr(d);
+      var isPast = dStr <= toLocalDateStr(new Date());
       if (!isPast) continue;
       var isSelected = dStr === selectedStaffDate;
       pickerHtml += '<button onclick="selectStaffDate(\'' + dStr + '\')" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:JetBrains Mono,monospace;border:1px solid ' + (isSelected ? "#3b82f6" : "var(--border2)") + ';background:' + (isSelected ? "rgba(59,130,246,0.2)" : "var(--bg3)") + ';color:' + (isSelected ? "#3b82f6" : "var(--text2)") + '">' + shortDays[i] + " " + d.getDate() + '</button>';
@@ -3136,8 +3142,8 @@ function renderStaff() {
     var todayDayNum = todayD.getDay();
     var monD = new Date(todayD);
     monD.setDate(todayD.getDate() - (todayDayNum === 0 ? 6 : todayDayNum - 1));
-    var monStr2 = monD.toISOString().split("T")[0];
-    var friStr2 = new Date(monD.getTime() + 4*86400000).toISOString().split("T")[0];
+    var monStr2 = toLocalDateStr(monD);
+    var friStr2 = toLocalDateStr(new Date(monD.getTime() + 4*86400000));
     var weekHours2 = 0;
     Object.keys(s.att).forEach(function(d) { if (d >= monStr2 && d <= friStr2) weekHours2 += s.att[d]; });
     var weekEarned2 = Math.round(weekHours2 * STAFF_SATS_PER_HOUR);
