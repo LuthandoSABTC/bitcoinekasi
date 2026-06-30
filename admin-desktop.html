@@ -1043,6 +1043,27 @@ body {
 .chip-doctor { background:rgba(16,185,129,0.08);color:#34D399;border:1px solid rgba(16,185,129,0.15); }
 .chip-transport { background:rgba(234,179,8,0.08);color:#FCD34D;border:1px solid rgba(234,179,8,0.15); }
 .chip-other { background:rgba(156,163,175,0.08);color:#9CA3AF;border:1px solid rgba(156,163,175,0.15); }
+
+/* Excuse System */
+.excuse-btn { padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Space Grotesk,sans-serif;border:1px solid rgba(247,147,26,0.3);background:rgba(247,147,26,0.08);color:var(--orange);white-space:nowrap;transition:all 0.15s;margin-left:8px; }
+.excuse-btn:hover { background:rgba(247,147,26,0.15); }
+.badge-sick { background:rgba(239,68,68,0.1);color:#F87171;border:1px solid rgba(239,68,68,0.2); }
+.badge-holiday { background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.25); }
+.badge-family { background:rgba(168,85,247,0.1);color:#C084FC;border:1px solid rgba(168,85,247,0.25); }
+.badge-doctor { background:rgba(16,185,129,0.1);color:#34D399;border:1px solid rgba(16,185,129,0.2); }
+.badge-transport { background:rgba(234,179,8,0.1);color:#FCD34D;border:1px solid rgba(234,179,8,0.2); }
+.badge-other { background:rgba(156,163,175,0.1);color:#9CA3AF;border:1px solid rgba(156,163,175,0.2); }
+.reason-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px; }
+.reason-btn { padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:Space Grotesk,sans-serif;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);text-align:center;transition:all 0.15s; }
+.reason-btn:hover { background:var(--bg4);color:var(--text); }
+.reason-btn.selected { border-color:var(--orange);background:var(--orange-glow);color:var(--orange); }
+.reason-icon { font-size:22px;margin-bottom:5px;display:block; }
+.chip-sick { background:rgba(239,68,68,0.08);color:#F87171;border:1px solid rgba(239,68,68,0.15); }
+.chip-holiday { background:rgba(59,130,246,0.08);color:#60A5FA;border:1px solid rgba(59,130,246,0.15); }
+.chip-family { background:rgba(168,85,247,0.08);color:#C084FC;border:1px solid rgba(168,85,247,0.15); }
+.chip-doctor { background:rgba(16,185,129,0.08);color:#34D399;border:1px solid rgba(16,185,129,0.15); }
+.chip-transport { background:rgba(234,179,8,0.08);color:#FCD34D;border:1px solid rgba(234,179,8,0.15); }
+.chip-other { background:rgba(156,163,175,0.08);color:#9CA3AF;border:1px solid rgba(156,163,175,0.15); }
 </style>
 </head>
 <body>
@@ -3643,6 +3664,83 @@ function showStaffPayReminder() {
   document.body.appendChild(modal);
 }
 
+
+// ── Excuse System ──────────────────────────────────────────────
+var excusesMap = {};
+var excuseTargetStudent = null;
+var excuseTargetDate = null;
+var selectedExcuseReason = null;
+var excuseLabels = { sick: "🤒 Sick", holiday: "🏖️ Holiday", family: "👨‍👩‍👧 Family", doctor: "🏥 Doctor", transport: "🚌 Transport", other: "📝 Other" };
+var excuseBadgeClass = { sick: "badge-sick", holiday: "badge-holiday", family: "badge-family", doctor: "badge-doctor", transport: "badge-transport", other: "badge-other" };
+
+function openExcuseModal(studentId, date) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+  excuseTargetStudent = studentId;
+  excuseTargetDate = date || TODAY;
+  selectedExcuseReason = null;
+  document.querySelectorAll(".reason-btn").forEach(function(b) { b.classList.remove("selected"); });
+  document.getElementById("excuseNote").value = "";
+  document.getElementById("excuseErr").innerHTML = "";
+  document.getElementById("excuseModalSub").textContent = s.name + " · " + excuseTargetDate;
+  document.getElementById("excuseModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeExcuseModal() {
+  document.getElementById("excuseModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function selectReason(reason) {
+  selectedExcuseReason = reason;
+  document.querySelectorAll(".reason-btn").forEach(function(b) {
+    b.classList.toggle("selected", b.dataset.reason === reason);
+  });
+}
+
+async function saveExcuse() {
+  if (!selectedExcuseReason) {
+    document.getElementById("excuseErr").innerHTML = '<div class="alert alert-err">Please select a reason</div>';
+    return;
+  }
+  var note = document.getElementById("excuseNote").value.trim();
+  var reasonText = excuseLabels[selectedExcuseReason] + (note ? " — " + note : "");
+  var existing = await sb("GET","excuses",null,"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+  if (existing && existing.length) {
+    await sb("PATCH","excuses",{ reason: reasonText },"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+  } else {
+    await sb("POST","excuses",{ student_id: excuseTargetStudent, date: excuseTargetDate, reason: reasonText });
+  }
+  closeExcuseModal();
+  await loadExcuses();
+  renderAttend();
+}
+
+async function loadExcuses() {
+  if (!students.length) { excusesMap = {}; return; }
+  try {
+    var ids = students.map(function(s) { return s.id; }).join(",");
+    var raw = await sb("GET","excuses",null,"?student_id=in.(" + ids + ")");
+    excusesMap = {};
+    (raw || []).forEach(function(e) {
+      if (!excusesMap[e.student_id]) excusesMap[e.student_id] = {};
+      excusesMap[e.student_id][e.date] = e.reason;
+    });
+  } catch(e) {
+    console.log("loadExcuses failed:", e.message);
+    excusesMap = {};
+  }
+}
+
+function getExcuseType(reasonText) {
+  if (!reasonText) return null;
+  for (var key in excuseLabels) {
+    if (reasonText.indexOf(excuseLabels[key]) === 0) return key;
+  }
+  return "other";
+}
+
 </script>
 
   <!-- Staff History Modal -->
@@ -3682,6 +3780,31 @@ function showStaffPayReminder() {
         <label class="inp-label">Note (optional)</label>
         <input class="inp" id="excuseNote" type="text" placeholder="Add more detail...">
 
+        <div id="excuseErr"></div>
+        <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveExcuse()">✓ Save Excuse</button>
+        <button class="btn btn-outline" style="width:100%;padding:13px;margin-top:8px" onclick="closeExcuseModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Excuse Modal -->
+  <div id="excuseModal" style="display:none" class="profile-modal" onclick="if(event.target===this)closeExcuseModal()">
+    <div class="profile-box" style="max-width:440px">
+      <div style="padding:28px">
+        <div style="font-size:28px;margin-bottom:12px">📝</div>
+        <div style="font-family:Space Grotesk,sans-serif;font-size:20px;font-weight:800;margin-bottom:4px">Add Excuse</div>
+        <div id="excuseModalSub" style="font-size:12px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-bottom:24px"></div>
+        <label class="inp-label">Select Reason</label>
+        <div class="reason-grid" id="reasonGrid">
+          <div class="reason-btn" data-reason="sick" onclick="selectReason('sick')"><span class="reason-icon">🤒</span>Sick</div>
+          <div class="reason-btn" data-reason="holiday" onclick="selectReason('holiday')"><span class="reason-icon">🏖️</span>Holiday</div>
+          <div class="reason-btn" data-reason="family" onclick="selectReason('family')"><span class="reason-icon">👨‍👩‍👧</span>Family</div>
+          <div class="reason-btn" data-reason="doctor" onclick="selectReason('doctor')"><span class="reason-icon">🏥</span>Doctor</div>
+          <div class="reason-btn" data-reason="transport" onclick="selectReason('transport')"><span class="reason-icon">🚌</span>Transport</div>
+          <div class="reason-btn" data-reason="other" onclick="selectReason('other')"><span class="reason-icon">📝</span>Other</div>
+        </div>
+        <label class="inp-label">Note (optional)</label>
+        <input class="inp" id="excuseNote" type="text" placeholder="Add more detail...">
         <div id="excuseErr"></div>
         <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveExcuse()">✓ Save Excuse</button>
         <button class="btn btn-outline" style="width:100%;padding:13px;margin-top:8px" onclick="closeExcuseModal()">Cancel</button>
