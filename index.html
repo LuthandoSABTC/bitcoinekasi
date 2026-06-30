@@ -1425,9 +1425,15 @@ body {
       <div id="p-test" class="page">
         <div class="section-title" style="margin-bottom:16px">Test Payment</div>
         <div class="form-card" style="max-width:500px">
-          <p style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;font-family:JetBrains Mono,monospace">Send a small test payment (1–10 sats) to verify Lightning connectivity with a student's address.</p>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;font-family:JetBrains Mono,monospace">Send a small test payment (1–10 sats) to verify Lightning connectivity before sending a full payout.</p>
+
+          <div style="display:flex;gap:8px;margin-bottom:20px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:4px">
+            <button type="button" id="testTypeStudentBtn" class="btn" style="flex:1;justify-content:center;background:var(--orange);color:#000;border-color:var(--orange)" onclick="switchTestType('student')">Student</button>
+            <button type="button" id="testTypeStaffBtn" class="btn btn-outline" style="flex:1;justify-content:center" onclick="switchTestType('staff')">Staff</button>
+          </div>
+
           <div class="inp-group">
-            <label class="inp-label">Select Student</label>
+            <label class="inp-label" id="testRecipientLabel">Select Student</label>
             <select class="inp" id="testStudent" onchange="previewTestDest()">
               <option value="">-- Choose student --</option>
             </select>
@@ -2961,25 +2967,50 @@ function generateHighlightsPDF() {
 }
 
 // ── Test Payment ────────────────────────────────────────────────
-function renderTest() {
+// ── Test Payment Type Toggle ─────────────────────────────────
+var testType = "student";
+
+function switchTestType(type) {
+  testType = type;
+  var studentBtn = document.getElementById("testTypeStudentBtn");
+  var staffBtn = document.getElementById("testTypeStaffBtn");
+  var label = document.getElementById("testRecipientLabel");
   var sel = document.getElementById("testStudent");
   if (!sel) return;
-  sel.innerHTML = '<option value="">-- Choose student --</option>';
-  students.forEach(function(s) {
-    var opt = document.createElement("option");
-    opt.value = s.id;
-    opt.textContent = s.name;
-    sel.appendChild(opt);
-  });
-  var res = document.getElementById("testResult");
-  var prev = document.getElementById("testDestPreview");
-  if (res) res.innerHTML = "";
-  if (prev) prev.textContent = "";
+
+  if (type === "student") {
+    studentBtn.style.background = "var(--orange)"; studentBtn.style.color = "#000"; studentBtn.style.borderColor = "var(--orange)";
+    staffBtn.style.background = ""; staffBtn.style.color = ""; staffBtn.style.borderColor = "";
+    label.textContent = "Select Student";
+    sel.innerHTML = '<option value="">-- Choose student --</option>';
+    students.forEach(function(s) {
+      var opt = document.createElement("option");
+      opt.value = s.id; opt.textContent = s.name;
+      sel.appendChild(opt);
+    });
+  } else {
+    staffBtn.style.background = "var(--orange)"; staffBtn.style.color = "#000"; staffBtn.style.borderColor = "var(--orange)";
+    studentBtn.style.background = ""; studentBtn.style.color = ""; studentBtn.style.borderColor = "";
+    label.textContent = "Select Staff Member";
+    sel.innerHTML = '<option value="">-- Choose staff --</option>';
+    staffMembers.forEach(function(s) {
+      var opt = document.createElement("option");
+      opt.value = s.id; opt.textContent = s.name + " (" + s.role + ")";
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById("testDestPreview").textContent = "";
+  document.getElementById("testResult").innerHTML = "";
+}
+
+function renderTest() {
+  switchTestType(testType);
 }
 
 function previewTestDest() {
   var id = document.getElementById("testStudent").value;
-  var s = students.find(function(x) { return x.id === id; });
+  var list = testType === "staff" ? staffMembers : students;
+  var s = list.find(function(x) { return x.id === id; });
   document.getElementById("testDestPreview").textContent = s ? "Address: " + (s.destination || "none set") : "";
 }
 
@@ -2987,10 +3018,12 @@ async function sendTestPayment() {
   var id = document.getElementById("testStudent").value;
   var amount = parseInt(document.getElementById("testAmount").value);
   var result = document.getElementById("testResult");
-  if (!id) { result.innerHTML = '<div class="alert alert-err">Please select a student</div>'; return; }
+  var list = testType === "staff" ? staffMembers : students;
+  var label = testType === "staff" ? "staff member" : "student";
+  if (!id) { result.innerHTML = '<div class="alert alert-err">Please select a ' + label + '</div>'; return; }
   if (!amount || amount < 1 || amount > 10) { result.innerHTML = '<div class="alert alert-err">Amount must be 1–10 sats</div>'; return; }
-  var s = students.find(function(x) { return x.id === id; });
-  if (!s || !s.destination) { result.innerHTML = '<div class="alert alert-err">Student has no Lightning address</div>'; return; }
+  var s = list.find(function(x) { return x.id === id; });
+  if (!s || !s.destination) { result.innerHTML = '<div class="alert alert-err">No Lightning address set for this ' + label + '</div>'; return; }
   result.innerHTML = '<div class="alert alert-info">Sending ' + amount + ' sats to ' + s.name + '...</div>';
   try {
     var ctrl = new AbortController();
