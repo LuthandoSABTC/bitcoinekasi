@@ -690,7 +690,7 @@ body {
 
 /* ── PROFILE MODAL ───────────────────────────────────────────── */
 .profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(6px); }
-.profile-box { background: #FFFFFF; border: 1px solid var(--border2); border-radius: 20px; width: 100%; max-width: 760px; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.profile-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: 20px; width: 100%; max-width: 760px; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
 .profile-box::-webkit-scrollbar { width: 4px; }
 .profile-box::-webkit-scrollbar-track { background: transparent; }
 .profile-box::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -711,7 +711,7 @@ body {
   color: var(--text2); font-size: 14px; transition: all 0.15s;
 }
 .profile-close:hover { background: var(--red-bg); color: var(--red); border-color: rgba(220,38,38,0.2); }
-.profile-stat { padding: 20px; text-align: center; background: #FFFFFF; transition: background 0.15s; }
+.profile-stat { padding: 20px; text-align: center; background: var(--bg2); transition: background 0.15s; }
 .profile-stat:hover { background: var(--bg3); }
 .profile-stat-val { font-size: 22px; font-weight: 800; color: var(--orange); font-family: 'JetBrains Mono', monospace; }
 .profile-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; }
@@ -726,7 +726,7 @@ body {
 
 /* ── LEADERBOARD FILTER ──────────────────────────────────────── */
 .lb-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.lb-filter-btn { padding: 7px 16px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Space Grotesk', sans-serif; border: 1.5px solid var(--border2); background: #FFFFFF; color: var(--text2); transition: all 0.15s; }
+.lb-filter-btn { padding: 7px 16px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Space Grotesk', sans-serif; border: 1.5px solid var(--border2); background: var(--bg3); color: var(--text2); transition: all 0.15s; }
 .lb-filter-btn:hover { background: var(--bg3); }
 .lb-filter-btn.active { background: var(--orange); color: #FFFFFF; border-color: var(--orange); }
 
@@ -786,8 +786,8 @@ body {
 .highlights-text strong { color: var(--text); }
 .perfect-week-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .perfect-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--green-bg); border: 1px solid rgba(5,150,105,0.2); border-radius: 100px; padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--green); font-family: 'JetBrains Mono', monospace; }
-.btn-pdf { display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; font-family: 'Space Grotesk', sans-serif; transition: all 0.15s; }
-.btn-pdf:hover { background: var(--orange); color: #FFFFFF; border-color: var(--orange); }
+.btn-pdf { display: inline-flex; align-items: center; gap: 6px; background: var(--bg4); border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; font-family: 'Space Grotesk', sans-serif; transition: all 0.15s; }
+.btn-pdf:hover { background: var(--orange); color: #000; border-color: var(--orange); }
 
 /* ── TIERS ───────────────────────────────────────────────────── */
 .tier-section { margin-bottom: 24px; }
@@ -865,7 +865,7 @@ body {
 /* ── MISC ────────────────────────────────────────────────────── */
 .lnurl-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--green-bg); border: 1px solid rgba(5,150,105,0.2); border-radius: 4px; padding: 1px 6px; font-size: 9px; font-weight: 700; color: var(--green); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; margin-left: 6px; vertical-align: middle; }
 .eow-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 600; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(6px); }
-.eow-box { background: #FFFFFF; border: 1px solid var(--border2); border-radius: 24px; padding: 40px; width: 100%; max-width: 480px; text-align: center; box-shadow: var(--shadow-lg); }
+.eow-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: 24px; padding: 40px; width: 100%; max-width: 480px; text-align: center; box-shadow: var(--shadow-lg); }
 .eow-icon { font-size: 48px; margin-bottom: 16px; }
 .eow-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
 .eow-sub { font-size: 13px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-bottom: 28px; }
@@ -1784,7 +1784,12 @@ async function loadStudents() {
   renderAll();
 }
 
-function renderAll() { updateStats(); renderAttend(); checkLowAttendance(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay(); fetchBitcoinPrice(); setTimeout(updateWeekSatsValue, 2000); setInterval(fetchBitcoinPrice, 300000); }
+function renderAll() {
+  updateStats(); renderAttend(); checkLowAttendance(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay();
+  try { fetchBitcoinPrice(); } catch(e) { console.log("Price widget error (non-fatal):", e.message); }
+  setTimeout(updateWeekSatsValue, 2000);
+  if (!window._btcPriceIntervalSet) { window._btcPriceIntervalSet = true; setInterval(function(){ try { fetchBitcoinPrice(); } catch(e){} }, 300000); }
+}
 
 function updateStats() {
   var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
@@ -3808,21 +3813,26 @@ var btcPriceZAR = 0;
 
 async function fetchBitcoinPrice() {
   try {
-    var res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=zar&include_24hr_change=true");
+    var res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=zar&include_24hr_change=true", { mode: "cors" });
+    if (!res.ok) throw new Error("CoinGecko HTTP " + res.status);
     var data = await res.json();
     var price = data.bitcoin.zar;
     var change = data.bitcoin.zar_24h_change;
     btcPriceZAR = price;
     updatePriceWidget(price, change);
   } catch(e) {
+    console.log("CoinGecko fetch failed, trying fallback:", e.message);
     try {
-      var res2 = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=BTC");
+      var res2 = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=BTC", { mode: "cors" });
+      if (!res2.ok) throw new Error("Coinbase HTTP " + res2.status);
       var data2 = await res2.json();
       var price2 = parseFloat(data2.data.rates.ZAR);
       btcPriceZAR = price2;
       updatePriceWidget(price2, null);
     } catch(e2) {
-      console.log("Price fetch failed:", e2.message);
+      console.log("Bitcoin price fetch failed entirely (widget will stay hidden):", e2.message);
+      var widget = document.getElementById("btcPriceWidget");
+      if (widget) widget.style.display = "none";
     }
   }
 }
