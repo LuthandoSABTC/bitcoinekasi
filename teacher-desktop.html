@@ -1022,6 +1022,27 @@ body {
 }
 .btc-price-sats span { color: var(--orange); font-weight: 700; }
 .btc-price-loading { color: var(--text3); font-size: 12px; font-family: JetBrains Mono, monospace; }
+
+/* Excuse System */
+.excuse-btn { padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Space Grotesk,sans-serif;border:1px solid rgba(247,147,26,0.3);background:rgba(247,147,26,0.08);color:var(--orange);white-space:nowrap;transition:all 0.15s;margin-left:8px; }
+.excuse-btn:hover { background:rgba(247,147,26,0.15); }
+.badge-sick { background:rgba(239,68,68,0.1);color:#F87171;border:1px solid rgba(239,68,68,0.2); }
+.badge-holiday { background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.25); }
+.badge-family { background:rgba(168,85,247,0.1);color:#C084FC;border:1px solid rgba(168,85,247,0.25); }
+.badge-doctor { background:rgba(16,185,129,0.1);color:#34D399;border:1px solid rgba(16,185,129,0.2); }
+.badge-transport { background:rgba(234,179,8,0.1);color:#FCD34D;border:1px solid rgba(234,179,8,0.2); }
+.badge-other { background:rgba(156,163,175,0.1);color:#9CA3AF;border:1px solid rgba(156,163,175,0.2); }
+.reason-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px; }
+.reason-btn { padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:Space Grotesk,sans-serif;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);text-align:center;transition:all 0.15s; }
+.reason-btn:hover { background:var(--bg4);color:var(--text); }
+.reason-btn.selected { border-color:var(--orange);background:var(--orange-glow);color:var(--orange); }
+.reason-icon { font-size:22px;margin-bottom:5px;display:block; }
+.chip-sick { background:rgba(239,68,68,0.08);color:#F87171;border:1px solid rgba(239,68,68,0.15); }
+.chip-holiday { background:rgba(59,130,246,0.08);color:#60A5FA;border:1px solid rgba(59,130,246,0.15); }
+.chip-family { background:rgba(168,85,247,0.08);color:#C084FC;border:1px solid rgba(168,85,247,0.15); }
+.chip-doctor { background:rgba(16,185,129,0.08);color:#34D399;border:1px solid rgba(16,185,129,0.15); }
+.chip-transport { background:rgba(234,179,8,0.08);color:#FCD34D;border:1px solid rgba(234,179,8,0.15); }
+.chip-other { background:rgba(156,163,175,0.08);color:#9CA3AF;border:1px solid rgba(156,163,175,0.15); }
 </style>
 </head>
 <body>
@@ -1812,6 +1833,7 @@ async function loadStudents() {
     attendance.filter(function(a) { return a.student_id === s.id; }).forEach(function(a) { att[a.date] = true; });
     return Object.assign({}, s, { att: att });
   });
+  await loadExcuses();
   renderAll();
 }
 
@@ -1836,18 +1858,28 @@ function renderAttend() {
   var classDay = isClassDay();
   var html = "";
   if (!classDay) {
-    // Show students in read-only mode with a banner
-    html += '<div style="background:var(--red-bg);border-bottom:1px solid rgba(239,68,68,0.2);padding:12px 20px;font-size:12px;color:var(--red);font-family:\'DM Mono\',monospace">' + getClassDayMessage() + '</div>';
+    html += '<div style="background:var(--red-bg);border-bottom:1px solid rgba(239,68,68,0.2);padding:12px 20px;font-size:12px;color:var(--red);font-family:\'JetBrains Mono\',monospace">' + getClassDayMessage() + '</div>';
   }
   students.forEach(function(s) {
     var here = !!(s.att && s.att[TODAY]);
     var days = Object.keys(s.att || {}).length;
-    html += '<div class="attend-row">';
-    html += '<div><div class="attend-name">' + s.name + '</div>';
-    html += '<div class="attend-sub">' + days + ' days &middot; ' + (days * SATS) + ' sats earned</div></div>';
+    var excuseReason = excusesMap[s.id] && excusesMap[s.id][TODAY];
+    var excuseType = excuseReason ? getExcuseType(excuseReason) : null;
+    html += '<div class="attend-row" style="flex-wrap:wrap">';
+    html += '<div style="flex:1;min-width:160px"><div class="attend-name">' + s.name + '</div>';
+    var subLine = days + ' days &middot; ' + (days * SATS) + ' sats earned';
+    if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
+    html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {
       html += '<button class="toggle ' + (here ? 'on' : '') + '" onclick="toggleAttend(\'' + s.id + '\')"></button>';
-      html += '<span class="badge ' + (here ? 'badge-green' : 'badge-gray') + '">' + (here ? 'PRESENT' : 'ABSENT') + '</span>';
+      if (here) {
+        html += '<span class="badge badge-green">PRESENT</span>';
+      } else if (excuseType) {
+        html += '<span class="badge ' + excuseBadgeClass[excuseType] + '">' + excuseLabels[excuseType] + '</span>';
+      } else {
+        html += '<span class="badge badge-gray">ABSENT</span>';
+        html += '<button class="excuse-btn" onclick="openExcuseModal(\'' + s.id + '\',\'' + TODAY + '\')">📝 + Excuse</button>';
+      }
     } else {
       html += '<button class="toggle" disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none"></button>';
       html += '<span class="badge badge-gray" style="opacity:0.4">LOCKED</span>';
@@ -3765,6 +3797,34 @@ function showStaffPayReminder() {
       </div>
       <div id="shHistory"></div>
       <div class="staff-summary-strip" id="shSummary"></div>
+    </div>
+  </div>
+
+  <!-- Excuse Modal -->
+  <div id="excuseModal" style="display:none" class="profile-modal" onclick="if(event.target===this)closeExcuseModal()">
+    <div class="profile-box" style="max-width:440px">
+      <div style="padding:28px">
+        <div style="font-size:28px;margin-bottom:12px">📝</div>
+        <div style="font-family:Space Grotesk,sans-serif;font-size:20px;font-weight:800;margin-bottom:4px">Add Excuse</div>
+        <div id="excuseModalSub" style="font-size:12px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-bottom:24px"></div>
+
+        <label class="inp-label">Select Reason</label>
+        <div class="reason-grid" id="reasonGrid">
+          <div class="reason-btn" data-reason="sick" onclick="selectReason('sick')"><span class="reason-icon">🤒</span>Sick</div>
+          <div class="reason-btn" data-reason="holiday" onclick="selectReason('holiday')"><span class="reason-icon">🏖️</span>Holiday</div>
+          <div class="reason-btn" data-reason="family" onclick="selectReason('family')"><span class="reason-icon">👨‍👩‍👧</span>Family</div>
+          <div class="reason-btn" data-reason="doctor" onclick="selectReason('doctor')"><span class="reason-icon">🏥</span>Doctor</div>
+          <div class="reason-btn" data-reason="transport" onclick="selectReason('transport')"><span class="reason-icon">🚌</span>Transport</div>
+          <div class="reason-btn" data-reason="other" onclick="selectReason('other')"><span class="reason-icon">📝</span>Other</div>
+        </div>
+
+        <label class="inp-label">Note (optional)</label>
+        <input class="inp" id="excuseNote" type="text" placeholder="Add more detail...">
+
+        <div id="excuseErr"></div>
+        <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveExcuse()">✓ Save Excuse</button>
+        <button class="btn btn-outline" style="width:100%;padding:13px;margin-top:8px" onclick="closeExcuseModal()">Cancel</button>
+      </div>
     </div>
   </div>
 </body>
