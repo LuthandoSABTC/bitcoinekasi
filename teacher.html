@@ -1119,6 +1119,28 @@ body {
         <div class="stat-card"><div class="stat-num" id="sToday">0/0</div><div class="stat-label">Present Today</div></div>
         <div class="stat-card"><div class="stat-num" id="sOwed">0</div><div class="stat-label">Sats Owed</div></div>
       </div>
+      <!-- Bitcoin Price Widget -->
+      <div id="btcPriceWidget" class="btc-price-widget" style="display:none">
+        <div class="btc-price-logo">₿</div>
+        <div class="btc-price-main">
+          <div class="btc-price-label">Bitcoin Price</div>
+          <div class="btc-price-zar" id="btcPriceZar">Loading...</div>
+          <div class="btc-price-change" id="btcPriceChange"></div>
+        </div>
+        <div class="btc-price-divider"></div>
+        <div class="btc-price-stat">
+          <div class="btc-price-stat-val" id="btcSatVal">—</div>
+          <div class="btc-price-stat-label">1 SAT in ZAR</div>
+        </div>
+        <div class="btc-price-divider"></div>
+        <div class="btc-price-stat">
+          <div class="btc-price-stat-val" id="btc500SatVal">—</div>
+          <div class="btc-price-stat-label">500 SATS in ZAR</div>
+        </div>
+        <div class="btc-price-divider"></div>
+        <div class="btc-price-sats" id="btcWeekSats"></div>
+      </div>
+
 
       <!-- ATTENDANCE -->
       <div id="p-attend" class="page show">
@@ -3769,6 +3791,70 @@ function getExcuseType(reasonText) {
     if (reasonText.indexOf(excuseLabels[key]) === 0) return key;
   }
   return "other";
+}
+
+
+// ── Bitcoin Price Widget ──────────────────────────────────────
+var btcPriceZAR = 0;
+
+async function fetchBitcoinPrice() {
+  try {
+    var res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=zar&include_24hr_change=true");
+    var data = await res.json();
+    var price = data.bitcoin.zar;
+    var change = data.bitcoin.zar_24h_change;
+    btcPriceZAR = price;
+    updatePriceWidget(price, change);
+  } catch(e) {
+    try {
+      var res2 = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=BTC");
+      var data2 = await res2.json();
+      var price2 = parseFloat(data2.data.rates.ZAR);
+      btcPriceZAR = price2;
+      updatePriceWidget(price2, null);
+    } catch(e2) {
+      console.log("Price fetch failed:", e2.message);
+    }
+  }
+}
+
+function updatePriceWidget(price, change) {
+  var widget = document.getElementById("btcPriceWidget");
+  if (!widget) return;
+  widget.style.display = "flex";
+
+  var priceEl = document.getElementById("btcPriceZar");
+  if (priceEl) priceEl.textContent = "R" + Math.round(price).toLocaleString("en-ZA");
+
+  var changeEl = document.getElementById("btcPriceChange");
+  if (changeEl && change !== null) {
+    var up = change >= 0;
+    changeEl.className = "btc-price-change " + (up ? "up" : "down");
+    changeEl.textContent = (up ? "▲ +" : "▼ ") + Math.abs(change).toFixed(2) + "% today";
+  }
+
+  var satPrice = price / 100000000;
+  var satEl = document.getElementById("btcSatVal");
+  if (satEl) satEl.textContent = "R" + satPrice.toFixed(4);
+
+  var sat500El = document.getElementById("btc500SatVal");
+  if (sat500El) sat500El.textContent = "R" + (satPrice * 500).toFixed(2);
+
+  updateWeekSatsValue();
+}
+
+function updateWeekSatsValue() {
+  var el = document.getElementById("btcWeekSats");
+  if (!el || !btcPriceZAR || !students.length) return;
+  var satPrice = btcPriceZAR / 100000000;
+  var totalOwed = students.reduce(function(a,s) {
+    return a + Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
+  }, 0);
+  if (totalOwed > 0) {
+    el.innerHTML = "⚡" + totalOwed.toLocaleString() + " sats owed ≈ <span>R" + (satPrice * totalOwed).toFixed(2) + "</span>";
+  } else {
+    el.innerHTML = "Today&#39;s " + SATS + " sats ≈ <span>R" + (satPrice * SATS).toFixed(2) + "</span> per student";
+  }
 }
 
 </script>
