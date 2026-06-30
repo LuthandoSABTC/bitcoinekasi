@@ -3722,6 +3722,83 @@ function showStaffPayReminder() {
   document.body.appendChild(modal);
 }
 
+
+// ── Excuse System ──────────────────────────────────────────────
+var excusesMap = {};
+var excuseTargetStudent = null;
+var excuseTargetDate = null;
+var selectedExcuseReason = null;
+var excuseLabels = { sick: "🤒 Sick", holiday: "🏖️ Holiday", family: "👨‍👩‍👧 Family", doctor: "🏥 Doctor", transport: "🚌 Transport", other: "📝 Other" };
+var excuseBadgeClass = { sick: "badge-sick", holiday: "badge-holiday", family: "badge-family", doctor: "badge-doctor", transport: "badge-transport", other: "badge-other" };
+
+function openExcuseModal(studentId, date) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+  excuseTargetStudent = studentId;
+  excuseTargetDate = date || TODAY;
+  selectedExcuseReason = null;
+  document.querySelectorAll(".reason-btn").forEach(function(b) { b.classList.remove("selected"); });
+  document.getElementById("excuseNote").value = "";
+  document.getElementById("excuseErr").innerHTML = "";
+  document.getElementById("excuseModalSub").textContent = s.name + " · " + excuseTargetDate;
+  document.getElementById("excuseModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeExcuseModal() {
+  document.getElementById("excuseModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function selectReason(reason) {
+  selectedExcuseReason = reason;
+  document.querySelectorAll(".reason-btn").forEach(function(b) {
+    b.classList.toggle("selected", b.dataset.reason === reason);
+  });
+}
+
+async function saveExcuse() {
+  if (!selectedExcuseReason) {
+    document.getElementById("excuseErr").innerHTML = '<div class="alert alert-err">Please select a reason</div>';
+    return;
+  }
+  var note = document.getElementById("excuseNote").value.trim();
+  var reasonText = excuseLabels[selectedExcuseReason] + (note ? " — " + note : "");
+  var existing = await sb("GET","excuses",null,"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+  if (existing && existing.length) {
+    await sb("PATCH","excuses",{ reason: reasonText },"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+  } else {
+    await sb("POST","excuses",{ student_id: excuseTargetStudent, date: excuseTargetDate, reason: reasonText });
+  }
+  closeExcuseModal();
+  await loadExcuses();
+  renderAttend();
+}
+
+async function loadExcuses() {
+  if (!students.length) { excusesMap = {}; return; }
+  try {
+    var ids = students.map(function(s) { return s.id; }).join(",");
+    var raw = await sb("GET","excuses",null,"?student_id=in.(" + ids + ")");
+    excusesMap = {};
+    (raw || []).forEach(function(e) {
+      if (!excusesMap[e.student_id]) excusesMap[e.student_id] = {};
+      excusesMap[e.student_id][e.date] = e.reason;
+    });
+  } catch(e) {
+    console.log("loadExcuses failed (table may not exist yet):", e.message);
+    excusesMap = {};
+  }
+}
+
+function getExcuseType(reasonText) {
+  if (!reasonText) return null;
+  for (var key in excuseLabels) {
+    if (reasonText.indexOf(excuseLabels[key]) === 0) return key;
+  }
+  return "other";
+}
+
 </script>
 
   <!-- Staff History Modal -->
