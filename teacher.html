@@ -2575,7 +2575,12 @@ function checkLowAttendance() {
   var lowStudents = students.filter(function(s) {
     var weekAtt = filterAttByWeek(s.att, 0, "week");
     var attended = Object.keys(weekAtt).length;
-    var pct = classDaysHeld.length > 0 ? (attended / classDaysHeld.length) * 100 : 100;
+    // Count days that have an excuse as "covered" — don't penalize excused absences
+    var excused = classDaysHeld.filter(function(d) {
+      return !weekAtt[d] && excusesMap[s.id] && excusesMap[s.id][d];
+    }).length;
+    var effectiveDays = Math.max(0, classDaysHeld.length - excused);
+    var pct = effectiveDays > 0 ? (attended / effectiveDays) * 100 : 100;
     return pct < 50;
   });
 
@@ -2589,8 +2594,12 @@ function checkLowAttendance() {
     lowStudents.map(function(s) {
       var weekAtt = filterAttByWeek(s.att, 0, "week");
       var attended = Object.keys(weekAtt).length;
-      var pct = Math.round((attended / classDaysHeld.length) * 100);
-      return s.name + " — " + attended + "/" + classDaysHeld.length + " days (" + pct + "%)";
+      var excused = classDaysHeld.filter(function(d) {
+        return !weekAtt[d] && excusesMap[s.id] && excusesMap[s.id][d];
+      }).length;
+      var effectiveDays = Math.max(0, classDaysHeld.length - excused);
+      var pct = effectiveDays > 0 ? Math.round((attended / effectiveDays) * 100) : 100;
+      return s.name + " — " + attended + "/" + effectiveDays + " days (" + pct + "%)";
     }).join("<br>") +
     "</div></div></div>";
 }
