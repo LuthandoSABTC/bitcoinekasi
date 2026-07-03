@@ -1744,6 +1744,7 @@ async function sb(method, table, body, params) {
     body: body ? JSON.stringify(body) : null
   });
   var text = await res.text();
+  if (!res.ok) { console.error("Supabase " + method + " " + table + " failed:", res.status, text); return null; }
   if (!text) return [];
   try { return JSON.parse(text); } catch(e) { return []; }
 }
