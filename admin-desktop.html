@@ -3278,7 +3278,7 @@ function renderStaff() {
       var sid3 = s.id;
       html += '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">';
       html += '<div style="font-size:10px;color:var(--text3);text-align:center">Hours</div>';
-      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (selHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onchange="saveStaffHours(this.dataset.staffid)" onblur="saveStaffHours(this.dataset.staffid)">';
+      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (selHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onblur="saveStaffHours(this.dataset.staffid)">';
       html += '<div style="font-size:9px;color:var(--text3)">⚡' + Math.round((selHours||0)*STAFF_SATS_PER_HOUR) + ' sats</div></div>';
     } else {
       html += '<span class="badge badge-gray" style="opacity:0.4">NOT A WORK DAY</span>';
