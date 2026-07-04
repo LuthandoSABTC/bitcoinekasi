@@ -1757,7 +1757,13 @@ async function sb(method, table, body, params) {
   });
   var text = await res.text();
   if (!text) return [];
-  try { return JSON.parse(text); } catch(e) { return []; }
+  var parsed;
+  try { parsed = JSON.parse(text); } catch(e) { return []; }
+  if (!res.ok) {
+    var msg = (parsed && (parsed.message || parsed.error || parsed.hint)) || text.slice(0,200);
+    throw new Error(msg);
+  }
+  return parsed;
 }
 
 function doLogin() {
