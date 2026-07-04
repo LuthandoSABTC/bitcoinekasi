@@ -1154,6 +1154,9 @@ body {
       <button class="nb" id="nb-profiles" onclick="go('profiles')"><span class="nb-icon">&#128100;</span>Student Profiles</button>
       <button class="nb" id="nb-staff" onclick="go('staff')"><span class="nb-icon">&#128105;</span>Staff</button>
       <button class="nb" id="nb-shacks" onclick="go('shacks')" style="color:#a855f7"><span class="nb-icon">&#127968;</span>Painted Shacks</button>
+      <div class="nav-section">Postgrad</div>
+      <button class="nb" id="nb-pg-attend" onclick="go('pg-attend')"><span class="nb-icon">&#127891;</span>PG Attendance</button>
+      <button class="nb" id="nb-pg-roster" onclick="go('pg-roster')"><span class="nb-icon">&#128101;</span>PG Roster</button>
       <div class="nav-section">System</div>
       <button class="nb" id="nb-settings" onclick="go('settings')"><span class="nb-icon">&#9881;</span>Settings</button>
       <button class="nb" id="nb-test" onclick="go('test')"><span class="nb-icon">&#9654;</span>Test Payment</button>
@@ -1869,11 +1872,21 @@ async function loadStudents() {
 }
 
 function renderAll() {
-  updateStats(); renderAttend(); checkLowAttendance(); renderTest(); renderProfiles(); loadStaff(); renderStaffPayouts(); loadShacks(); checkStaffPayDay();
-  try { fetchBitcoinPrice(); } catch(e) { console.log("Price widget error (non-fatal):", e.message); }
+  updateStats();
+  renderAttend();
+  checkLowAttendance();
+  renderTest();
+  renderProfiles();
+  loadStaff();
+  loadShacks();
+  checkStaffPayDay();
+  try { fetchBitcoinPrice(); } catch(e) { console.log("Price widget error:", e.message); }
   try { renderDashboard(); } catch(e) {}
   setTimeout(updateWeekSatsValue, 2000);
-  if (!window._btcPriceIntervalSet) { window._btcPriceIntervalSet = true; setInterval(function(){ try { fetchBitcoinPrice(); } catch(e){} }, 300000); }
+  if (!window._btcPriceIntervalSet) {
+    window._btcPriceIntervalSet = true;
+    setInterval(function(){ try { fetchBitcoinPrice(); } catch(e){} }, 300000);
+  }
 }
 
 function updateStats() {
