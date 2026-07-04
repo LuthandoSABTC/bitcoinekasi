@@ -3331,6 +3331,7 @@ async function loadStaff() {
   renderStaff();
   renderStaffPayouts();
   renderStaffRoster();
+  try { renderDashboard(); } catch(e) {}
 }
 
 var selectedStaffDate = toLocalDateStr(new Date());
