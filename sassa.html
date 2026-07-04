@@ -1062,6 +1062,26 @@ body {
 .dash-action-btn:hover { border-color: var(--border3); background: var(--bg3); }
 .dash-action-icon { font-size: 22px; margin-bottom: 6px; }
 .dash-action-label { font-size: 11px; font-weight: 600; color: var(--text2); font-family: Space Grotesk, sans-serif; }
+
+/* Payment Failure Notification */
+.pay-fail-modal { position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px); }
+.pay-fail-box { background:var(--bg2);border:1px solid rgba(244,63,94,0.4);border-radius:20px;width:100%;max-width:460px;padding:36px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(244,63,94,0.1); }
+.pay-fail-icon { font-size:48px;margin-bottom:16px; }
+.pay-fail-title { font-family:Space Grotesk,sans-serif;font-size:22px;font-weight:800;color:var(--red);margin-bottom:6px; }
+.pay-fail-sub { font-size:13px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-bottom:24px; }
+.pay-fail-card { background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;text-align:left; }
+.pay-fail-name { font-family:Space Grotesk,sans-serif;font-size:17px;font-weight:800;color:var(--text);margin-bottom:4px; }
+.pay-fail-role { font-size:12px;color:var(--text3);margin-bottom:12px; }
+.pay-fail-amount { font-size:24px;font-weight:800;color:var(--orange);font-family:JetBrains Mono,monospace;margin-bottom:4px; }
+.pay-fail-reason { font-size:11px;color:var(--red);font-family:JetBrains Mono,monospace;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:6px;padding:8px 12px;margin-top:10px;word-break:break-word; }
+.pay-fail-history { background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:20px;max-height:160px;overflow-y:auto;text-align:left; }
+.pay-fail-history-item { font-size:11px;color:var(--text2);font-family:JetBrains Mono,monospace;padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start; }
+.pay-fail-history-item:last-child { border-bottom:none;padding-bottom:0; }
+.pay-fail-btns { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+
+/* Postgrad */
+.pg-badge { background:rgba(168,85,247,0.1);color:#C084FC;border:1px solid rgba(168,85,247,0.25);padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;font-family:JetBrains Mono,monospace; }
+.pg-avatar { width:40px;height:40px;border-radius:50%;background:rgba(168,85,247,0.12);border:2px solid rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#C084FC;flex-shrink:0;font-family:Space Grotesk,sans-serif; }
 </style>
 </head>
 <body>
@@ -1570,6 +1590,51 @@ body {
         <button class="btn btn-outline" style="flex:1" onclick="closeEdit()">Cancel</button>
         <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Changes</button>
       </div>
+
+      <!-- POSTGRAD ATTENDANCE -->
+      <div id="p-pg-attend" class="page">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <h3>Postgrad Students — Today&#39;s Attendance</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="pgMarkAll()">✓ Mark All Present</button>
+            </div>
+          </div>
+          <div id="pgAttendList"><div class="empty"><div class="empty-title">Loading...</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head" style="background:var(--bg3)">
+            <div style="display:flex;gap:16px;font-size:12px;font-family:JetBrains Mono,monospace">
+              <span>Total: <strong id="pgTotal" style="color:#C084FC">0</strong></span>
+              <span>Present: <strong id="pgPresent" style="color:var(--green)">0</strong></span>
+              <span>Absent: <strong id="pgAbsent" style="color:var(--red)">0</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POSTGRAD ROSTER -->
+      <div id="p-pg-roster" class="page">
+        <div class="roster-grid">
+          <div class="form-card">
+            <div style="font-size:15px;font-weight:700;margin-bottom:20px;font-family:Space Grotesk,sans-serif">Enroll Postgrad Student</div>
+            <div class="inp-group">
+              <label class="inp-label">Full Name</label>
+              <input class="inp" id="pgName" placeholder="Student full name">
+            </div>
+            <div class="inp-group">
+              <label class="inp-label">Cohort</label>
+              <input class="inp" id="pgCohort" value="Postgrad Cohort 1 - 2026" placeholder="Postgrad Cohort 1 - 2026">
+            </div>
+            <div id="pgErr"></div>
+            <button class="btn btn-primary" style="width:100%" onclick="addPGStudent()">+ Enroll Postgrad Student</button>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Postgrad Students</h3></div>
+            <div id="pgRosterList"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1784,9 +1849,11 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["dashboard","attend","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"];
+var pages = ["dashboard","attend","pg-attend","pg-roster","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"];
 var pageTitles = {
   dashboard:   ["Dashboard","Your program at a glance"],
+  "pg-attend":  ["Postgrad Attendance","Mark postgrad students"],
+  "pg-roster":  ["Postgrad Roster","Manage postgrad students"],
   attend:      ["Attendance","Mark today's class"],
   payout:      ["Payouts","Send Lightning payments to students"],
   stats:       ["Statistics","Class performance overview"],
@@ -1823,6 +1890,7 @@ function go(name) {
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
   if (name === "dashboard")   renderDashboard();
+  if (name === "pg-attend" || name === "pg-roster") loadPGStudents();
   if (["profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"].indexOf(name) !== -1) {
     renderProfiles();
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
@@ -1922,8 +1990,15 @@ async function toggleAttend(id) {
   var s = students.find(function(x) { return x.id === id; });
   if (!s) return;
   var isPresent = !!(s.att && s.att[TODAY]);
-  if (isPresent) { await sb("DELETE","attendance",null,"?student_id=eq." + id + "&date=eq." + TODAY); }
-  else { await sb("POST","attendance",{ student_id: id, date: TODAY },null); }
+  if (isPresent) {
+    await sb("DELETE","attendance",null,"?student_id=eq." + id + "&date=eq." + TODAY);
+  } else {
+    await sb("POST","attendance",{ student_id: id, date: TODAY },null);
+    // Clear any excuse for today since they actually attended
+    if (excusesMap[id] && excusesMap[id][TODAY]) {
+      await sb("DELETE","excuses",null,"?student_id=eq." + id + "&date=eq." + TODAY);
+    }
+  }
   await loadStudents();
 }
 
@@ -1931,7 +2006,12 @@ async function markAll() {
   if (!isClassDay()) { alert(getClassDayMessage()); return; }
   for (var i = 0; i < students.length; i++) {
     var s = students[i];
-    if (!(s.att && s.att[TODAY])) await sb("POST","attendance",{ student_id: s.id, date: TODAY },null);
+    if (!(s.att && s.att[TODAY])) {
+      await sb("POST","attendance",{ student_id: s.id, date: TODAY },null);
+      if (excusesMap[s.id] && excusesMap[s.id][TODAY]) {
+        await sb("DELETE","excuses",null,"?student_id=eq." + s.id + "&date=eq." + TODAY);
+      }
+    }
   }
   await loadStudents();
 }
@@ -2057,7 +2137,12 @@ async function paySingle(id, owed) {
     await sb("PATCH","students",{ paid: (s.paid||0) + owed },"?id=eq." + id);
     payStatus[id] = "ok:Sent " + owed + " sats";
     await loadStudents();
-  } catch(e) { payStatus[id] = "err:" + e.message; }
+  } catch(e) {
+    payStatus[id] = "err:" + e.message;
+    renderPayout();
+    showPayFailModal(s.name, "Student", owed, e.message, function() { paySingle(id, owed); });
+    return;
+  }
   renderPayout();
 }
 
@@ -4065,6 +4150,169 @@ function backupAllData() {
   document.body.removeChild(link);
 }
 
+
+// ── Payment Failure Notifications ────────────────────────────
+var payFailLog = [];
+var payFailRetryFn = null;
+
+function showPayFailModal(name, role, amount, reason, retryFn) {
+  payFailLog.push({ name: name, role: role, amount: amount, reason: reason, time: new Date().toLocaleTimeString() });
+
+  document.getElementById("pfName").textContent = name;
+  document.getElementById("pfRole").textContent = role;
+  document.getElementById("pfAmount").textContent = "⚡" + amount.toLocaleString() + " sats";
+  document.getElementById("pfReason").textContent = reason;
+  payFailRetryFn = retryFn;
+
+  var retryBtn = document.getElementById("pfRetryBtn");
+  retryBtn.onclick = function() {
+    closePayFailModal();
+    if (payFailRetryFn) payFailRetryFn();
+  };
+
+  // Show history if more than 1 failure
+  if (payFailLog.length > 1) {
+    var wrap = document.getElementById("pfHistoryWrap");
+    var hist = document.getElementById("pfHistory");
+    wrap.style.display = "block";
+    hist.innerHTML = payFailLog.slice().reverse().map(function(f) {
+      return "<div class='pay-fail-history-item'><span style='color:var(--red)'>✗</span><span><strong>" + f.name + "</strong> — ⚡" + f.amount.toLocaleString() + " — " + f.reason.slice(0,40) + " (" + f.time + ")</span></div>";
+    }).join("");
+  }
+
+  document.getElementById("payFailModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closePayFailModal() {
+  document.getElementById("payFailModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+
+// ── Postgrad Students ─────────────────────────────────────────
+var pgStudents = [];
+var pgAttendance = [];
+var pgTODAY = TODAY;
+
+async function loadPGStudents() {
+  try {
+    var raw = await sb("GET","postgrad_students",null,"?status=eq.active&order=created_at.asc");
+    if (!raw || !raw.length) { pgStudents = []; pgAttendance = []; renderPGAttend(); renderPGRoster(); return; }
+    var ids = raw.map(function(s){ return s.id; }).join(",");
+    var attRaw = await sb("GET","postgrad_attendance",null,"?student_id=in.(" + ids + ")");
+    pgAttendance = attRaw || [];
+    pgStudents = raw.map(function(s) {
+      var att = {};
+      pgAttendance.filter(function(a){ return a.student_id === s.id; }).forEach(function(a){ att[a.date] = true; });
+      return Object.assign({}, s, { att: att });
+    });
+    renderPGAttend();
+    renderPGRoster();
+  } catch(e) {
+    console.log("loadPGStudents error:", e.message);
+  }
+}
+
+function renderPGAttend() {
+  var el = document.getElementById("pgAttendList");
+  if (!el) return;
+  if (!pgStudents.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No postgrad students enrolled</div><div class="empty-sub">Go to PG Roster to add students</div></div>';
+    document.getElementById("pgTotal").textContent = 0;
+    document.getElementById("pgPresent").textContent = 0;
+    document.getElementById("pgAbsent").textContent = 0;
+    return;
+  }
+  var classDay = isClassDay();
+  var html = "";
+  var presentCount = 0;
+  pgStudents.forEach(function(s) {
+    var here = !!(s.att && s.att[TODAY]);
+    if (here) presentCount++;
+    var days = Object.keys(s.att||{}).length;
+    html += '<div class="attend-row" style="flex-wrap:wrap">';
+    html += '<div class="pg-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
+    html += '<div style="flex:1;min-width:160px"><div class="attend-name">' + s.name + ' <span class="pg-badge" style="font-size:9px;margin-left:4px">POSTGRAD</span></div>';
+    html += '<div class="attend-sub">' + days + ' days attended</div></div>';
+    if (classDay) {
+      html += '<button class="toggle ' + (here?'on':'') + '" onclick="togglePGAttend(\'' + s.id + '\')"></button>';
+      html += '<span class="badge ' + (here?'badge-green':'badge-gray') + '">' + (here?'PRESENT':'ABSENT') + '</span>';
+    } else {
+      html += '<button class="toggle" disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none"></button>';
+      html += '<span class="badge badge-gray" style="opacity:0.4">LOCKED</span>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+  document.getElementById("pgTotal").textContent = pgStudents.length;
+  document.getElementById("pgPresent").textContent = presentCount;
+  document.getElementById("pgAbsent").textContent = pgStudents.length - presentCount;
+}
+
+function renderPGRoster() {
+  var el = document.getElementById("pgRosterList");
+  if (!el) return;
+  if (!pgStudents.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">No postgrad students yet</div></div>';
+    return;
+  }
+  var html = "";
+  pgStudents.forEach(function(s) {
+    var days = Object.keys(s.att||{}).length;
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">';
+    html += '<div class="pg-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
+    html += '<div style="flex:1"><div style="font-weight:700;font-family:Space Grotesk,sans-serif">' + s.name + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px">' + (s.cohort||"Postgrad") + ' · ' + days + ' days attended</div></div>';
+    html += '<button class="btn btn-danger btn-sm" onclick="deletePGStudent(this.dataset.id)" data-id="' + s.id + '">Remove</button>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function togglePGAttend(id) {
+  if (!isClassDay()) return;
+  var s = pgStudents.find(function(x){ return x.id === id; });
+  if (!s) return;
+  var here = !!(s.att && s.att[TODAY]);
+  if (here) {
+    await sb("DELETE","postgrad_attendance",null,"?student_id=eq." + id + "&date=eq." + TODAY);
+  } else {
+    await sb("POST","postgrad_attendance",{ student_id: id, date: TODAY });
+  }
+  await loadPGStudents();
+}
+
+async function pgMarkAll() {
+  if (!isClassDay()) { alert(getClassDayMessage()); return; }
+  for (var i = 0; i < pgStudents.length; i++) {
+    var s = pgStudents[i];
+    if (!(s.att && s.att[TODAY])) {
+      await sb("POST","postgrad_attendance",{ student_id: s.id, date: TODAY });
+    }
+  }
+  await loadPGStudents();
+}
+
+async function addPGStudent() {
+  var name = document.getElementById("pgName").value.trim();
+  var cohort = document.getElementById("pgCohort").value.trim() || "Postgrad Cohort 1 - 2026";
+  var errEl = document.getElementById("pgErr");
+  if (!name) { errEl.innerHTML = '<div class="alert alert-err">Please enter a name</div>'; return; }
+  errEl.innerHTML = "";
+  await sb("POST","postgrad_students",{ name: name, cohort: cohort, status: "active" });
+  document.getElementById("pgName").value = "";
+  await loadPGStudents();
+}
+
+async function deletePGStudent(id) {
+  var s = pgStudents.find(function(x){ return x.id === id; });
+  if (!s) return;
+  if (!confirm("Remove " + s.name + " from Postgrad program?")) return;
+  await sb("DELETE","postgrad_students",null,"?id=eq." + id);
+  await loadPGStudents();
+}
+
 </script>
 
   <!-- Staff History Modal -->
@@ -4107,6 +4355,29 @@ function backupAllData() {
         <div id="excuseErr"></div>
         <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveExcuse()">✓ Save Excuse</button>
         <button class="btn btn-outline" style="width:100%;padding:13px;margin-top:8px" onclick="closeExcuseModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Failure Modal -->
+  <div id="payFailModal" style="display:none" class="pay-fail-modal">
+    <div class="pay-fail-box">
+      <div class="pay-fail-icon">⚠️</div>
+      <div class="pay-fail-title">Payment Failed</div>
+      <div class="pay-fail-sub">Could not send Lightning payment</div>
+      <div class="pay-fail-card">
+        <div class="pay-fail-name" id="pfName">—</div>
+        <div class="pay-fail-role" id="pfRole">—</div>
+        <div class="pay-fail-amount" id="pfAmount">⚡0</div>
+        <div class="pay-fail-reason" id="pfReason">Unknown error</div>
+      </div>
+      <div id="pfHistoryWrap" style="display:none">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-family:Space Grotesk,sans-serif;margin-bottom:8px">Failed Payments This Session</div>
+        <div class="pay-fail-history" id="pfHistory"></div>
+      </div>
+      <div class="pay-fail-btns">
+        <button class="btn btn-primary" style="padding:14px;justify-content:center" id="pfRetryBtn">↺ Try Again</button>
+        <button class="btn" style="padding:14px;justify-content:center" onclick="closePayFailModal()">Dismiss</button>
       </div>
     </div>
   </div>
