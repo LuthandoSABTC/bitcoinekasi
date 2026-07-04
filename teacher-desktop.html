@@ -3603,6 +3603,7 @@ async function loadShacks() {
   renderShacks();
   renderShackPayouts();
   renderShackRoster();
+  try { renderDashboard(); } catch(e) {}
 }
 
 function renderShacks() {
