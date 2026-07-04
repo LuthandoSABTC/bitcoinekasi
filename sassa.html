@@ -4314,24 +4314,28 @@ async function pgMarkAll() {
 }
 
 async function addPGStudent() {
-  var name = document.getElementById("pgName").value.trim();
-  var cohort = document.getElementById("pgCohort").value.trim() || "Postgrad Cohort 1 - 2026";
+  var nameEl = document.getElementById("pgName");
+  var cohortEl = document.getElementById("pgCohort");
   var errEl = document.getElementById("pgErr");
+  console.log("addPGStudent called", { nameEl: nameEl, cohortEl: cohortEl, errEl: errEl });
+  if (!nameEl) { alert("pgName element not found - please report this error"); return; }
+  if (!errEl) { alert("pgErr element not found - please report this error"); return; }
+  var name = nameEl.value.trim();
+  var cohort = (cohortEl ? cohortEl.value.trim() : "") || "Postgrad Cohort 1 - 2026";
   if (!name) { errEl.innerHTML = '<div class="alert alert-err">Please enter a name</div>'; return; }
   errEl.innerHTML = '<div class="alert alert-info">Adding student...</div>';
   try {
-    var teacherId = typeof TEACHER_ID !== "undefined" ? TEACHER_ID : (typeof myTeacherId !== "undefined" ? myTeacherId : null);
     var payload = { name: name, cohort: cohort, status: "active" };
-    if (teacherId) payload.teacher_id = teacherId;
+    console.log("Posting payload:", payload);
     var result = await sb("POST","postgrad_students", payload, null);
-    // result can be [] (empty array) or [{...}] — both are fine
-    document.getElementById("pgName").value = "";
+    console.log("Post result:", result);
+    nameEl.value = "";
     errEl.innerHTML = '<div class="alert alert-ok">✓ ' + name + ' enrolled successfully</div>';
     setTimeout(function() { errEl.innerHTML = ""; }, 3000);
     await loadPGStudents();
   } catch(e) {
-    errEl.innerHTML = '<div class="alert alert-err">Error: ' + e.message + '</div>';
     console.error("addPGStudent error:", e);
+    errEl.innerHTML = '<div class="alert alert-err">Error: ' + e.message + '</div>';
   }
 }
 
