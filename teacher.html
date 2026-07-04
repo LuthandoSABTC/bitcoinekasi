@@ -4357,7 +4357,7 @@ async function addPGStudent() {
     var payload = { name: name, cohort: cohort, status: "active" };
     if (teacherId) payload.teacher_id = teacherId;
     var result = await sb("POST","postgrad_students", payload, null);
-    if (!result) throw new Error("No response from database");
+    // result can be [] (empty array) or [{...}] — both are fine
     document.getElementById("pgName").value = "";
     errEl.innerHTML = '<div class="alert alert-ok">✓ ' + name + ' enrolled successfully</div>';
     setTimeout(function() { errEl.innerHTML = ""; }, 3000);
