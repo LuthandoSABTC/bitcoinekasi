@@ -1454,11 +1454,8 @@ body {
           <button class="btn btn-primary" style="width:100%;margin-bottom:24px" onclick="saveTeacherSettings()">Save API Key</button>
           <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px">
             <div style="font-size:15px;font-weight:700;margin-bottom:16px">Change Password</div>
-            <div class="inp-group">
-              <label class="inp-label">New Teacher Password</label>
-              <input class="inp" type="password" id="tNewPw" placeholder="Min 4 characters">
-              <div class="inp-hint" id="tCurPw">Current: ekasi2024</div>
-            </div>
+            <div class="inp-group"><label class="inp-label">New Password</label><input class="inp" type="password" id="tNewPw" placeholder="Min 4 characters"></div>
+            <div id="tPwMsg"></div>
             <button class="btn btn-outline" style="width:100%" onclick="saveTeacherPassword()">Update Password</button>
           </div>
         </div>
@@ -1469,12 +1466,11 @@ body {
         <div class="section-header">
           <div class="section-title">Bitcoin Diploma — Chapter Log</div>
         </div>
-        <!-- Today's entry -->
         <div class="form-card" style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
             <div style="width:8px;height:8px;background:var(--orange);border-radius:50%;flex-shrink:0"></div>
-            <div style="font-size:14px;font-weight:700">Record Today's Class</div>
-            <span id="chapterTodayDate" style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-left:auto"></span>
+            <div style="font-size:14px;font-weight:700">Record Today\'s Class</div>
+            <span id="chapterTodayDate" style="font-size:11px;color:var(--text3);font-family:\'DM Mono\',monospace;margin-left:auto"></span>
           </div>
           <div class="inp-group">
             <label class="inp-label">Chapter</label>
@@ -1483,20 +1479,18 @@ body {
             </select>
           </div>
           <div id="chapterTopicsPreview" style="margin-top:-8px;margin-bottom:16px;display:none">
-            <div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase">Topics covered</div>
+            <div style="font-size:11px;color:var(--text3);font-family:\'DM Mono\',monospace;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase">Topics covered</div>
             <div id="chapterTopicsList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
           </div>
           <div class="inp-group">
             <label class="inp-label">Notes (optional)</label>
-            <textarea class="inp" id="chapterNotes" placeholder="What did the class cover today? Any highlights or challenges?" style="height:80px;resize:vertical;margin-bottom:0"></textarea>
+            <textarea class="inp" id="chapterNotes" placeholder="What did the class cover today?" style="height:80px;resize:vertical;margin-bottom:0"></textarea>
           </div>
           <div id="chapterSaveMsg"></div>
           <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveChapterEntry()">&#128218; Save Chapter Entry</button>
         </div>
-        <!-- Progress tracker -->
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">CURRICULUM PROGRESS</div>
         <div id="chapterProgress" style="margin-bottom:20px"></div>
-        <!-- History log -->
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);letter-spacing:0.5px">CLASS HISTORY</div>
         <div class="card"><div id="chapterHistory"></div></div>
       </div>
@@ -1716,7 +1710,7 @@ const SUPABASE_URL = "https://bnteowvyioptlvohyert.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
 const TEACHER_ID = "fee45b1a-c503-453e-9ae8-5c08f9b71a0f";
 let API_KEY = localStorage.getItem("ek_key") || "";
-let PW = localStorage.getItem("ek_pw") || "ekasi2024";
+let PW = localStorage.getItem("ek_sassa_pw") || "ekasi2024";
 function toLocalDateStr(d) {
   var y = d.getFullYear();
   var m = String(d.getMonth() + 1).padStart(2, "0");
@@ -1883,6 +1877,7 @@ var pageTitles = {
   shacks:          ["Painted Shacks","Monthly check-in and payments"],
   "shacks-payouts":["Shack Payouts","Pay shack owners monthly"],
   "shacks-roster": ["Shack Roster","Manage shack owners"],
+  settings:    ["Settings","Configure API key"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
 
@@ -1909,10 +1904,10 @@ function go(name) {
     renderProfiles();
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
   }
+  if (name === "test")        { setTimeout(renderTest, 100); }
   if (name === "settings") {
     updateTeacherKeyBadge();
     document.getElementById("tSettingsMsg").innerHTML = "";
-    document.getElementById("tCurPw").textContent = "Current: " + PW;
   }
 }
 
@@ -2367,7 +2362,6 @@ function renderLeaderboard() {
   el.innerHTML = tierHtml;
 }
 
-
 function switchRosterTab(tab) {
   document.getElementById("rView-active").style.display = tab === "active" ? "" : "none";
   document.getElementById("rView-alumni").style.display = tab === "alumni" ? "" : "none";
@@ -2528,15 +2522,16 @@ function saveTeacherSettings() {
   setTimeout(function() { document.getElementById("tSettingsMsg").innerHTML = ""; }, 3000);
 }
 
+
 function saveTeacherPassword() {
   var p = document.getElementById("tNewPw").value.trim();
-  if (!p || p.length < 4) { document.getElementById("tSettingsMsg").innerHTML = '<div class="alert alert-err">Password must be at least 4 characters</div>'; return; }
+  var msg = document.getElementById("tPwMsg");
+  if (!p || p.length < 4) { msg.innerHTML = '<div class="alert alert-err">Password must be at least 4 characters</div>'; return; }
   PW = p;
-  localStorage.setItem("ek_pw", p);
+  localStorage.setItem("ek_sassa_pw", p);
   document.getElementById("tNewPw").value = "";
-  document.getElementById("tCurPw").textContent = "Current: " + p;
-  document.getElementById("tSettingsMsg").innerHTML = '<div class="alert alert-ok">Password updated!</div>';
-  setTimeout(function() { document.getElementById("tSettingsMsg").innerHTML = ""; }, 3000);
+  msg.innerHTML = '<div class="alert alert-ok">Password updated!</div>';
+  setTimeout(function() { msg.innerHTML = ""; }, 3000);
 }
 
 
@@ -2628,7 +2623,7 @@ const CHAPTERS = [
   { num: 10, title: "Why Bitcoin?",                        topics: ["CBDCs", "Philosophy of Bitcoin", "Right to control your money"] }
 ];
 
-var chapterLog = []; // loaded from Supabase
+var chapterLog = [];
 
 async function loadChapterLog() {
   var raw = await sb("GET","chapters",null,"?teacher_id=eq." + TEACHER_ID + "&order=date.desc");
@@ -2636,14 +2631,10 @@ async function loadChapterLog() {
 }
 
 async function renderChaptersPage() {
-  // Set today's date label
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var d = new Date();
   document.getElementById("chapterTodayDate").textContent = d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
-
   await loadChapterLog();
-
-  // Populate chapter select
   var sel = document.getElementById("chapterSelect");
   sel.innerHTML = '<option value="">— Select chapter —</option>';
   CHAPTERS.forEach(function(c) {
@@ -2652,15 +2643,12 @@ async function renderChaptersPage() {
     opt.textContent = "Chapter " + c.num + " — " + c.title;
     sel.appendChild(opt);
   });
-
-  // Pre-select if today already has an entry
   var todayEntry = chapterLog.find(function(e) { return e.date === TODAY; });
   if (todayEntry) {
     sel.value = todayEntry.chapter;
     document.getElementById("chapterNotes").value = todayEntry.notes || "";
     onChapterSelect();
   }
-
   renderChapterProgress();
   renderChapterHistory();
 }
@@ -2672,9 +2660,7 @@ function onChapterSelect() {
   if (!num) { preview.style.display = "none"; return; }
   var ch = CHAPTERS.find(function(c) { return c.num === num; });
   if (!ch) { preview.style.display = "none"; return; }
-  list.innerHTML = ch.topics.map(function(t) {
-    return '<span class="topic-chip">' + t + '</span>';
-  }).join("");
+  list.innerHTML = ch.topics.map(function(t) { return '<span class="topic-chip">' + t + '</span>'; }).join("");
   preview.style.display = "block";
 }
 
@@ -2684,8 +2670,6 @@ async function saveChapterEntry() {
   var msg = document.getElementById("chapterSaveMsg");
   if (!num) { msg.innerHTML = '<div class="alert alert-err">Please select a chapter</div>'; return; }
   msg.innerHTML = '<div class="alert alert-info">Saving...</div>';
-
-  // Check if today already has an entry — update it
   var existing = chapterLog.find(function(e) { return e.date === TODAY; });
   var result;
   if (existing) {
@@ -2693,8 +2677,7 @@ async function saveChapterEntry() {
   } else {
     result = await sb("POST","chapters",{ teacher_id: TEACHER_ID, date: TODAY, chapter: num, notes: notes },null);
   }
-
-  if (result && (result.length || result.id)) {
+  if (result !== null && result !== undefined) {
     msg.innerHTML = '<div class="alert alert-ok">&#10003; Chapter ' + num + ' saved for today!</div>';
     setTimeout(function() { msg.innerHTML = ""; }, 3000);
     await loadChapterLog();
@@ -2707,23 +2690,16 @@ async function saveChapterEntry() {
 
 function renderChapterProgress() {
   var el = document.getElementById("chapterProgress");
-  // Count sessions per chapter
   var counts = {};
   chapterLog.forEach(function(e) { counts[e.chapter] = (counts[e.chapter]||0) + 1; });
   var totalDone = Object.keys(counts).length;
-
-  var html = '';
-  // Progress bar
   var pct = Math.round((totalDone / 10) * 100);
-  html += '<div style="margin-bottom:16px">';
+  var html = '<div style="margin-bottom:16px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
   html += '<span style="font-size:12px;color:var(--text3);font-family:\'DM Mono\',monospace">' + totalDone + '/10 chapters started</span>';
   html += '<span style="font-size:12px;font-weight:700;color:var(--orange);font-family:\'DM Mono\',monospace">' + pct + '%</span>';
-  html += '</div>';
-  html += '<div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">';
-  html += '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 1s ease"></div>';
-  html += '</div></div>';
-
+  html += '</div><div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">';
+  html += '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width 1s ease"></div></div></div>';
   CHAPTERS.forEach(function(c) {
     var sessions = counts[c.num] || 0;
     var isDone = sessions > 0;
@@ -2731,21 +2707,16 @@ function renderChapterProgress() {
     html += '<div class="chapter-progress-item' + (isDone?' done':'') + (isActive?' active':'') + '">';
     html += '<div class="chapter-num' + (isDone?' done':'') + (isActive&&!isDone?' active':'') + '">';
     html += isDone ? '&#10003;' : c.num;
-    html += '</div>';
-    html += '<div><div class="chapter-title' + (isDone?' done':'') + '">Chapter ' + c.num + ' — ' + c.title + '</div>';
+    html += '</div><div><div class="chapter-title' + (isDone?' done':'') + '">Chapter ' + c.num + ' — ' + c.title + '</div>';
     html += '<div class="chapter-sessions">' + (sessions > 0 ? sessions + ' session' + (sessions!==1?'s':'') + ' taught' : 'Not started') + '</div></div>';
-    html += '<div class="chapter-days-badge' + (isDone?' done':'') + '">' + (sessions>0?sessions+'×':'—') + '</div>';
-    html += '</div>';
+    html += '<div class="chapter-days-badge' + (isDone?' done':'') + '">' + (sessions>0?sessions+'×':'—') + '</div></div>';
   });
   el.innerHTML = html;
 }
 
 function renderChapterHistory() {
   var el = document.getElementById("chapterHistory");
-  if (!chapterLog.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-title">No entries yet</div><div class="empty-sub">Record your first chapter above</div></div>';
-    return;
-  }
+  if (!chapterLog.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No entries yet</div><div class="empty-sub">Record your first chapter above</div></div>'; return; }
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var html = "";
   chapterLog.forEach(function(e) {
@@ -2753,15 +2724,11 @@ function renderChapterHistory() {
     var d = new Date(e.date + "T00:00:00");
     var days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     var dateStr = days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()];
-    html += '<div class="chapter-history-row">';
-    html += '<div class="chapter-history-header">';
+    html += '<div class="chapter-history-row"><div class="chapter-history-header">';
     html += '<span class="chapter-badge">Ch.' + e.chapter + '</span>';
     html += '<span style="font-size:13px;font-weight:600">' + (ch ? ch.title : 'Chapter ' + e.chapter) + '</span>';
-    html += '<span class="chapter-history-date">' + dateStr + '</span>';
-    html += '</div>';
-    if (e.notes) {
-      html += '<div class="chapter-history-notes">' + e.notes + '</div>';
-    }
+    html += '<span class="chapter-history-date">' + dateStr + '</span></div>';
+    if (e.notes) html += '<div class="chapter-history-notes">' + e.notes + '</div>';
     if (ch) {
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">';
       ch.topics.forEach(function(t) { html += '<span class="topic-chip">' + t + '</span>'; });
