@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitcoin Ekasi - Teacher Portal</title>
+<title>Bitcoin Ekasi — Teacher Desktop</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1153,6 +1153,18 @@ body {
       <div class="live-pill"><div class="live-dot"></div>LIVE</div>
     </div>
 
+
+    <!-- Quick action bar (desktop only) -->
+    <div class="quick-bar">
+      <button class="quick-btn primary" onclick="markAll()">✓ Mark All Present</button>
+      <button class="quick-btn" onclick="go('payout')">⚡ Payouts</button>
+      <button class="quick-btn" onclick="go('leaderboard')">★ Leaderboard</button>
+      <button class="quick-btn" onclick="go('chapters')">📚 Chapters</button>
+      <div style="margin-left:auto;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">
+        <span id="dateEl2"></span>
+      </div>
+    </div>
+
     <div class="content">
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-num" id="sStudents">0</div><div class="stat-label">Students</div></div>
@@ -1914,7 +1926,9 @@ function updateDate() {
   var d = new Date();
   var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  document.getElementById("dateEl").textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+  var dateStr = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+  document.getElementById("dateEl").textContent = dateStr;
+  var el2 = document.getElementById("dateEl2"); if(el2) el2.textContent = dateStr;
 }
 
 async function loadStudents() {
@@ -3135,6 +3149,19 @@ async function saveEdit() {
     msg.innerHTML = '<div class="alert alert-err">Failed to save. Try again.</div>';
   }
 }
+
+
+// ── Keyboard shortcuts (desktop) ─────────────────────────────
+document.addEventListener("keydown", function(e) {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+  if (e.key === "1") go("attend");
+  if (e.key === "2") go("payout");
+  if (e.key === "3") go("stats");
+  if (e.key === "4") go("leaderboard");
+  if (e.key === "5") go("roster");
+  if (e.key === "6") go("chapters");
+  if (e.key === "m") markAll();
+});
 
 
 // ── PDF Report Generation ───────────────────────────────────────
