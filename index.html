@@ -1474,6 +1474,43 @@ body {
         <div id="shackRosterList"></div>
       </div>
 
+
+      <!-- POSTGRAD ATTENDANCE -->
+      <div id="p-pg-attend" class="page">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <h3>Postgrad Students — Today&#39;s Attendance</h3>
+            <button class="btn btn-primary btn-sm" onclick="pgMarkAll()">✓ Mark All Present</button>
+          </div>
+          <div id="pgAttendList"><div class="empty"><div class="empty-title">Loading...</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head" style="background:var(--bg3)">
+            <div style="display:flex;gap:16px;font-size:12px;font-family:JetBrains Mono,monospace">
+              <span>Total: <strong id="pgTotal" style="color:#C084FC">0</strong></span>
+              <span>Present: <strong id="pgPresent" style="color:var(--green)">0</strong></span>
+              <span>Absent: <strong id="pgAbsent" style="color:var(--red)">0</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POSTGRAD ROSTER -->
+      <div id="p-pg-roster" class="page">
+        <div class="roster-grid">
+          <div class="form-card">
+            <div style="font-size:15px;font-weight:700;margin-bottom:20px;font-family:Space Grotesk,sans-serif">Enroll Postgrad Student</div>
+            <div class="inp-group"><label class="inp-label">Full Name</label><input class="inp" id="pgName" placeholder="Student full name"></div>
+            <div class="inp-group"><label class="inp-label">Cohort</label><input class="inp" id="pgCohort" value="Postgrad Cohort 1 - 2026"></div>
+            <div id="pgErr"></div>
+            <button class="btn btn-primary" style="width:100%" onclick="addPGStudent()">+ Enroll Postgrad Student</button>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Postgrad Students</h3></div>
+            <div id="pgRosterList"></div>
+          </div>
+        </div>
+      </div>
       <!-- SETTINGS -->
       <div id="p-settings" class="page">
         <div class="settings-grid">
@@ -4227,34 +4264,6 @@ async function deletePGStudent(id) {
       </div>
       <div id="shHistory"></div>
       <div class="staff-summary-strip" id="shSummary"></div>
-    </div>
-  </div>
-
-  <!-- Excuse Modal -->
-  <div id="excuseModal" style="display:none" class="profile-modal" onclick="if(event.target===this)closeExcuseModal()">
-    <div class="profile-box" style="max-width:440px">
-      <div style="padding:28px">
-        <div style="font-size:28px;margin-bottom:12px">📝</div>
-        <div style="font-family:Space Grotesk,sans-serif;font-size:20px;font-weight:800;margin-bottom:4px">Add Excuse</div>
-        <div id="excuseModalSub" style="font-size:12px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-bottom:24px"></div>
-
-        <label class="inp-label">Select Reason</label>
-        <div class="reason-grid" id="reasonGrid">
-          <div class="reason-btn" data-reason="sick" onclick="selectReason('sick')"><span class="reason-icon">🤒</span>Sick</div>
-          <div class="reason-btn" data-reason="holiday" onclick="selectReason('holiday')"><span class="reason-icon">🏖️</span>Holiday</div>
-          <div class="reason-btn" data-reason="family" onclick="selectReason('family')"><span class="reason-icon">👨‍👩‍👧</span>Family</div>
-          <div class="reason-btn" data-reason="doctor" onclick="selectReason('doctor')"><span class="reason-icon">🏥</span>Doctor</div>
-          <div class="reason-btn" data-reason="transport" onclick="selectReason('transport')"><span class="reason-icon">🚌</span>Transport</div>
-          <div class="reason-btn" data-reason="other" onclick="selectReason('other')"><span class="reason-icon">📝</span>Other</div>
-        </div>
-
-        <label class="inp-label">Note (optional)</label>
-        <input class="inp" id="excuseNote" type="text" placeholder="Add more detail...">
-
-        <div id="excuseErr"></div>
-        <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveExcuse()">✓ Save Excuse</button>
-        <button class="btn btn-outline" style="width:100%;padding:13px;margin-top:8px" onclick="closeExcuseModal()">Cancel</button>
-      </div>
     </div>
   </div>
 
