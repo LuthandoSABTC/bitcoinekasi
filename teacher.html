@@ -1636,7 +1636,7 @@ body {
               <input class="inp" id="pgCohort" value="Postgrad Cohort 1 - 2026" placeholder="Postgrad Cohort 1 - 2026">
             </div>
             <div id="pgErr"></div>
-            <button class="btn btn-primary" style="width:100%" onclick="addPGStudent()">+ Enroll Postgrad Student</button>
+            <button class="btn btn-primary" style="width:100%" id="pgEnrollBtn">+ Enroll Postgrad Student</button>
           </div>
           <div class="card">
             <div class="card-head"><h3>Postgrad Students</h3></div>
@@ -4248,6 +4248,9 @@ var pgAttendance = [];
 var pgTODAY = TODAY;
 
 async function loadPGStudents() {
+  // Wire up enroll button safely
+  var pgBtn = document.getElementById("pgEnrollBtn");
+  if (pgBtn && !pgBtn._wired) { pgBtn._wired = true; pgBtn.addEventListener("click", addPGStudent); }
   try {
     var raw = await sb("GET","postgrad_students",null,"?status=eq.active&order=created_at.asc");
     if (!raw || !raw.length) { pgStudents = []; pgAttendance = []; renderPGAttend(); renderPGRoster(); return; }
