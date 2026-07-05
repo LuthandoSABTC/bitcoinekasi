@@ -1479,7 +1479,7 @@ body {
           </div>
           <div style="margin-bottom:20px">
             <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Cohort</label>
-            <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" type="text" id="pgCohort" value="Postgrad Cohort 1 - 2026">
+            <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" type="text" id="pgCohort" value="Postgrad 2026">
           </div>
           <div id="pgErr" style="margin-bottom:10px"></div>
           <button id="pgEnrollBtn" style="width:100%;background:var(--orange);color:#000;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">+ Enroll Postgrad Student</button>
@@ -1557,7 +1557,7 @@ body {
           </div>
           <div style="margin-bottom:20px">
             <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Cohort</label>
-            <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" type="text" id="pgCohort" value="Postgrad Cohort 1 - 2026">
+            <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" type="text" id="pgCohort" value="Postgrad 2026">
           </div>
           <div id="pgErr" style="margin-bottom:10px"></div>
           <button id="pgEnrollBtn" style="width:100%;background:var(--orange);color:#000;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">+ Enroll Postgrad Student</button>
@@ -4240,7 +4240,7 @@ async function pgMarkAll() {
 
 async function addPGStudent() {
   var name = document.getElementById("pgName").value.trim();
-  var cohort = document.getElementById("pgCohort").value.trim() || "Postgrad Cohort 1 - 2026";
+  var cohort = document.getElementById("pgCohort").value.trim() || "Postgrad 2026";
   var errEl = document.getElementById("pgErr");
   if (!name) { errEl.innerHTML = '<div class="alert alert-err">Please enter a name</div>'; return; }
   errEl.innerHTML = '<div class="alert alert-info">Adding student...</div>';
