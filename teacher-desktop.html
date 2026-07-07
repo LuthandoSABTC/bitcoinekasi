@@ -1890,6 +1890,7 @@ function renderAll() {
   renderTest();
   renderProfiles();
   loadStaff();
+  loadPGStudents();
   checkStaffPayDay();
   try { fetchBitcoinPrice(); } catch(e) { console.log("Price widget error:", e.message); }
   try { renderDashboard(); } catch(e) {}
