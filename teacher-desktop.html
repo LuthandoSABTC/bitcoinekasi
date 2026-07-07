@@ -830,18 +830,6 @@ body {
 .staff-payout-row:hover { background: var(--bg3); }
 .badge-blue { background: rgba(79,70,229,0.08); color: var(--blue); border: 1px solid rgba(79,70,229,0.2); }
 
-/* ── SHACKS ──────────────────────────────────────────────────── */
-.shack-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px; transition: border-color 0.2s; }
-.shack-card:hover { border-color: rgba(124,58,237,0.25); }
-.shack-avatar { width: 46px; height: 46px; border-radius: 10px; background: rgba(124,58,237,0.08); border: 2px solid rgba(124,58,237,0.2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: var(--purple); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; text-align: center; }
-.shack-checkin-btn { padding: 9px 18px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Space Grotesk', sans-serif; border: none; transition: all 0.2s; white-space: nowrap; }
-.shack-checkin-btn.checked { background: rgba(124,58,237,0.1); color: var(--purple); border: 1.5px solid rgba(124,58,237,0.25); }
-.shack-checkin-btn.unchecked { background: var(--bg3); color: var(--text3); border: 1.5px solid var(--border2); }
-.shack-checkin-btn.unchecked:hover { background: var(--bg4); color: var(--text2); }
-.shack-payout-row { display: grid; grid-template-columns: 1fr 80px 100px 100px 140px; align-items: center; padding: 14px 22px; border-bottom: 1px solid var(--border); gap: 12px; font-size: 13px; transition: background 0.15s; }
-.shack-payout-row:last-child { border-bottom: none; }
-.shack-payout-row:hover { background: var(--bg3); }
-
 /* ── ALUMNI ──────────────────────────────────────────────────── */
 .alumni-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 18px; text-align: center; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
 .alumni-card:hover { border-color: rgba(247,147,26,0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(247,147,26,0.1); }
@@ -916,7 +904,7 @@ body {
   .topbar { padding: 20px 40px; }
 }
 
-/* ── STAFF/SHACK PICKER ──────────────────────────────────────── */
+/* ── STAFF PICKER ──────────────────────────────────────── */
 .profile-stats-wide { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
 
 /* Staff History Modal */
@@ -1045,7 +1033,7 @@ body {
 .chip-other { background:rgba(156,163,175,0.08);color:#9CA3AF;border:1px solid rgba(156,163,175,0.15); }
 
 /* Dashboard */
-.dash-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+.dash-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
 .dash-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
 .dash-card:hover { transform: translateY(-2px); }
 .dash-card-icon { font-size: 24px; margin-bottom: 10px; }
@@ -1057,7 +1045,7 @@ body {
 .dash-row:last-child { border-bottom: none; }
 .dash-row-label { font-size: 13px; color: var(--text2); }
 .dash-row-val { font-family: JetBrains Mono, monospace; font-weight: 700; color: var(--orange); }
-.dash-quick-actions { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+.dash-quick-actions { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
 .dash-action-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; cursor: pointer; transition: all 0.15s; }
 .dash-action-btn:hover { border-color: var(--border3); background: var(--bg3); }
 .dash-action-icon { font-size: 22px; margin-bottom: 6px; }
@@ -1129,7 +1117,6 @@ body {
       <button class="nb" id="nb-monthly" onclick="go('monthly')"><span class="nb-icon">&#128200;</span>Monthly</button>
       <button class="nb" id="nb-profiles" onclick="go('profiles')"><span class="nb-icon">&#128100;</span>Student Profiles</button>
       <button class="nb" id="nb-staff" onclick="go('staff')"><span class="nb-icon">&#128105;</span>Staff</button>
-      <button class="nb" id="nb-shacks" onclick="go('shacks')" style="color:#a855f7"><span class="nb-icon">&#127968;</span>Painted Shacks</button>
       <div class="nav-section">Postgrad</div>
       <button class="nb" id="nb-pg-attend" onclick="go('pg-attend')"><span class="nb-icon">&#127891;</span>PG Attendance</button>
       <button class="nb" id="nb-pg-roster" onclick="go('pg-roster')"><span class="nb-icon">&#128101;</span>PG Roster</button>
@@ -1202,7 +1189,6 @@ body {
         <div class="dash-grid">
           <div class="dash-card"><div class="dash-card-icon">🎓</div><div class="dash-card-val" id="dashStudents" style="color:var(--orange)">0</div><div class="dash-card-label">Active Students</div></div>
           <div class="dash-card"><div class="dash-card-icon">👩‍🏫</div><div class="dash-card-val" id="dashStaff" style="color:#6366F1">0</div><div class="dash-card-label">Teaching Assistants</div></div>
-          <div class="dash-card"><div class="dash-card-icon">🏠</div><div class="dash-card-val" id="dashShacks" style="color:#a855f7">0</div><div class="dash-card-label">Shack Owners</div></div>
           <div class="dash-card"><div class="dash-card-icon">🎓</div><div class="dash-card-val" id="dashAlumni" style="color:var(--green)">0</div><div class="dash-card-label">Alumni</div></div>
         </div>
 
@@ -1212,7 +1198,6 @@ body {
             <div class="dash-action-btn" onclick="go('attend')"><div class="dash-action-icon">✓</div><div class="dash-action-label">Mark Attendance</div></div>
             <div class="dash-action-btn" onclick="go('payout')"><div class="dash-action-icon">⚡</div><div class="dash-action-label">Pay Students</div></div>
             <div class="dash-action-btn" onclick="go('staff-payouts')"><div class="dash-action-icon">👩‍🏫</div><div class="dash-action-label">Pay Staff</div></div>
-            <div class="dash-action-btn" onclick="go('shacks-payouts')"><div class="dash-action-icon">🏠</div><div class="dash-action-label">Pay Shacks</div></div>
           </div>
         </div>
 
@@ -1221,7 +1206,6 @@ body {
           <div class="card">
             <div class="dash-row"><span class="dash-row-label">🎓 Students</span><span class="dash-row-val" id="dashStudentOwed">⚡0</span></div>
             <div class="dash-row"><span class="dash-row-label">👩‍🏫 Teaching Assistants</span><span class="dash-row-val" id="dashStaffOwed">⚡0</span></div>
-            <div class="dash-row"><span class="dash-row-label">🏠 Shack Owners</span><span class="dash-row-val" id="dashShackOwed">⚡0</span></div>
             <div class="dash-row" style="background:var(--bg3)"><span class="dash-row-label" style="font-weight:700;color:var(--text)">Total Owed</span><span class="dash-row-val" id="dashTotalOwed" style="font-size:16px">⚡0</span></div>
           </div>
         </div>
@@ -1400,57 +1384,6 @@ body {
           <button class="btn btn-primary" style="width:100%;padding:12px" onclick="addStaff()">+ Add Staff Member</button>
         </div>
         <div id="staffRosterList"></div>
-      </div>
-
-      <!-- PAINTED SHACKS -->
-      <div id="p-shacks" class="page">
-        <div class="section-header">
-          <div class="section-title">🏠 Painted Shacks</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="go('shacks-payouts')">⚡ Pay Monthly</button>
-            <button class="btn btn-outline btn-sm" onclick="go('shacks-roster')">+ Manage</button>
-          </div>
-        </div>
-        <div id="shackMonthLabel" style="font-size:12px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-bottom:8px"></div>
-        <div id="shackSummaryStrip" style="margin-bottom:16px"></div>
-        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:700;margin-bottom:16px;background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="checkInAllShacks()">✓ Mark All Active This Month</button>
-        <div id="shackList"></div>
-      </div>
-
-      <!-- SHACK PAYOUTS -->
-      <div id="p-shacks-payouts" class="page">
-        <div class="section-header">
-          <div class="section-title">🏠 Shack Owner Payouts</div>
-          <button class="btn btn-primary btn-sm" style="background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="payAllShacks()">⚡ Pay All Active This Month</button>
-        </div>
-        <div id="shackPayAlert" style="margin-bottom:12px"></div>
-        <div class="card">
-          <div class="shack-payout-row" style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:JetBrains Mono,monospace;background:var(--bg3)">
-            <div>Shack Owner</div>
-            <div style="text-align:right">Shack #</div>
-            <div style="text-align:right">This Month</div>
-            <div style="text-align:right">Total Paid</div>
-            <div style="text-align:right">Action</div>
-          </div>
-          <div id="shackPayoutList"></div>
-        </div>
-      </div>
-
-      <!-- SHACK ROSTER -->
-      <div id="p-shacks-roster" class="page">
-        <div class="section-header">
-          <div class="section-title">🏠 Manage Shack Owners</div>
-          <div style="font-size:12px;color:var(--text3);font-family:JetBrains Mono,monospace" id="shackCount">0 / 41 added</div>
-        </div>
-        <div class="card" style="padding:20px;margin-bottom:16px">
-          <div style="font-size:15px;font-weight:700;margin-bottom:16px">Add Shack Owner</div>
-          <div class="inp-group"><label class="inp-label">Owner Name</label><input class="inp" id="shackName" placeholder="Full name"></div>
-          <div class="inp-group"><label class="inp-label">Sponsor Name</label><input class="inp" id="shackSponsor" placeholder="e.g. Fedi, Blockstream"></div>
-          <div class="inp-group"><label class="inp-label">Lightning Address (Blink)</label><input class="inp" id="shackDest" placeholder="name@blink.sv"></div>
-          <div id="shackRosterErr"></div>
-          <button class="btn btn-primary" style="width:100%;padding:12px;background:rgba(168,85,247,0.9);border-color:rgba(168,85,247,0.9)" onclick="addShackOwner()">+ Add Shack Owner</button>
-        </div>
-        <div id="shackRosterList"></div>
       </div>
 
 
@@ -1651,22 +1584,6 @@ body {
       <div style="display:flex;gap:8px;margin-top:4px">
         <button class="btn btn-outline" style="flex:1" onclick="closeEdit()">Cancel</button>
         <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Changes</button>
-      </div>
-          <div style="margin-bottom:16px">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-family:Space Grotesk,sans-serif">Full Name</label>
-            <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;font-family:Inter,sans-serif;outline:none;margin-bottom:0" type="text" id="pgName" placeholder="Student full name">
-          </div>
-          <div style="margin-bottom:20px">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-family:Space Grotesk,sans-serif">Cohort</label>
-            <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;font-family:Inter,sans-serif;outline:none;margin-bottom:0" type="text" id="pgCohort" value="Postgrad 2026">
-          </div>
-          <div id="pgErr" style="margin-bottom:10px"></div>
-          <button id="pgEnrollBtn" style="width:100%;background:var(--orange);color:#000;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;font-family:Space Grotesk,sans-serif;cursor:pointer">+ Enroll Postgrad Student</button>
-        </div>
-        <div class="card">
-          <div class="card-head"><h3>Postgrad Students</h3></div>
-          <div id="pgRosterList"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -1888,7 +1805,7 @@ function doLogout() {
   document.getElementById("pwErr").innerHTML = "";
 }
 
-var pages = ["dashboard","attend","pg-attend","pg-roster","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"];
+var pages = ["dashboard","attend","pg-attend","pg-roster","payout","stats","leaderboard","roster","chapters","monthly","settings","test","profiles","staff","staff-payouts","staff-roster"];
 var pageTitles = {
   dashboard:   ["Dashboard","Your program at a glance"],
   "pg-attend":  ["Postgrad Attendance","Mark postgrad students"],
@@ -1904,9 +1821,6 @@ var pageTitles = {
   staff:       ["Staff","Teaching assistant attendance and payments"],
   "staff-payouts": ["Staff Payouts","Pay teaching assistants"],
   "staff-roster":  ["Staff Roster","Manage teaching assistants"],
-  shacks:          ["Painted Shacks","Monthly check-in and payments"],
-  "shacks-payouts":["Shack Payouts","Pay shack owners monthly"],
-  "shacks-roster": ["Shack Roster","Manage shack owners"],
   test:        ["Test Payment","Verify Lightning connectivity"]
 };
 
@@ -1929,7 +1843,7 @@ function go(name) {
   if (name === "monthly")     renderMonthly();
   if (name === "dashboard")   renderDashboard();
   if (name === "pg-attend" || name === "pg-roster") loadPGStudents();
-  if (["profiles","staff","staff-payouts","staff-roster","shacks","shacks-payouts","shacks-roster"].indexOf(name) !== -1) {
+  if (["profiles","staff","staff-payouts","staff-roster"].indexOf(name) !== -1) {
     renderProfiles();
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
   }
@@ -1974,7 +1888,6 @@ function renderAll() {
   renderTest();
   renderProfiles();
   loadStaff();
-  loadShacks();
   checkStaffPayDay();
   try { fetchBitcoinPrice(); } catch(e) { console.log("Price widget error:", e.message); }
   try { renderDashboard(); } catch(e) {}
@@ -2384,7 +2297,6 @@ function renderLeaderboard() {
       tierHtml += '<div class="tier-card">' + absentTier.map(function(s){ return renderTierRow(s, "var(--text3)"); }).join('') + '</div></div>';
     }
   } else {
-    // All Time mode — no fixed max, just sort by days descending, group isn't tier-based
     var sortedAll = data.slice().sort(function(a,b){ return b.days - a.days || a.name.localeCompare(b.name); });
     tierHtml += '<div class="tier-section"><div class="tier-header"><span class="tier-icon">📊</span><span class="tier-title">All Students — All Time</span><span class="tier-count">' + sortedAll.length + ' students</span></div>';
     tierHtml += '<div class="tier-card">' + sortedAll.map(function(s){ return renderTierRow(s, "var(--orange)"); }).join('') + '</div></div>';
@@ -2442,7 +2354,6 @@ function renderAlumniWall() {
     var dt = new Date(d + "T00:00:00");
     return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
   }
-  // Group by cohort
   var cohorts = {};
   alumni.forEach(function(s) {
     var c = s.cohort || "Cohort 5 - 2026";
@@ -2662,14 +2573,12 @@ async function loadChapterLog() {
 }
 
 async function renderChaptersPage() {
-  // Set today's date label
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var d = new Date();
   document.getElementById("chapterTodayDate").textContent = d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
 
   await loadChapterLog();
 
-  // Populate chapter select
   var sel = document.getElementById("chapterSelect");
   sel.innerHTML = '<option value="">— Select chapter —</option>';
   CHAPTERS.forEach(function(c) {
@@ -2679,7 +2588,6 @@ async function renderChaptersPage() {
     sel.appendChild(opt);
   });
 
-  // Pre-select if today already has an entry
   var todayEntry = chapterLog.find(function(e) { return e.date === TODAY; });
   if (todayEntry) {
     sel.value = todayEntry.chapter;
@@ -2711,7 +2619,6 @@ async function saveChapterEntry() {
   if (!num) { msg.innerHTML = '<div class="alert alert-err">Please select a chapter</div>'; return; }
   msg.innerHTML = '<div class="alert alert-info">Saving...</div>';
 
-  // Check if today already has an entry — update it
   var existing = chapterLog.find(function(e) { return e.date === TODAY; });
   var result;
   if (existing) {
@@ -2733,13 +2640,11 @@ async function saveChapterEntry() {
 
 function renderChapterProgress() {
   var el = document.getElementById("chapterProgress");
-  // Count sessions per chapter
   var counts = {};
   chapterLog.forEach(function(e) { counts[e.chapter] = (counts[e.chapter]||0) + 1; });
   var totalDone = Object.keys(counts).length;
 
   var html = '';
-  // Progress bar
   var pct = Math.round((totalDone / 10) * 100);
   html += '<div style="margin-bottom:16px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
@@ -2804,7 +2709,6 @@ function renderChapterHistory() {
 function checkLowAttendance() {
   var el = document.getElementById("lowAttendWarn");
   if (!el) return;
-  // Only warn if we have at least 1 class day this week
   var r = getClassWeekRange(0);
   var classDaysHeld = [];
   var cur = new Date(r.start + "T00:00:00");
@@ -2819,7 +2723,6 @@ function checkLowAttendance() {
   var lowStudents = students.filter(function(s) {
     var weekAtt = filterAttByWeek(s.att, 0, "week");
     var attended = Object.keys(weekAtt).length;
-    // Count days that have an excuse as "covered" — don't penalize excused absences
     var excused = classDaysHeld.filter(function(d) {
       return !weekAtt[d] && excusesMap[s.id] && excusesMap[s.id][d];
     }).length;
@@ -2863,7 +2766,6 @@ function openProfile(studentId) {
   var weekAtt = filterAttByWeek(s.att, 0, "week");
   var weekDays = Object.keys(weekAtt).length;
 
-  // Start date = earliest attendance record, or enrollment date
   var startDate = allDays.length > 0 ? allDays[0] : null;
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -2873,7 +2775,6 @@ function openProfile(studentId) {
     return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
   }
 
-  // Days since program started
   var daysSinceStart = 0;
   if (startDate) {
     var start = new Date(startDate + "T00:00:00");
@@ -2881,7 +2782,6 @@ function openProfile(studentId) {
     daysSinceStart = Math.floor((now - start) / (1000 * 60 * 60 * 24));
   }
 
-  // Attendance rate overall
   var attendanceRate = daysSinceStart > 0
     ? Math.round((totalDays / Math.ceil(daysSinceStart * 4 / 7)) * 100)
     : 0;
@@ -2892,21 +2792,18 @@ function openProfile(studentId) {
   document.getElementById("profileDest").textContent = s.destination || "No Lightning address";
   document.getElementById("profileJoined").textContent = startDate ? "Started: " + fmtDate(startDate) : "No attendance recorded yet";
 
-  // 4-stat grid
   document.getElementById("profileStats").innerHTML =
     '<div class="profile-stat"><div class="profile-stat-val">' + totalDays + '</div><div class="profile-stat-label">Sessions</div></div>' +
     '<div class="profile-stat"><div class="profile-stat-val">⚡' + totalSats + '</div><div class="profile-stat-label">Sats Earned</div></div>' +
     '<div class="profile-stat"><div class="profile-stat-val">⚡' + paid + '</div><div class="profile-stat-label">Sats Paid</div></div>' +
     '<div class="profile-stat"><div class="profile-stat-val">' + weekDays + '/4</div><div class="profile-stat-label">This Week</div></div>';
 
-  // Info rows
   document.getElementById("profileInfoRows").innerHTML =
     '<div class="profile-info-row"><span class="profile-info-label">Program Start Date</span><span class="profile-info-val">' + fmtDate(startDate) + '</span></div>' +
     '<div class="profile-info-row"><span class="profile-info-label">Last Attended</span><span class="profile-info-val">' + (allDays.length ? fmtDate(allDays[allDays.length-1]) : "—") + '</span></div>' +
     '<div class="profile-info-row"><span class="profile-info-label">Bonus Sats</span><span class="profile-info-val" style="color:#ffd700">+' + (s.bonus||0) + '</span></div>' +
     '<div class="profile-info-row"><span class="profile-info-label">Sats Still Owed</span><span class="profile-info-val" style="color:' + (owed>0?"var(--orange)":"var(--green)") + '">⚡' + owed + '</span></div>';
 
-  // All sessions attended — chips
   var allDaysEl = document.getElementById("profileAllDays");
   if (allDays.length) {
     var chipsHtml = '<div class="attendance-history">';
@@ -2936,10 +2833,9 @@ function closeProfile() {
 function buildContribGraph(s) {
   var el = document.getElementById("profileCalendar");
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  var days = ["T","W","T","F"]; // Tue Wed Thu Fri
+  var days = ["T","W","T","F"];
   var today = new Date(TODAY + "T00:00:00");
 
-  // Go back 8 weeks from current week
   var weeks = [];
   for (var w = -7; w <= 0; w++) {
     var r = getClassWeekRange(w);
@@ -2952,7 +2848,6 @@ function buildContribGraph(s) {
     weeks.push({ offset: w, days: weekDays, label: r.start });
   }
 
-  // Header labels (week starts)
   var html = '<div style="display:flex;gap:3px;margin-bottom:4px;margin-left:20px">';
   weeks.forEach(function(w) {
     var d = new Date(w.label + "T00:00:00");
@@ -2960,16 +2855,13 @@ function buildContribGraph(s) {
   });
   html += '</div>';
 
-  // Day rows (Tue, Wed, Thu, Fri)
   html += '<div style="display:flex;gap:0">';
-  // Day labels
   html += '<div style="display:flex;flex-direction:column;gap:3px;margin-right:4px">';
   days.forEach(function(d) {
     html += '<div style="width:14px;height:14px;font-size:8px;color:var(--text3);display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono,monospace">' + d + '</div>';
   });
   html += '</div>';
 
-  // Week columns
   weeks.forEach(function(w) {
     html += '<div style="display:flex;flex-direction:column;gap:3px;margin-right:3px">';
     w.days.forEach(function(date) {
@@ -3014,11 +2906,11 @@ function buildWeeklyBreakdown(s) {
 // ═══════════════════════════════════════════════════════════════
 function checkEndOfWeek() {
   var day = new Date().getDay();
-  if (day !== 5) return; // Only on Fridays
+  if (day !== 5) return;
   var shown = sessionStorage.getItem("eow_shown_" + TODAY);
-  if (shown) return; // Only show once per session per day
+  if (shown) return;
   sessionStorage.setItem("eow_shown_" + TODAY, "1");
-  setTimeout(showEowSummary, 1500); // Wait for data to load
+  setTimeout(showEowSummary, 1500);
 }
 
 function showEowSummary() {
@@ -3028,7 +2920,6 @@ function showEowSummary() {
   var startD = new Date(r.start + "T00:00:00");
   var endD = new Date(r.end + "T00:00:00");
 
-  // Calculate week stats
   var totalAttendances = 0;
   var perfectStudents = [];
   var totalSatsPaid = 0;
@@ -3050,7 +2941,6 @@ function showEowSummary() {
     '<div class="eow-stat"><div class="eow-stat-val">' + totalAttendances + '</div><div class="eow-stat-label">Check-ins</div></div>' +
     '<div class="eow-stat"><div class="eow-stat-val">⚡' + totalSatsPaid + '</div><div class="eow-stat-label">Sats Earned</div></div>';
 
-  // Top student this week
   var topStudents = students.slice().sort(function(a,b) {
     return Object.keys(filterAttByWeek(b.att,0,"week")).length - Object.keys(filterAttByWeek(a.att,0,"week")).length;
   });
@@ -3080,7 +2970,6 @@ function renderMonthly() {
   if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  // Only show weeks with at least 1 attendance record
   var activeWeeks = [];
   for (var w = 0; w >= -11; w--) {
     var totalAtt = 0;
@@ -3219,7 +3108,6 @@ function generateHighlightsPDF() {
     if (st.mode === 'all') {
       effBonus = s.bonus || 0;
     } else {
-      // Show 500 sats bonus for perfect week students in weekly view
       effBonus = (days >= PERFECT_DAYS && (s.bonus||0) > 0) ? BONUS_SATS : 0;
     }
     return { name: s.name, days: days, sats: days * SATS + effBonus, bonus: effBonus };
@@ -3246,7 +3134,6 @@ function generateHighlightsPDF() {
   var y = 20;
   var pageW = doc.internal.pageSize.getWidth();
 
-  // Header
   doc.setFillColor(247, 147, 26);
   doc.rect(0, 0, pageW, 8, "F");
   doc.setFontSize(18);
@@ -3261,7 +3148,6 @@ function generateHighlightsPDF() {
   doc.text("Generated: " + new Date().toLocaleDateString("en-GB"), 14, y);
   y += 12;
 
-  // Summary stats box
   doc.setDrawColor(220);
   doc.setFillColor(245, 245, 245);
   doc.roundedRect(14, y, pageW - 28, 28, 3, 3, "FD");
@@ -3287,7 +3173,6 @@ function generateHighlightsPDF() {
   });
   y += 38;
 
-  // Summary text
   doc.setTextColor(40);
   doc.setFontSize(11);
   doc.setFont(undefined, "bold");
@@ -3311,7 +3196,6 @@ function generateHighlightsPDF() {
   doc.text(lines, 14, y);
   y += lines.length * 5 + 8;
 
-  // Perfect Week list
   if (perfectStudents.length > 0) {
     doc.setFont(undefined, "bold");
     doc.setFontSize(11);
@@ -3325,7 +3209,6 @@ function generateHighlightsPDF() {
     y += pLines.length * 5 + 8;
   }
 
-  // Table header
   doc.setFont(undefined, "bold");
   doc.setFontSize(11);
   doc.text("Attendance Detail", 14, y);
@@ -3359,7 +3242,6 @@ function generateHighlightsPDF() {
     y += 7;
   });
 
-  // Footer
   y += 10;
   if (y > 280) { doc.addPage(); y = 20; }
   doc.setFontSize(8);
@@ -3429,7 +3311,7 @@ var staffPayStatus = {};
 
 function isStaffDay() {
   var day = new Date().getDay();
-  return day >= 1 && day <= 5; // Mon-Fri
+  return day >= 1 && day <= 5;
 }
 
 async function loadStaff() {
@@ -3447,6 +3329,7 @@ async function loadStaff() {
   renderStaff();
   renderStaffPayouts();
   renderStaffRoster();
+  try { renderDashboard(); } catch(e) {}
 }
 
 var selectedStaffDate = toLocalDateStr(new Date());
@@ -3463,11 +3346,9 @@ function renderStaff() {
   var dayNum = selDate.getDay();
   var isWorkDay = dayNum >= 1 && dayNum <= 5;
 
-  // Build date picker showing Mon-Fri of current week
   if (dateEl) {
     var today = new Date();
     var todayDay = today.getDay();
-    // Get Monday of this week
     var monday = new Date(today);
     monday.setDate(today.getDate() - (todayDay === 0 ? 6 : todayDay - 1));
 
@@ -3501,7 +3382,6 @@ function renderStaff() {
     html += '<div class="staff-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
     html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
     html += '<div style="font-size:11px;color:#3b82f6;margin-top:2px">' + s.role + '</div>';
-    // Calculate this week's hours
     var todayD = new Date();
     var todayDayNum = todayD.getDay();
     var monD = new Date(todayD);
@@ -3516,7 +3396,7 @@ function renderStaff() {
       var sid3 = s.id;
       html += '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">';
       html += '<div style="font-size:10px;color:var(--text3);text-align:center">Hours</div>';
-      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (selHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onchange="saveStaffHours(this.dataset.staffid)" onblur="saveStaffHours(this.dataset.staffid)">';
+      html += '<input class="staff-hours-input" type="number" min="0" max="12" step="0.5" value="' + (selHours || "") + '" placeholder="0" id="staff-hrs-' + sid3 + '" data-staffid="' + sid3 + '" onblur="saveStaffHours(this.dataset.staffid)">';
       html += '<div style="font-size:9px;color:var(--text3)">⚡' + Math.round((selHours||0)*STAFF_SATS_PER_HOUR) + ' sats</div></div>';
     } else {
       html += '<span class="badge badge-gray" style="opacity:0.4">NOT A WORK DAY</span>';
@@ -3610,7 +3490,11 @@ async function payStaffSingle(staffId, owed) {
           apiKey: key,
           destination: s.destination,
           amount: owed,
-          memo: "Bitcoin Ekasi - Your dedication inspires the next generation. Thank you for everything you do!"
+          memo: "Bitcoin Ekasi - Your dedication inspires the next generation. Thank you for everything you do!",
+          staffName: s.name,
+          whatsappNumber: s.whatsapp_number,
+          callmebotApikey: s.callmebot_apikey,
+          telegramChatId: s.telegram_chat_id
         })
     });
     var data = await res.json();
@@ -3688,239 +3572,10 @@ async function deleteStaff(staffId) {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// PAINTED SHACKS — 28000 sats/month
-// ══════════════════════════════════════════════════════════════
-const SHACK_SATS = 28000;
-var shackOwners = [];
-var shackPayStatus = {};
-
-function getCurrentMonth() {
-  var now = new Date();
-  return now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
-}
-
-function getMonthLabel() {
-  var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  var now = new Date();
-  return months[now.getMonth()] + " " + now.getFullYear();
-}
-
-async function loadShacks() {
-  var raw = await sb("GET","shack_owners",null,"?order=sponsor_name.asc");
-  if (!raw) { shackOwners = []; renderShacks(); return; }
-  var ids = raw.map(function(s) { return s.id; });
-  var month = getCurrentMonth();
-  var checkins = ids.length ? await sb("GET","shack_checkins",null,"?shack_owner_id=in.(" + ids.join(",") + ")&month=eq." + month) : [];
-  var checkedIds = (checkins||[]).map(function(c) { return c.shack_owner_id; });
-  shackOwners = raw.map(function(s) {
-    return Object.assign({}, s, { checkedIn: checkedIds.indexOf(s.id) !== -1 });
-  });
-  renderShacks();
-  renderShackPayouts();
-  renderShackRoster();
-}
-
-function renderShacks() {
-  var el = document.getElementById("shackList");
-  var monthEl = document.getElementById("shackMonthLabel");
-  var summaryEl = document.getElementById("shackSummaryStrip");
-  if (!el) { setTimeout(renderShacks, 500); return; }
-
-  var month = getMonthLabel();
-  if (monthEl) monthEl.textContent = "Month: " + month + " · 28,000 sats per active shack owner";
-
-  var checkedCount = shackOwners.filter(function(s) { return s.checkedIn; }).length;
-  var totalSats = checkedCount * SHACK_SATS;
-
-  if (summaryEl) {
-    summaryEl.innerHTML =
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
-      '<div class="card" style="padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#a855f7;font-family:JetBrains Mono,monospace">' + checkedCount + '/' + shackOwners.length + '</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Active This Month</div></div>' +
-      '<div class="card" style="padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#a855f7;font-family:JetBrains Mono,monospace">⚡' + totalSats.toLocaleString() + '</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Sats This Month</div></div>' +
-      '<div class="card" style="padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#a855f7;font-family:JetBrains Mono,monospace">' + shackOwners.length + '/41</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Shacks Enrolled</div></div>' +
-      '</div>';
-  }
-
-  if (!shackOwners.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-title">No shack owners added yet</div><div class="empty-sub">Go to Manage to add shack owners</div></div>';
-    return;
-  }
-
-  var html = "";
-  shackOwners.forEach(function(s) {
-    html += '<div class="shack-card">';
-    html += '<div class="shack-avatar" style="font-size:10px;letter-spacing:0px">' + (s.sponsor_name ? s.sponsor_name.slice(0,6) : '?') + '</div>';
-    html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">' + s.name + '</div>';
-    html += '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.destination + '</div>';
-    html += '<div style="font-size:11px;color:var(--text3);margin-top:3px">Total paid: ' + (s.paid_months||0) + ' month' + ((s.paid_months||0)!==1?'s':'') + '</div></div>';
-    var checked = s.checkedIn;
-    html += '<button class="shack-checkin-btn ' + (checked?"checked":"unchecked") + '" onclick="toggleShackCheckin(this.dataset.id)" data-id="' + s.id + '">' + (checked?"✓ Active":"Mark Active") + '</button>';
-    html += '</div>';
-  });
-  el.innerHTML = html;
-}
-
-async function toggleShackCheckin(shackId) {
-  var s = shackOwners.find(function(x) { return x.id === shackId; });
-  if (!s) return;
-  var month = getCurrentMonth();
-  if (s.checkedIn) {
-    await sb("DELETE","shack_checkins",null,"?shack_owner_id=eq." + shackId + "&month=eq." + month);
-  } else {
-    await sb("POST","shack_checkins",{ shack_owner_id: shackId, month: month, checked_in: true });
-  }
-  await loadShacks();
-}
-
-async function checkInAllShacks() {
-  var month = getCurrentMonth();
-  for (var i = 0; i < shackOwners.length; i++) {
-    var s = shackOwners[i];
-    if (!s.checkedIn) {
-      await sb("POST","shack_checkins",{ shack_owner_id: s.id, month: month, checked_in: true });
-    }
-  }
-  await loadShacks();
-}
-
-function renderShackPayouts() {
-  var el = document.getElementById("shackPayoutList");
-  if (!el) return;
-  if (!shackOwners.length) { el.innerHTML = '<div class="empty" style="padding:24px"><div class="empty-title">No shack owners added yet</div></div>'; return; }
-  var currentMonth = getCurrentMonth();
-  var html = "";
-  shackOwners.forEach(function(s) {
-    var ps = shackPayStatus[s.id];
-    var alreadyPaidThisMonth = s.last_paid_month === currentMonth;
-    var action = "";
-    if (ps === "loading") {
-      action = '<span class="badge badge-orange"><span class="spinner"></span> Sending</span>';
-    } else if (ps && ps.indexOf("ok:") === 0) {
-      action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
-    } else if (ps && ps.indexOf("err:") === 0) {
-      action = '<span style="color:var(--red);font-size:11px">' + ps.slice(4).slice(0,30) + '</span>';
-    } else if (alreadyPaidThisMonth) {
-      action = '<span class="badge badge-green" style="font-size:10px">✓ Paid this month</span>';
-    } else if (s.checkedIn) {
-      action = '<button class="btn btn-sm" style="background:rgba(168,85,247,0.2);color:#a855f7;border:1px solid rgba(168,85,247,0.3)" onclick="payShackSingle(this.dataset.id,' + SHACK_SATS + ')" data-id="' + s.id + '">Pay ⚡' + SHACK_SATS.toLocaleString() + '</button>';
-    } else {
-      action = '<span class="badge badge-gray">Not active</span>';
-    }
-    html += '<div class="shack-payout-row" style="' + (alreadyPaidThisMonth ? "opacity:0.5" : "") + '">';
-    html += '<div><div style="font-weight:600">' + s.name + '</div><div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">' + s.destination + '</div></div>';
-    html += '<div style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:#a855f7;font-size:12px">' + (s.sponsor_name||'—') + '</div>';
-    html += '<div style="text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:' + (s.checkedIn&&!alreadyPaidThisMonth?"#a855f7":"var(--text3)") + '">' + (s.checkedIn&&!alreadyPaidThisMonth?"⚡"+SHACK_SATS.toLocaleString():"—") + '</div>';
-    html += '<div style="text-align:right;font-family:JetBrains Mono,monospace;color:var(--green)">' + (s.paid_months||0) + ' months</div>';
-    html += '<div style="text-align:right">' + action + '</div></div>';
-  });
-  el.innerHTML = html;
-}
-
-async function payShackSingle(shackId, amount) {
-  var s = shackOwners.find(function(x) { return x.id === shackId; });
-  if (!s) return;
-  // Double-pay protection
-  if (s.last_paid_month === getCurrentMonth()) {
-    alert(s.name + " was already paid this month (" + getCurrentMonth() + "). No payment sent.");
-    return;
-  }
-  shackPayStatus[shackId] = "loading"; renderShackPayouts();
-  try {
-    var ctrl = new AbortController();
-    setTimeout(function() { ctrl.abort(); }, 30000);
-    var key = localStorage.getItem("ek_key") || "";
-    var res = await fetch(BACKEND + "/pay", {
-      method: "POST", signal: ctrl.signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-          apiKey: key,
-          destination: s.destination,
-          amount: amount,
-          memo: "Bitcoin Ekasi - Painted Shack Program. Thank you for being part of our community!"
-        })
-    });
-    var data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed");
-    await sb("PATCH","shack_owners",{ paid_months: (s.paid_months||0)+1, last_paid_month: getCurrentMonth() },"?id=eq." + shackId);
-    shackPayStatus[shackId] = "ok:Sent ⚡" + amount.toLocaleString();
-    await loadShacks();
-  } catch(e) { shackPayStatus[shackId] = "err:" + e.message; }
-  renderShackPayouts();
-}
-
-async function payAllShacks() {
-  var currentMonth = getCurrentMonth();
-  var active = shackOwners.filter(function(s) { return s.checkedIn && s.last_paid_month !== currentMonth; });
-  var alreadyPaid = shackOwners.filter(function(s) { return s.last_paid_month === currentMonth; }).length;
-  var alertEl = document.getElementById("shackPayAlert");
-  if (!active.length && alreadyPaid > 0) { alertEl.innerHTML = '<div class="alert alert-ok">✓ All active shack owners have already been paid this month.</div>'; return; }
-  if (!active.length) { alertEl.innerHTML = '<div class="alert alert-err">No shack owners marked active this month.</div>'; return; }
-  var confirmMsg = "Pay ⚡" + (active.length * SHACK_SATS).toLocaleString() + " sats to " + active.length + " shack owner" + (active.length!==1?"s":"") + "?";
-  if (alreadyPaid > 0) confirmMsg += "\n\n" + alreadyPaid + " owner" + (alreadyPaid!==1?"s":"") + " already paid this month will be skipped.";
-  if (!confirm(confirmMsg)) return;
-  alertEl.innerHTML = '<div class="alert alert-info">Sending payments to ' + active.length + ' shack owners...</div>';
-  for (var i = 0; i < active.length; i++) {
-    await payShackSingle(active[i].id, SHACK_SATS);
-    await new Promise(function(r) { setTimeout(r, 600); });
-  }
-  alertEl.innerHTML = '<div class="alert alert-ok">✓ All ' + active.length + ' shack owner payments sent!</div>';
-  setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
-}
-
-function renderShackRoster() {
-  var el = document.getElementById("shackRosterList");
-  var countEl = document.getElementById("shackCount");
-  if (!el) return;
-  if (countEl) countEl.textContent = shackOwners.length + " / 41 added";
-  if (!shackOwners.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No shack owners yet</div></div>'; return; }
-  var html = '<div class="card">';
-  shackOwners.forEach(function(s) {
-    html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">';
-    html += '<div class="shack-avatar" style="font-size:10px;letter-spacing:0px">' + (s.sponsor_name ? s.sponsor_name.slice(0,6) : '?') + '</div>';
-    html += '<div style="flex:1;min-width:0"><div style="font-weight:700">' + s.name + '</div>';
-    html += '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.destination + '</div></div>';
-    html += '<div style="text-align:right;flex-shrink:0">';
-    html += '<div style="font-size:12px;color:#a855f7;font-weight:700">' + (s.paid_months||0) + ' months paid</div>';
-    html += '<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="deleteShackOwner(this.dataset.id)" data-id="' + s.id + '">Remove</button></div></div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-async function addShackOwner() {
-  var name = document.getElementById("shackName").value.trim();
-  var number = document.getElementById("shackSponsor").value.trim();
-  var dest = document.getElementById("shackDest").value.trim();
-  var errEl = document.getElementById("shackRosterErr");
-  if (!name) { errEl.innerHTML = '<div class="alert alert-err">Name is required</div>'; return; }
-  if (!number) { errEl.innerHTML = '<div class="alert alert-err">Shack number is required</div>'; return; }
-  if (!dest) { errEl.innerHTML = '<div class="alert alert-err">Lightning address is required</div>'; return; }
-  errEl.innerHTML = '<div class="alert alert-info">Adding...</div>';
-  var result = await sb("POST","shack_owners",{ name: name, sponsor_name: number, destination: dest });
-  if (result) {
-    errEl.innerHTML = '<div class="alert alert-ok">✓ Added ' + name + '!</div>';
-    document.getElementById("shackName").value = "";
-    document.getElementById("shackSponsor").value = "";
-    document.getElementById("shackDest").value = "";
-    await loadShacks();
-    setTimeout(function() { errEl.innerHTML = ""; }, 2000);
-  } else {
-    errEl.innerHTML = '<div class="alert alert-err">Failed to add. Try again.</div>';
-  }
-}
-
-async function deleteShackOwner(shackId) {
-  if (!confirm("Remove this shack owner?")) return;
-  await sb("DELETE","shack_owners",null,"?id=eq." + shackId);
-  await loadShacks();
-}
-
-
 // ── Staff Pay Day Reminder (Fridays) ──────────────────────────
 function checkStaffPayDay() {
   var day = new Date().getDay();
-  if (day !== 5) return; // Only Fridays
+  if (day !== 5) return;
   var shown = sessionStorage.getItem("staff_reminder_" + TODAY);
   if (shown) return;
   sessionStorage.setItem("staff_reminder_" + TODAY, "1");
@@ -4139,10 +3794,8 @@ function renderDashboard() {
 
   document.getElementById("dashStudents").textContent = activeStudents.length;
   document.getElementById("dashStaff").textContent = staffMembers.length;
-  document.getElementById("dashShacks").textContent = shackOwners.length;
   document.getElementById("dashAlumni").textContent = alumniStudents.length;
 
-  // Sats owed across all categories
   var studentOwed = activeStudents.reduce(function(a, s) {
     return a + Math.max(0, Object.keys(s.att||{}).length*SATS + (s.bonus||0) - (s.paid||0));
   }, 0);
@@ -4151,16 +3804,11 @@ function renderDashboard() {
     var earned = Math.round(totalHours * STAFF_SATS_PER_HOUR);
     return a + Math.max(0, earned - (s.paid||0));
   }, 0);
-  var shackOwed = shackOwners.reduce(function(a, s) {
-    return a + (s.checkedIn ? SHACK_SATS : 0);
-  }, 0);
 
   document.getElementById("dashStudentOwed").textContent = "⚡" + studentOwed.toLocaleString();
   document.getElementById("dashStaffOwed").textContent = "⚡" + staffOwed.toLocaleString();
-  document.getElementById("dashShackOwed").textContent = "⚡" + shackOwed.toLocaleString();
-  document.getElementById("dashTotalOwed").textContent = "⚡" + (studentOwed + staffOwed + shackOwed).toLocaleString();
+  document.getElementById("dashTotalOwed").textContent = "⚡" + (studentOwed + staffOwed).toLocaleString();
 
-  // This week stats
   var present = activeStudents.filter(function(s) { return s.att && s.att[TODAY]; }).length;
   document.getElementById("dashPresentToday").textContent = present + "/" + activeStudents.length;
 
@@ -4172,8 +3820,7 @@ function renderDashboard() {
   document.getElementById("dashAttRate").textContent = attRate + "%";
 
   var totalPaid = activeStudents.reduce(function(a,s){ return a + (s.paid||0); }, 0) +
-                   staffMembers.reduce(function(a,s){ return a + (s.paid||0); }, 0) +
-                   shackOwners.reduce(function(a,s){ return a + ((s.paid_months||0) * SHACK_SATS); }, 0);
+                   staffMembers.reduce(function(a,s){ return a + (s.paid||0); }, 0);
   document.getElementById("dashTotalPaid").textContent = "⚡" + totalPaid.toLocaleString();
 }
 
@@ -4191,11 +3838,6 @@ function exportAllDataCSV() {
     var hours = Object.values(s.att||{}).reduce(function(a,b){ return a+b; }, 0);
     var earned = Math.round(hours * STAFF_SATS_PER_HOUR);
     rows.push(["Staff", s.name, s.role||"", s.destination||"", hours.toFixed(1) + " hrs", earned, s.paid||0, "active"]);
-  });
-
-  shackOwners.forEach(function(s) {
-    var earned = (s.paid_months||0) * SHACK_SATS;
-    rows.push(["Shack Owner", s.name, s.sponsor_name||"", s.destination||"", (s.paid_months||0) + " months", earned, earned, "active"]);
   });
 
   var csv = rows.map(function(r) {
@@ -4226,7 +3868,6 @@ function backupAllData() {
     teacher_id: typeof TEACHER_ID !== "undefined" ? TEACHER_ID : null,
     students: students,
     staff: staffMembers,
-    shack_owners: shackOwners,
     excuses: excusesMap
   };
   var json = JSON.stringify(backup, null, 2);
@@ -4261,7 +3902,6 @@ function showPayFailModal(name, role, amount, reason, retryFn) {
     if (payFailRetryFn) payFailRetryFn();
   };
 
-  // Show history if more than 1 failure
   if (payFailLog.length > 1) {
     var wrap = document.getElementById("pfHistoryWrap");
     var hist = document.getElementById("pfHistory");
@@ -4287,7 +3927,6 @@ var pgAttendance = [];
 var pgTODAY = TODAY;
 
 async function loadPGStudents() {
-  // Wire up enroll button safely
   var pgBtn = document.getElementById("pgEnrollBtn");
   if (pgBtn && !pgBtn._wired) { pgBtn._wired = true; pgBtn.addEventListener("click", addPGStudent); }
   try {
@@ -4392,7 +4031,6 @@ async function addPGStudent() {
   var nameEl = document.getElementById("pgName");
   var cohortEl = document.getElementById("pgCohort");
   var errEl = document.getElementById("pgErr");
-  console.log("addPGStudent called", { nameEl: nameEl, cohortEl: cohortEl, errEl: errEl });
   if (!nameEl) { alert("pgName element not found - please report this error"); return; }
   if (!errEl) { alert("pgErr element not found - please report this error"); return; }
   var name = nameEl.value.trim();
@@ -4401,15 +4039,12 @@ async function addPGStudent() {
   errEl.innerHTML = '<div class="alert alert-info">Adding student...</div>';
   try {
     var payload = { name: name, cohort: cohort, status: "active" };
-    console.log("Posting payload:", payload);
     var result = await sb("POST","postgrad_students", payload, null);
-    console.log("Post result:", result);
     nameEl.value = "";
     errEl.innerHTML = '<div class="alert alert-ok">✓ ' + name + ' enrolled successfully</div>';
     setTimeout(function() { errEl.innerHTML = ""; }, 3000);
     await loadPGStudents();
   } catch(e) {
-    console.error("addPGStudent error:", e);
     errEl.innerHTML = '<div class="alert alert-err">Error: ' + e.message + '</div>';
   }
 }
