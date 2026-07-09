@@ -3735,6 +3735,13 @@ async function loadExcuses() {
     excusesMap = {};
   }
 }
+  function getExcuseType(reasonText) {
+  if (!reasonText) return null;
+  for (var key in excuseLabels) {
+    if (reasonText.indexOf(excuseLabels[key]) === 0) return key;
+  }
+  return "other";
+}
 
 
 // ── Bitcoin Price Widget ──────────────────────────────────────
