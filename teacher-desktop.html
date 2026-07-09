@@ -3696,9 +3696,8 @@ async function saveExcuse() {
     await loadPGExcuses();
     renderPGAttend();
   } else {
-    await loadPGExcuses();
-    renderPGAttend();
-    renderPGRoster();
+    await loadExcuses();
+    renderAttend();
   }
 }
 
