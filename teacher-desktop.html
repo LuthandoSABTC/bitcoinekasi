@@ -3712,17 +3712,25 @@ async function loadPGExcuses() {
       pgExcusesMap[e.student_id][e.date] = e.reason;
     });
   } catch(e) {
-    console.log("loadPGExcuses failed (table may not exist yet):", e.message);
+   console.log("loadPGExcuses failed (table may not exist yet):", e.message);
     pgExcusesMap = {};
   }
 }
 
-function getExcuseType(reasonText) {
-  if (!reasonText) return null;
-  for (var key in excuseLabels) {
-    if (reasonText.indexOf(excuseLabels[key]) === 0) return key;
+async function loadExcuses() {
+  if (!students.length) { excusesMap = {}; return; }
+  try {
+    var ids = students.map(function(s) { return s.id; }).join(",");
+    var raw = await sb("GET","excuses",null,"?student_id=in.(" + ids + ")");
+    excusesMap = {};
+    (raw || []).forEach(function(e) {
+      if (!excusesMap[e.student_id]) excusesMap[e.student_id] = {};
+      excusesMap[e.student_id][e.date] = e.reason;
+    });
+  } catch(e) {
+    console.log("loadExcuses failed (table may not exist yet):", e.message);
+    excusesMap = {};
   }
-  return "other";
 }
 
 
