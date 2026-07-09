@@ -3954,10 +3954,13 @@ async function togglePGAttend(id) {
     await sb("DELETE","postgrad_attendance",null,"?student_id=eq." + id + "&date=eq." + TODAY);
   } else {
     await sb("POST","postgrad_attendance",{ student_id: id, date: TODAY });
+    if (pgExcusesMap[id] && pgExcusesMap[id][TODAY]) {
+      await sb("DELETE","postgrad_excuses",null,"?student_id=eq." + id + "&date=eq." + TODAY);
+    }
   }
   await loadPGStudents();
 }
-
+  
 async function pgMarkAll() {
   if (!isClassDay()) { alert(getClassDayMessage()); return; }
   for (var i = 0; i < pgStudents.length; i++) {
