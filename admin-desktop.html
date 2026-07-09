@@ -3871,13 +3871,13 @@ async function loadPGStudents() {
       pgAttendance.filter(function(a){ return a.student_id === s.id; }).forEach(function(a){ att[a.date] = true; });
       return Object.assign({}, s, { att: att });
     });
+    await loadPGExcuses();
     renderPGAttend();
     renderPGRoster();
   } catch(e) {
     console.log("loadPGStudents error:", e.message);
   }
 }
-
 function renderPGAttend() {
   var el = document.getElementById("pgAttendList");
   if (!el) return;
@@ -3895,13 +3895,24 @@ function renderPGAttend() {
     var here = !!(s.att && s.att[TODAY]);
     if (here) presentCount++;
     var days = Object.keys(s.att||{}).length;
+    var excuseReason = pgExcusesMap[s.id] && pgExcusesMap[s.id][TODAY];
+    var excuseType = excuseReason ? getExcuseType(excuseReason) : null;
     html += '<div class="attend-row" style="flex-wrap:wrap">';
     html += '<div class="pg-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
     html += '<div style="flex:1;min-width:160px"><div class="attend-name">' + s.name + ' <span class="pg-badge" style="font-size:9px;margin-left:4px">POSTGRAD</span></div>';
-    html += '<div class="attend-sub">' + days + ' days attended</div></div>';
+    var subLine = days + ' days attended';
+    if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
+    html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {
       html += '<button class="toggle ' + (here?'on':'') + '" onclick="togglePGAttend(\'' + s.id + '\')"></button>';
-      html += '<span class="badge ' + (here?'badge-green':'badge-gray') + '">' + (here?'PRESENT':'ABSENT') + '</span>';
+      if (here) {
+        html += '<span class="badge badge-green">PRESENT</span>';
+      } else if (excuseType) {
+        html += '<span class="badge ' + excuseBadgeClass[excuseType] + '">' + excuseLabels[excuseType] + '</span>';
+      } else {
+        html += '<span class="badge badge-gray">ABSENT</span>';
+        html += '<button class="excuse-btn" onclick="openExcuseModal(\'' + s.id + '\',\'' + TODAY + '\',\'pg\')">📝 + Excuse</button>';
+      }
     } else {
       html += '<button class="toggle" disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none"></button>';
       html += '<span class="badge badge-gray" style="opacity:0.4">LOCKED</span>';
@@ -3913,7 +3924,7 @@ function renderPGAttend() {
   document.getElementById("pgPresent").textContent = presentCount;
   document.getElementById("pgAbsent").textContent = pgStudents.length - presentCount;
 }
-
+  
 function renderPGRoster() {
   var el = document.getElementById("pgRosterList");
   if (!el) return;
