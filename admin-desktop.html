@@ -3544,17 +3544,22 @@ function showStaffPayReminder() {
 
 // ── Excuse System ──────────────────────────────────────────────
 var excusesMap = {};
+var pgExcusesMap = {};
 var excuseTargetStudent = null;
 var excuseTargetDate = null;
+var excuseTargetType = "student";  
 var selectedExcuseReason = null;
 var excuseLabels = { sick: "🤒 Sick", holiday: "🏖️ Holiday", family: "👨‍👩‍👧 Family", doctor: "🏥 Doctor", transport: "🚌 Transport", other: "📝 Other" };
 var excuseBadgeClass = { sick: "badge-sick", holiday: "badge-holiday", family: "badge-family", doctor: "badge-doctor", transport: "badge-transport", other: "badge-other" };
 
-function openExcuseModal(studentId, date) {
-  var s = students.find(function(x) { return x.id === studentId; });
+function openExcuseModal(studentId, date, type) {
+  var targetType = type || "student";
+  var list = targetType === "pg" ? pgStudents : students;
+  var s = list.find(function(x) { return x.id === studentId; });
   if (!s) return;
   excuseTargetStudent = studentId;
   excuseTargetDate = date || TODAY;
+  excuseTargetType = targetType;
   selectedExcuseReason = null;
   document.querySelectorAll(".reason-btn").forEach(function(b) { b.classList.remove("selected"); });
   document.getElementById("excuseNote").value = "";
@@ -3563,7 +3568,6 @@ function openExcuseModal(studentId, date) {
   document.getElementById("excuseModal").style.display = "flex";
   document.body.style.overflow = "hidden";
 }
-
 function closeExcuseModal() {
   document.getElementById("excuseModal").style.display = "none";
   document.body.style.overflow = "";
@@ -3583,17 +3587,22 @@ async function saveExcuse() {
   }
   var note = document.getElementById("excuseNote").value.trim();
   var reasonText = excuseLabels[selectedExcuseReason] + (note ? " — " + note : "");
-  var existing = await sb("GET","excuses",null,"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+  var table = excuseTargetType === "pg" ? "postgrad_excuses" : "excuses";
+  var existing = await sb("GET", table, null, "?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
   if (existing && existing.length) {
-    await sb("PATCH","excuses",{ reason: reasonText },"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+    await sb("PATCH", table, { reason: reasonText }, "?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
   } else {
-    await sb("POST","excuses",{ student_id: excuseTargetStudent, date: excuseTargetDate, reason: reasonText });
+    await sb("POST", table, { student_id: excuseTargetStudent, date: excuseTargetDate, reason: reasonText });
   }
   closeExcuseModal();
-  await loadExcuses();
-  renderAttend();
+  if (excuseTargetType === "pg") {
+    await loadPGExcuses();
+    renderPGAttend();
+  } else {
+    await loadExcuses();
+    renderAttend();
+  }
 }
-
 async function loadExcuses() {
   if (!students.length) { excusesMap = {}; return; }
   try {
@@ -3607,6 +3616,22 @@ async function loadExcuses() {
   } catch(e) {
     console.log("loadExcuses failed:", e.message);
     excusesMap = {};
+  }
+}
+
+  async function loadPGExcuses() {
+  if (!pgStudents.length) { pgExcusesMap = {}; return; }
+  try {
+    var ids = pgStudents.map(function(s) { return s.id; }).join(",");
+    var raw = await sb("GET", "postgrad_excuses", null, "?student_id=in.(" + ids + ")");
+    pgExcusesMap = {};
+    (raw || []).forEach(function(e) {
+      if (!pgExcusesMap[e.student_id]) pgExcusesMap[e.student_id] = {};
+      pgExcusesMap[e.student_id][e.date] = e.reason;
+    });
+  } catch(e) {
+    console.log("loadPGExcuses failed (table may not exist yet):", e.message);
+    pgExcusesMap = {};
   }
 }
 
