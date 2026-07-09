@@ -3644,16 +3644,20 @@ function showStaffPayReminder() {
 // ── Excuse System ──────────────────────────────────────────────
 var excusesMap = {};
 var excuseTargetStudent = null;
+var excuseTargetType = "student";
 var excuseTargetDate = null;
 var selectedExcuseReason = null;
 var excuseLabels = { sick: "🤒 Sick", holiday: "🏖️ Holiday", family: "👨‍👩‍👧 Family", doctor: "🏥 Doctor", transport: "🚌 Transport", other: "📝 Other" };
 var excuseBadgeClass = { sick: "badge-sick", holiday: "badge-holiday", family: "badge-family", doctor: "badge-doctor", transport: "badge-transport", other: "badge-other" };
 
-function openExcuseModal(studentId, date) {
-  var s = students.find(function(x) { return x.id === studentId; });
+  function openExcuseModal(studentId, date, type) {
+  var targetType = type || "student";
+  var list = targetType === "pg" ? pgStudents : students;
+  var s = list.find(function(x) { return x.id === studentId; });
   if (!s) return;
   excuseTargetStudent = studentId;
   excuseTargetDate = date || TODAY;
+  excuseTargetType = targetType;
   selectedExcuseReason = null;
   document.querySelectorAll(".reason-btn").forEach(function(b) { b.classList.remove("selected"); });
   document.getElementById("excuseNote").value = "";
@@ -3682,30 +3686,37 @@ async function saveExcuse() {
   }
   var note = document.getElementById("excuseNote").value.trim();
   var reasonText = excuseLabels[selectedExcuseReason] + (note ? " — " + note : "");
-  var existing = await sb("GET","excuses",null,"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+  var table = excuseTargetType === "pg" ? "postgrad_excuses" : "excuses";
+  var existing = await sb("GET", table, null, "?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
   if (existing && existing.length) {
-    await sb("PATCH","excuses",{ reason: reasonText },"?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
+    await sb("PATCH", table, { reason: reasonText }, "?student_id=eq." + excuseTargetStudent + "&date=eq." + excuseTargetDate);
   } else {
-    await sb("POST","excuses",{ student_id: excuseTargetStudent, date: excuseTargetDate, reason: reasonText });
+    await sb("POST", table, { student_id: excuseTargetStudent, date: excuseTargetDate, reason: reasonText });
   }
   closeExcuseModal();
-  await loadExcuses();
-  renderAttend();
+  if (excuseTargetType === "pg") {
+    await loadPGExcuses();
+    renderPGAttend();
+  } else {
+    await loadPGExcuses();
+    renderPGAttend();
+    renderPGRoster();
+  }
 }
 
-async function loadExcuses() {
-  if (!students.length) { excusesMap = {}; return; }
+async function loadPGExcuses() {
+  if (!pgStudents.length) { pgExcusesMap = {}; return; }
   try {
-    var ids = students.map(function(s) { return s.id; }).join(",");
-    var raw = await sb("GET","excuses",null,"?student_id=in.(" + ids + ")");
-    excusesMap = {};
+    var ids = pgStudents.map(function(s) { return s.id; }).join(",");
+    var raw = await sb("GET", "postgrad_excuses", null, "?student_id=in.(" + ids + ")");
+    pgExcusesMap = {};
     (raw || []).forEach(function(e) {
-      if (!excusesMap[e.student_id]) excusesMap[e.student_id] = {};
-      excusesMap[e.student_id][e.date] = e.reason;
+      if (!pgExcusesMap[e.student_id]) pgExcusesMap[e.student_id] = {};
+      pgExcusesMap[e.student_id][e.date] = e.reason;
     });
   } catch(e) {
-    console.log("loadExcuses failed (table may not exist yet):", e.message);
-    excusesMap = {};
+    console.log("loadPGExcuses failed (table may not exist yet):", e.message);
+    pgExcusesMap = {};
   }
 }
 
@@ -3969,13 +3980,24 @@ function renderPGAttend() {
     var here = !!(s.att && s.att[TODAY]);
     if (here) presentCount++;
     var days = Object.keys(s.att||{}).length;
+    var excuseReason = pgExcusesMap[s.id] && pgExcusesMap[s.id][TODAY];
+    var excuseType = excuseReason ? getExcuseType(excuseReason) : null;
     html += '<div class="attend-row" style="flex-wrap:wrap">';
     html += '<div class="pg-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
     html += '<div style="flex:1;min-width:160px"><div class="attend-name">' + s.name + ' <span class="pg-badge" style="font-size:9px;margin-left:4px">POSTGRAD</span></div>';
-    html += '<div class="attend-sub">' + days + ' days attended</div></div>';
+    var subLine = days + ' days attended';
+    if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
+    html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {
       html += '<button class="toggle ' + (here?'on':'') + '" onclick="togglePGAttend(\'' + s.id + '\')"></button>';
-      html += '<span class="badge ' + (here?'badge-green':'badge-gray') + '">' + (here?'PRESENT':'ABSENT') + '</span>';
+      if (here) {
+        html += '<span class="badge badge-green">PRESENT</span>';
+      } else if (excuseType) {
+        html += '<span class="badge ' + excuseBadgeClass[excuseType] + '">' + excuseLabels[excuseType] + '</span>';
+      } else {
+        html += '<span class="badge badge-gray">ABSENT</span>';
+        html += '<button class="excuse-btn" onclick="openExcuseModal(\'' + s.id + '\',\'' + TODAY + '\',\'pg\')">📝 + Excuse</button>';
+      }
     } else {
       html += '<button class="toggle" disabled style="opacity:0.25;cursor:not-allowed;pointer-events:none"></button>';
       html += '<span class="badge badge-gray" style="opacity:0.4">LOCKED</span>';
@@ -3987,7 +4009,6 @@ function renderPGAttend() {
   document.getElementById("pgPresent").textContent = presentCount;
   document.getElementById("pgAbsent").textContent = pgStudents.length - presentCount;
 }
-
 function renderPGRoster() {
   var el = document.getElementById("pgRosterList");
   if (!el) return;
@@ -4017,6 +4038,9 @@ async function togglePGAttend(id) {
     await sb("DELETE","postgrad_attendance",null,"?student_id=eq." + id + "&date=eq." + TODAY);
   } else {
     await sb("POST","postgrad_attendance",{ student_id: id, date: TODAY });
+    if (pgExcusesMap[id] && pgExcusesMap[id][TODAY]) {
+      await sb("DELETE","postgrad_excuses",null,"?student_id=eq." + id + "&date=eq." + TODAY);
+    }
   }
   await loadPGStudents();
 }
