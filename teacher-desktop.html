@@ -3255,6 +3255,41 @@ function generateHighlightsPDF() {
   doc.save(filename);
 }
 
+    // Postgrad Students
+  if (pgStudents.length > 0) {
+    y += 12;
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(40);
+    doc.text("Postgrad Students", 14, y);
+    y += 8;
+ 
+    doc.setFillColor(168, 85, 247);
+    doc.rect(14, y - 5, pageW - 28, 8, "F");
+    doc.setTextColor(255);
+    doc.setFontSize(9);
+    doc.text("Name", 18, y);
+    doc.text("Days Attended", pageW - 50, y);
+    y += 8;
+ 
+    doc.setTextColor(40);
+    doc.setFont(undefined, "normal");
+    pgStudents.forEach(function(s, i) {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      if (i % 2 === 0) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(14, y - 5, pageW - 28, 7, "F");
+      }
+      var pgDays = Object.keys(s.att || {}).length;
+      doc.text(s.name, 18, y);
+      doc.text(String(pgDays), pageW - 40, y);
+      y += 7;
+    });
+  }
 
 // ── Student Profiles Page ─────────────────────────────────────
 function renderProfiles() {
