@@ -3069,22 +3069,6 @@ function generateHighlightsPDF() {
     y += 7;
   });
 
-  data.forEach(function(s, i) {
-    if (y > 270) {
-      doc.addPage();
-      y = 20;
-    }
-    if (i % 2 === 0) {
-      doc.setFillColor(250, 250, 250);
-      doc.rect(14, y - 5, pageW - 28, 7, "F");
-    }
-    doc.text(s.name, 18, y);
-    doc.text(String(s.days), pageW - 88, y);
-    doc.text(String(s.sats - s.bonus), pageW - 60, y);
-    doc.text(s.bonus > 0 ? "+" + s.bonus : "-", pageW - 28, y);
-    y += 7;
-  });
-
    // Postgrad Students
   if (pgStudents.length > 0) {
     y += 12;
