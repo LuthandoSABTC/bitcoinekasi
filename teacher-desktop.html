@@ -3229,7 +3229,7 @@ function generateHighlightsPDF() {
 
   doc.setTextColor(40);
   doc.setFont(undefined, "normal");
-  data.forEach(function(s, i) {
+data.forEach(function(s, i) {
     if (y > 270) {
       doc.addPage();
       y = 20;
@@ -3245,17 +3245,7 @@ function generateHighlightsPDF() {
     y += 7;
   });
 
-  y += 10;
-  if (y > 280) { doc.addPage(); y = 20; }
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text("Bitcoin Ekasi Attendance Tracker - Bitcoin Diploma Program, Mossel Bay", 14, 290);
-
-  var filename = "Bitcoin_Ekasi_Report_" + TODAY + ".pdf";
-  doc.save(filename);
-}
-
-    // Postgrad Students
+  // Postgrad Students
   if (pgStudents.length > 0) {
     y += 12;
     if (y > 270) { doc.addPage(); y = 20; }
@@ -3264,7 +3254,7 @@ function generateHighlightsPDF() {
     doc.setTextColor(40);
     doc.text("Postgrad Students", 14, y);
     y += 8;
- 
+
     doc.setFillColor(168, 85, 247);
     doc.rect(14, y - 5, pageW - 28, 8, "F");
     doc.setTextColor(255);
@@ -3272,7 +3262,7 @@ function generateHighlightsPDF() {
     doc.text("Name", 18, y);
     doc.text("Days Attended", pageW - 50, y);
     y += 8;
- 
+
     doc.setTextColor(40);
     doc.setFont(undefined, "normal");
     pgStudents.forEach(function(s, i) {
@@ -3291,33 +3281,14 @@ function generateHighlightsPDF() {
     });
   }
 
-// ── Student Profiles Page ─────────────────────────────────────
-function renderProfiles() {
-  var el = document.getElementById("profilesGrid");
-  if (!el) { setTimeout(renderProfiles, 500); return; }
-  if (!students.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-title"><span class="spinner"></span> Loading students...</div></div>';
-    setTimeout(renderProfiles, 800);
-    return;
-  }
-  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">';
-  students.forEach(function(s) {
-    var allDays = Object.keys(s.att || {}).sort();
-    var totalDays = allDays.length;
-    var totalSats = totalDays * SATS + (s.bonus || 0);
-    var paid = s.paid || 0;
-    var owed = Math.max(0, totalSats - paid);
-    var startDate = allDays.length > 0 ? allDays[0] : null;
-    var lastDate = allDays.length > 0 ? allDays[allDays.length-1] : null;
-    var weekDays = Object.keys(filterAttByWeek(s.att, 0, "week")).length;
-
-    function fmtShort(d) {
-      if (!d) return "—";
-      var dt = new Date(d + "T00:00:00");
-      return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
-    }
-
+  y += 10;
+  if (y > 280) { doc.addPage(); y = 20; }
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text("Bitcoin Ekasi Attendance Tracker - Bitcoin Diploma Program, Mossel Bay", 14, 290);
+  var filename = "Bitcoin_Ekasi_Report_" + TODAY + ".pdf";
+  doc.save(filename);
+}
     var sid2 = s.id;
     html += '<div class="card profile-grid-card" style="cursor:pointer" onclick="openProfile(this.dataset.id)" data-id="' + sid2 + '">';
     html += '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">';
