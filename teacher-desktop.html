@@ -4003,14 +4003,10 @@ async function loadPGStudents() {
       var att = {};
       pgAttendance.filter(function(a){ return a.student_id === s.id; }).forEach(function(a){ att[a.date] = true; });
       return Object.assign({}, s, { att: att });
-      
+    });
     renderPGAttend();
     renderPGRoster();
     try { renderDashboard(); } catch(e) {}
-  } catch(e) {
-    console.log("loadPGStudents error:", e.message);
-  }
-}
 
 function renderPGAttend() {
   var el = document.getElementById("pgAttendList");
