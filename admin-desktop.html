@@ -3910,6 +3910,7 @@ async function loadPGStudents() {
     await loadPGExcuses();
     renderPGAttend();
     renderPGRoster();
+    try { renderDashboard(); } catch(e) {}
   } catch(e) {
     console.log("loadPGStudents error:", e.message);
   }
