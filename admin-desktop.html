@@ -1788,6 +1788,7 @@ function go(name) {
   if (name === "stats")       renderStats();
   if (name === "leaderboard") renderLeaderboard();
   if (name === "roster")      renderRoster();
+  html += '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + totalDays + ' days · ⚡' + (totalDays*SATS+(s.bonus||0)) + ' sats</div>';
   if (name === "classes")     loadAllClasses();
   if (name === "chapters")    loadAllChapters();
   if (name === "monthly")     renderMonthly();
