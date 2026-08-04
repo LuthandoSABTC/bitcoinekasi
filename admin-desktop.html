@@ -2336,6 +2336,27 @@ async function graduateStudent(id) {
   alert("🎓 " + s.name + " has graduated! They have been moved to the Alumni Wall.");
 }
 
+  const PASS_THRESHOLD = 80;
+
+async function saveTestScore(studentId) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+  var current = s.final_test_score != null ? s.final_test_score : "";
+  var input = prompt("Enter " + s.name + "'s final test score (0-100):", current);
+  if (input === null) return;
+  var score = parseInt(input);
+  if (isNaN(score) || score < 0 || score > 100) {
+    alert("Please enter a valid number between 0 and 100");
+    return;
+  }
+  var today = toLocalDateStr(new Date());
+  await sb("PATCH", "students", { final_test_score: score, final_test_date: today }, "?id=eq." + studentId);
+  await loadStudents();
+  renderRoster();
+  var result = score >= PASS_THRESHOLD ? "PASSED \u2713" : "did not pass \u2014 consider having them repeat";
+  alert(s.name + " scored " + score + "% \u2014 " + result);
+}
+
 async function postgraduateStudent(id) {
   var s = students.find(function(x) { return x.id === id; });
   if (!s) return;
