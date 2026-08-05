@@ -2277,6 +2277,9 @@ function renderRoster() {
         (passed ? "\u2713 Passed" : "\u2717 Did not pass") + ' \u2014 ' + s.final_test_score + '%</div>';
     }
     html += scoreLine;
+    if (s.final_test_score != null && s.final_test_score < PASS_THRESHOLD) {
+      html += '<button class="btn btn-sm" style="margin-top:4px;background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.3)" onclick="markAsRepeating(this.dataset.id)" data-id="' + sid + '">\uD83D\uDD01 Mark as Repeating</button>';
+    }
     html += '</div>';
     html += '<div style="display:flex;gap:6px;flex-shrink:0">';
     html += '<button class="btn btn-sm" style="background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3)" onclick="saveTestScore(this.dataset.id)" data-id="' + sid + '">\uD83D\uDCDD Score</button>';
@@ -2287,11 +2290,10 @@ function renderRoster() {
   });
   el.innerHTML = html;
 }
-  if (s.final_test_score != null && s.final_test_score < PASS_THRESHOLD) {
-      html += '<button class="btn btn-sm" style="margin-top:4px;background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.3)" onclick="markAsRepeating(this.dataset.id)" data-id="' + sid + '">\uD83D\uDD01 Mark as Repeating</button>';
-    }
 
 
+
+  
 function renderAlumniWall() {
   var el = document.getElementById("alumniWall");
   if (!el) return;
