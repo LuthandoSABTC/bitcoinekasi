@@ -2820,7 +2820,8 @@ function checkLowAttendance() {
     cur.setDate(cur.getDate() + 1);
   }
   if (!classDaysHeld.length) { el.innerHTML = ""; return; }
-  var lowStudents = students.filter(function(s) {
+  var activeOnly = students.filter(function(s) { return !s.status || s.status === "active"; });
+  var lowStudents = activeOnly.filter(function(s) {
     var weekAtt = filterAttByWeek(s.att,0,"week");
     var attended = Object.keys(weekAtt).length;
     var excused = classDaysHeld.filter(function(d) { return !weekAtt[d] && excusesMap[s.id] && excusesMap[s.id][d]; }).length;
