@@ -2413,6 +2413,16 @@ async function graduateStudent(id) {
   renderProfiles();
   alert("🎓 " + s.name + " has graduated! They have been moved to the Alumni Wall.");
 }
+async function markAsRepeating(studentId) {
+  var s = students.find(function(x) { return x.id === studentId; });
+  if (!s) return;
+  if (!confirm(s.name + " will start a fresh round — their sats owed will reset to 0 going forward, but their full history stays visible everywhere else. Continue?")) return;
+  var today = toLocalDateStr(new Date());
+  await sb("PATCH", "students", { round_start_date: today, round_start_paid: s.paid || 0 }, "?id=eq." + studentId);
+  await loadStudents();
+  renderRoster();
+  alert(s.name + " is now on a new round starting " + today + ". Their payout will reset to 0 owed and count only new attendance from today onward.");
+}
 
   const PASS_THRESHOLD = 50;
 
