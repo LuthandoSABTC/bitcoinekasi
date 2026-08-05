@@ -1906,14 +1906,15 @@ function renderAll() {
 }
 
 function updateStats() {
-  var present = students.filter(function(s) { return s.att && s.att[TODAY]; }).length;
-  var owed = students.reduce(function(a, s) {
+  var activeOnly = students.filter(function(s) { return !s.status || s.status === "active"; });
+  var present = activeOnly.filter(function(s) { return s.att && s.att[TODAY]; }).length;
+  var owed = activeOnly.reduce(function(a, s) {
     return a + Math.max(0, Object.keys(s.att || {}).length * SATS + (s.bonus || 0) - (s.paid || 0));
   }, 0);
-  document.getElementById("sStudents").textContent = students.length;
-  document.getElementById("sToday").textContent = present + "/" + students.length;
+  document.getElementById("sStudents").textContent = activeOnly.length;
+  document.getElementById("sToday").textContent = present + "/" + activeOnly.length;
   document.getElementById("sOwed").textContent = owed;
-  document.getElementById("streakEl").textContent = present + "/" + students.length + " present today";
+  document.getElementById("streakEl").textContent = present + "/" + activeOnly.length + " present today";
   var badge = document.getElementById("nb-owed");
   if (owed > 0) { badge.textContent = owed; badge.style.display = ""; } else badge.style.display = "none";
 }
