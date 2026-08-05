@@ -1920,7 +1920,8 @@ function updateStats() {
 
 function renderAttend() {
   var el = document.getElementById("attendList");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students enrolled</div><div class="empty-sub">Go to My Roster to add students</div></div>'; return; }
+  var activeStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!activeStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students enrolled</div><div class="empty-sub">Go to My Roster to add students</div></div>'; return; }
   var classDay = isClassDay();
   var html = "";
   if (!classDay) {
