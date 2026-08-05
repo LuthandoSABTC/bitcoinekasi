@@ -2845,8 +2845,8 @@ function checkLowAttendance() {
 function renderMonthly() {
   var el = document.getElementById("monthlyContent");
   if (!el) return;
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
-  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var monthlyStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!monthlyStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
 
   // Only show weeks with at least 1 attendance record
   var activeWeeks = [];
