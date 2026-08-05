@@ -2036,7 +2036,7 @@ async function handleGrantBonus() {
   var totalEarned = 0, totalOwed = 0, activeCount = 0;
   var html = "";
 
-  students.forEach(function(s) {
+  payoutStudents.forEach(function(s) {
     var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
     var days = Object.keys(filtAtt).length;
     var earned = days * SATS;
