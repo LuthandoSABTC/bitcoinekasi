@@ -2079,7 +2079,8 @@ function renderPayout() {
   var el = document.getElementById("payoutList");
   var summaryEl = document.getElementById("payoutWeekSummary");
   var headerEl = document.getElementById("payoutColsHeader");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
+  var payoutStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!payoutStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
 
   if (headerEl) {
     if (st.mode === 'all') {
