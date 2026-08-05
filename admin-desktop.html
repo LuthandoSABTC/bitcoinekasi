@@ -3260,8 +3260,9 @@ function renderProfiles() {
     return;
   }
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var profileStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
   var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">';
-  students.forEach(function(s) {
+  profileStudents.forEach(function(s) {
     var allDays = Object.keys(s.att || {}).sort();
     var totalDays = allDays.length;
     var totalSats = totalDays * SATS + (s.bonus || 0);
