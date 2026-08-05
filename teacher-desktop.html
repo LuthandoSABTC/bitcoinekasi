@@ -2042,7 +2042,10 @@ function renderPayout() {
     var action = "";
 
     if (st.mode === 'all') {
-      var realOwed = Math.max(0, allTimeEarned + (s.bonus||0) - paid);
+      var effectiveDays = s.round_start_date ? Object.keys(s.att||{}).filter(function(d) { return d >= s.round_start_date; }).length : allTimeDays;
+      var effectiveEarned = effectiveDays * SATS + (s.bonus || 0);
+      var effectivePaid = s.round_start_date ? Math.max(0, paid - (s.round_start_paid || 0)) : paid;
+      var realOwed = Math.max(0, effectiveEarned - effectivePaid);
       totalEarned += allTimeEarned;
       totalOwed += realOwed;
       if (allTimeDays > 0) activeCount++;
