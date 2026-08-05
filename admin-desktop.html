@@ -2345,7 +2345,7 @@ async function graduateStudent(id) {
   alert("🎓 " + s.name + " has graduated! They have been moved to the Alumni Wall.");
 }
 
-  const PASS_THRESHOLD = 80;
+  const PASS_THRESHOLD = 50;
 
 async function saveTestScore(studentId) {
   var s = students.find(function(x) { return x.id === studentId; });
