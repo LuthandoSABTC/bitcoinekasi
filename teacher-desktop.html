@@ -2186,11 +2186,12 @@ function renderLeaderboard() {
   buildWeekFilter("lbWeekFilter", "lb");
   var el = document.getElementById("lbList");
   var banner = document.getElementById("lbStarBanner");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; if(banner)banner.innerHTML=""; return; }
+  var lbStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!lbStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; if(banner)banner.innerHTML=""; return; }
 
   var maxPossible = st.mode === 'all' ? null : 4;
 
-  var data = students.map(function(s) {
+  var data = lbStudents.map(function(s) {
     var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
     var days = Object.keys(filtAtt).length;
     var streak = 0;
@@ -2227,7 +2228,7 @@ function renderLeaderboard() {
     var totalSats = data.reduce(function(a,s) { return a + s.sats; }, 0);
     var totalDays = data.reduce(function(a,s) { return a + s.days; }, 0);
     var activeCount = data.filter(function(s) { return s.days > 0; }).length;
-    var avgDays = students.length ? (totalDays / students.length).toFixed(1) : "0";
+    var avgDays = lbStudents.length ? (totalDays / lbStudents.length).toFixed(1) : "0";
     var bestDays = data[0] ? data[0].days : 0;
 
     var periodLabel;
@@ -2242,14 +2243,14 @@ function renderLeaderboard() {
 
     var summaryText = "";
     if (st.mode === 'all') {
-      var avgDaysAll = students.length ? (totalDays/students.length).toFixed(1) : "0"; summaryText = "Since the program started, <strong>" + students.length + " students</strong> have earned a combined <strong>\u26A1" + totalSats + " sats</strong>, averaging <strong>" + avgDaysAll + " days attended</strong> per student.";
+      var avgDaysAll = lbStudents.length ? (totalDays/lbStudents.length).toFixed(1) : "0"; summaryText = "Since the program started, <strong>" + lbStudents.length + " students</strong> have earned a combined <strong>\u26A1" + totalSats + " sats</strong>, averaging <strong>" + avgDaysAll + " days attended</strong> per student.";
     } else {
-      if (perfectStudents.length === students.length && students.length > 0) {
-        summaryText = "Amazing! <strong>All " + students.length + " students</strong> attended every class this week (" + maxPossible + "/" + maxPossible + " days) \uD83C\uDF89";
+      if (perfectStudents.length === lbStudents.length && lbStudents.length > 0) {
+        summaryText = "Amazing! <strong>All " + lbStudents.length + " students</strong> attended every class this week (" + maxPossible + "/" + maxPossible + " days) \uD83C\uDF89";
       } else if (perfectStudents.length > 0) {
-        summaryText = "<strong>" + perfectStudents.length + " of " + students.length + " students</strong> attended all " + maxPossible + " days this week. <strong>" + activeCount + " of " + students.length + "</strong> attended at least once.";
+        summaryText = "<strong>" + perfectStudents.length + " of " + lbStudents.length + " students</strong> attended all " + maxPossible + " days this week. <strong>" + activeCount + " of " + lbStudents.length + "</strong> attended at least once.";
       } else if (activeCount > 0) {
-        summaryText = "<strong>" + activeCount + " of " + students.length + " students</strong> attended this week, with a best attendance of <strong>" + bestDays + "/" + maxPossible + " days</strong>.";
+        summaryText = "<strong>" + activeCount + " of " + lbStudents.length + " students</strong> attended this week, with a best attendance of <strong>" + bestDays + "/" + maxPossible + " days</strong>.";
       } else {
         summaryText = "No attendance recorded yet for this week.";
       }
@@ -2260,8 +2261,8 @@ function renderLeaderboard() {
       '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights \u2014 ' + periodLabel + '</span>' +
       '<button class="btn-pdf" onclick="downloadHighlightsPDF()">\u2B07\uFE0F Download PDF</button></div>' +
       '<div class="highlights-grid">' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">' + students.length + '</div><div class="highlight-stat-label">Total Students</div></div>' +
-      '<div class="highlight-stat"><div class="highlight-stat-val">' + activeCount + '/' + students.length + '</div><div class="highlight-stat-label">Attended</div></div>' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">' + lbStudents.length + '</div><div class="highlight-stat-label">Total Students</div></div>' +
+      '<div class="highlight-stat"><div class="highlight-stat-val">' + activeCount + '/' + lbStudents.length + '</div><div class="highlight-stat-label">Attended</div></div>' +
       '<div class="highlight-stat"><div class="highlight-stat-val">' + avgDays + '</div><div class="highlight-stat-label">Avg Days</div></div>' +
       '<div class="highlight-stat"><div class="highlight-stat-val">\u26A1' + totalSats + '</div><div class="highlight-stat-label">Sats Earned</div></div>' +
       '<div class="highlight-stat"><div class="highlight-stat-val">' + perfectStudents.length + '</div><div class="highlight-stat-label">Perfect Week' + (perfectStudents.length!==1?'s':'') + '</div></div>' +
@@ -2318,8 +2319,6 @@ function renderLeaderboard() {
 
   el.innerHTML = tierHtml;
 }
-
-
 function switchRosterTab(tab) {
   document.getElementById("rView-active").style.display = tab === "active" ? "" : "none";
   document.getElementById("rView-alumni").style.display = tab === "alumni" ? "" : "none";
