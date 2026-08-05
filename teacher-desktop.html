@@ -1841,7 +1841,6 @@ function go(name) {
   if (name === "stats")       renderStats();
   if (name === "leaderboard") renderLeaderboard();
   if (name === "roster")      renderRoster();
-  html += '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + totalDays + ' days · ⚡' + (totalDays*SATS+(s.bonus||0)) + ' sats</div>';
   if (name === "chapters")    renderChaptersPage();
   if (name === "monthly")     renderMonthly();
   if (name === "dashboard")   renderDashboard();
@@ -2334,6 +2333,13 @@ function renderRoster() {
     html += '<div style="font-weight:600;font-size:14px">' + s.name + '</div>';
     html += '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;max-width:260px">' + (s.destination || 'No address set') + '</div>';
     html += '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + totalDays + ' days · ⚡' + (totalDays*SATS+(s.bonus||0)) + ' sats</div>';
+    var scoreLine = "";
+    if (s.final_test_score != null) {
+      var passed = s.final_test_score >= PASS_THRESHOLD;
+      scoreLine = '<div style="font-size:10px;margin-top:2px;color:' + (passed ? "var(--green)" : "var(--red)") + '">' +
+        (passed ? "\u2713 Passed" : "\u2717 Did not pass") + ' \u2014 ' + s.final_test_score + '%</div>';
+    }
+    html += scoreLine;
     html += '</div>';
     html += '<div style="display:flex;gap:6px;flex-shrink:0">';
     html += '<button class="btn btn-outline btn-sm" onclick="openEdit(this.dataset.id)" data-id="' + sid + '">&#9998; Edit</button>';
