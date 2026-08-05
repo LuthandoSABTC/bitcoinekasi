@@ -1963,7 +1963,7 @@ function renderPayout() {
   var totalEarned = 0, totalOwed = 0, totalStudents = 0;
   var html = "";
 
-  students.forEach(function(s) {
+  payoutStudents.forEach(function(s) {
     var filteredAtt = filterAttByWeek(s.att, st.offset, st.mode);
     var days = Object.keys(filteredAtt).length;
     var earned = days * SATS;
