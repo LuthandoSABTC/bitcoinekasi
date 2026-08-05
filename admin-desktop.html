@@ -1511,6 +1511,7 @@ body {
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script>
 const SATS = 500;
+const PASS_THRESHOLD = 50; 
 // ── Perfect Week Bonus ────────────────────────────────────────
 const BONUS_SATS = 500;
 const PERFECT_DAYS = 4; // Tue-Fri
@@ -2363,8 +2364,6 @@ async function graduateStudent(id) {
   renderRoster();
   alert(s.name + " is now on a new round starting " + today + ". Their payout will reset to 0 owed and count only new attendance from today onward.");
 }
-
-  const PASS_THRESHOLD = 50;
 
 async function saveTestScore(studentId) {
   var s = students.find(function(x) { return x.id === studentId; });
