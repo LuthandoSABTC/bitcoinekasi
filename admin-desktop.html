@@ -2071,16 +2071,14 @@ async function payAll() {
 function renderStats() {
   var st = filterState.stats;
   buildWeekFilter("statsWeekFilter", "stats");
-
   var el = document.getElementById("statsList");
   var summaryEl = document.getElementById("statsWeekSummary");
+  var statsStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!statsStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
 
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
-
-  var sorted = students.slice().sort(function(a,b) {
-    var aDays = Object.keys(filterAttByWeek(a.att, st.offset, st.mode)).length;
-    var bDays = Object.keys(filterAttByWeek(b.att, st.offset, st.mode)).length;
-    return bDays - aDays;
+  var sorted = statsStudents.slice().sort(function(a,b) {
+    return Object.keys(filterAttByWeek(b.att,st.offset,st.mode)).length -
+           Object.keys(filterAttByWeek(a.att,st.offset,st.mode)).length;
   });
 
   var totalDays = 0;
@@ -2092,14 +2090,16 @@ function renderStats() {
     var paid = st.mode === 'all' ? (s.paid||0) : 0;
     var owed = Math.max(0, earned - paid);
     totalDays += days;
-    html += '<div class="attend-row"><div style="cursor:pointer" onclick="openProfile(\'' + s.id + '\')"><div class="attend-name">' + s.name + ' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
-    html += '<div class="attend-sub">' + days + ' days &middot; ' + earned + ' sats earned</div></div>';
+    html += '<div class="attend-row">';
+    html += '<div><div class="attend-name">' + s.name + '</div>';
+    html += '<div class="attend-sub">' + days + ' days attended &middot; ' + earned + ' sats earned</div></div>';
     html += '<div style="text-align:right"><div class="num-orange">' + earned + ' sats</div>';
     if (st.mode === 'all') {
       html += '<div style="font-size:11px;color:var(--green);font-family:\'DM Mono\',monospace;margin-top:2px">' + paid + ' paid &middot; ' + owed + ' owed</div>';
     }
     html += '</div>';
-    html += '<span class="badge ' + (days>0?'badge-green':'badge-gray') + '">' + days + ' days</span></div>';
+    html += '<span class="badge ' + (days>0?'badge-green':'badge-gray') + '">' + days + ' days</span>';
+    html += '</div>';
   });
   el.innerHTML = html;
 
@@ -2107,7 +2107,7 @@ function renderStats() {
   var activeCount = sorted.filter(function(s){ return Object.keys(filterAttByWeek(s.att,st.offset,st.mode)).length > 0; }).length;
   summaryEl.innerHTML =
     '<div class="week-summary-card"><div class="week-summary-val">' + activeCount + '</div><div class="week-summary-label">Active ' + label + '</div></div>' +
-    '<div class="week-summary-card"><div class="week-summary-val">' + (students.length ? (totalDays/students.length).toFixed(1) : '0') + '</div><div class="week-summary-label">Avg Days / Student</div></div>' +
+    '<div class="week-summary-card"><div class="week-summary-val">' + (statsStudents.length ? (totalDays/statsStudents.length).toFixed(1) : '0') + '</div><div class="week-summary-label">Avg Days / Student</div></div>' +
     '<div class="week-summary-card"><div class="week-summary-val">' + (totalDays*SATS) + '</div><div class="week-summary-label">Sats Earned</div></div>';
 }
 
