@@ -1927,7 +1927,7 @@ function renderAttend() {
   if (!classDay) {
     html += '<div style="background:var(--red-bg);border-bottom:1px solid rgba(239,68,68,0.2);padding:12px 20px;font-size:12px;color:var(--red);font-family:\'JetBrains Mono\',monospace">' + getClassDayMessage() + '</div>';
   }
-  students.forEach(function(s) {
+  activeStudents.forEach(function(s) {
     var here = !!(s.att && s.att[TODAY]);
     var days = Object.keys(s.att || {}).length;
     var excuseReason = excusesMap[s.id] && excusesMap[s.id][TODAY];
