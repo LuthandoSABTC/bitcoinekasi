@@ -2143,9 +2143,10 @@ function renderStats() {
   buildWeekFilter("statsWeekFilter", "stats");
   var el = document.getElementById("statsList");
   var summaryEl = document.getElementById("statsWeekSummary");
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
+  var statsStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!statsStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
 
-  var sorted = students.slice().sort(function(a,b) {
+  var sorted = statsStudents.slice().sort(function(a,b) {
     return Object.keys(filterAttByWeek(b.att,st.offset,st.mode)).length -
            Object.keys(filterAttByWeek(a.att,st.offset,st.mode)).length;
   });
@@ -2176,10 +2177,9 @@ function renderStats() {
   var activeCount = sorted.filter(function(s){ return Object.keys(filterAttByWeek(s.att,st.offset,st.mode)).length > 0; }).length;
   summaryEl.innerHTML =
     '<div class="week-summary-card"><div class="week-summary-val">' + activeCount + '</div><div class="week-summary-label">Active ' + label + '</div></div>' +
-    '<div class="week-summary-card"><div class="week-summary-val">' + (students.length ? (totalDays/students.length).toFixed(1) : '0') + '</div><div class="week-summary-label">Avg Days / Student</div></div>' +
+    '<div class="week-summary-card"><div class="week-summary-val">' + (statsStudents.length ? (totalDays/statsStudents.length).toFixed(1) : '0') + '</div><div class="week-summary-label">Avg Days / Student</div></div>' +
     '<div class="week-summary-card"><div class="week-summary-val">' + (totalDays*SATS) + '</div><div class="week-summary-label">Sats Earned</div></div>';
 }
-
 // ── Leaderboard (week filter) ─────────────────────────────────
 function renderLeaderboard() {
   var st = filterState.lb;
