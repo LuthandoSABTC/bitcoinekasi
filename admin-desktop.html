@@ -1983,7 +1983,10 @@ function renderPayout() {
     var ps = payStatus[s.id];
     var action = "";
     if (st.mode === 'all') {
-      var realOwed = Math.max(0, allTimeEarned - paid);
+      var effectiveDays = s.round_start_date ? Object.keys(s.att||{}).filter(function(d) { return d >= s.round_start_date; }).length : allTimeDays;
+      var effectiveEarned = effectiveDays * SATS + (s.bonus || 0);
+      var effectivePaid = s.round_start_date ? Math.max(0, paid - (s.round_start_paid || 0)) : paid;
+      var realOwed = Math.max(0, effectiveEarned - effectivePaid);
       if (ps === "loading") action = '<span class="badge badge-orange"><span class="spinner"></span></span>';
       else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
       else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px;font-family:\'DM Mono\',monospace">' + ps.slice(4).slice(0,25) + '</span>';
