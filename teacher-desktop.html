@@ -3023,9 +3023,8 @@ function closeEow() {
 function renderMonthly() {
   var el = document.getElementById("monthlyContent");
   if (!el) return;
-  if (!students.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
-  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
+  var monthlyStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
+  if (!monthlyStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; return; }
   var activeWeeks = [];
   for (var w = 0; w >= -11; w--) {
     var totalAtt = 0;
