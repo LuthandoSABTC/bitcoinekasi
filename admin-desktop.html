@@ -1947,10 +1947,10 @@ function renderPayout() {
   var summaryEl = document.getElementById("payoutWeekSummary");
   var headerEl = document.getElementById("payoutColsHeader");
   var payoutStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
-  if (!payoutStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No students yet</div></div>'; summaryEl.innerHTML=""; return; }
-  }
-
+  if (!payoutStudents.length) { el.innerHTML = '...'; summaryEl.innerHTML=""; return; }
   if (headerEl) {
+
+
     if (st.mode === 'all') {
       headerEl.style.gridTemplateColumns = "1fr 90px 90px 90px 140px";
       headerEl.innerHTML = '<div>Student</div><div style="text-align:right">Earned</div><div style="text-align:right">Paid</div><div style="text-align:right">Owed</div><div style="text-align:right">Action</div>';
