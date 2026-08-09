@@ -3506,9 +3506,8 @@ async function payStaffSingle(staffId, owed) {
   renderStaffPayouts();
 }
 
-async function payAllStaff() {
-  var owing = staffMembers.filter(function(s) {
-    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
+var owing = staffMembers.filter(function(s) {
+    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR) + (s.bonus || 0);
     return Math.max(0, totalEarned - (s.paid||0)) > 0;
   });
   if (!owing.length) {
