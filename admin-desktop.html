@@ -3516,7 +3516,7 @@ var owing = staffMembers.filter(function(s) {
   }
   for (var i = 0; i < owing.length; i++) {
     var s = owing[i];
-    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
+    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR) + (s.bonus || 0);
     var owed = Math.max(0, totalEarned - (s.paid||0));
     await payStaffSingle(s.id, owed);
     await new Promise(function(r) { setTimeout(r, 500); });
