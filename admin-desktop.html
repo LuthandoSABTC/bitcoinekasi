@@ -2977,6 +2977,7 @@ function downloadHighlightsPDF() {
 
 function generateHighlightsPDF() {
   var st = filterState.lb;
+  var students = window.students.filter(function(s) { return !s.status || s.status === "active"; });
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var maxPossible = st.mode === 'all' ? null : 4;
 
