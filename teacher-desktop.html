@@ -3335,6 +3335,9 @@ function generateHighlightsPDF() {
       doc.text(String(pgTotalDays), pageW - 38, y);
       y += 7;
     });
+  }
+
+  y += 10;
 
   y += 10;
   if (y > 280) { doc.addPage(); y = 20; }
