@@ -1685,14 +1685,13 @@ var filterState = {
 function getClassWeekRange(offset) {
   var now = new Date();
   var day = now.getDay(); // 0=Sun,1=Mon,2=Tue,...,6=Sat
-  // Days since last Tuesday
-  var diffToTue = (day === 0) ? -5 : (day === 1) ? -6 : -(day - 2);
-  var tue = new Date(now);
-  tue.setDate(now.getDate() + diffToTue + (offset * 7));
-  var fri = new Date(tue);
-  fri.setDate(tue.getDate() + 3); // Tue + 3 = Fri
+  var diffToMon = (day === 0) ? -6 : -(day - 1);
+  var mon = new Date(now);
+  mon.setDate(now.getDate() + diffToMon + (offset * 7));
+  var fri = new Date(mon);
+  fri.setDate(mon.getDate() + 4);
   return {
-    start: toLocalDateStr(tue),
+    start: toLocalDateStr(mon),
     end:   toLocalDateStr(fri)
   };
 }
