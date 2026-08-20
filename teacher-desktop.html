@@ -2188,7 +2188,7 @@ function renderLeaderboard() {
   var lbStudents = students.filter(function(s) { return !s.status || s.status === "active"; });
   if (!lbStudents.length) { el.innerHTML = '<div class="empty"><div class="empty-title">No data yet</div></div>'; if(banner)banner.innerHTML=""; return; }
 
-  var maxPossible = st.mode === 'all' ? null : 4;
+  var maxPossible = st.mode === 'all' ? null : 5;
 
   var data = lbStudents.map(function(s) {
     var filtAtt = filterAttByWeek(s.att, st.offset, st.mode);
