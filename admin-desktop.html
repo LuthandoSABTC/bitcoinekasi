@@ -2053,7 +2053,8 @@ async function paySingle(id, owed) {
 
 async function payAll() {
   if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
-  var owing = students.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
+  var activeOnly = students.filter(function(s) { return !s.status || s.status === "active"; });
+  var owing = activeOnly.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
   if (!owing.length) return;
   var alertEl = document.getElementById("payAlert");
   for (var i = 0; i < owing.length; i++) {
