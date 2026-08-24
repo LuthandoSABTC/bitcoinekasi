@@ -2122,8 +2122,8 @@ async function paySingle(id, owed) {
   renderPayout();
 }
 
-async function payAll() {
-  if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
+  async function payAll() {
+  if (!API_KEY) { alert("Set your Blink API key in Settings first"); return; }
   var activeOnly = students.filter(function(s) { return !s.status || s.status === "active"; });
   var owing = activeOnly.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
   if (!owing.length) return;
