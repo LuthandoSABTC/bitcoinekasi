@@ -2420,7 +2420,7 @@ async function graduateStudent(id) {
   var cohort = s.cohort || "Cohort 5 - 2026";
   if (!confirm("Graduate " + s.name + " from the Bitcoin Diploma Program? They will move to the Alumni Wall and no longer appear in active attendance.")) return;
   var today = toLocalDateStr(new Date());
-  await sb("PATCH","students",{ status: "alumni", graduated_at: today },"?id=eq." + id);
+  await sb("PATCH","students",{ status: "alumni", graduated: true, graduated_at: today },"?id=eq." + id);
   await loadStudents();
   renderRoster();
   renderAlumniWall();
