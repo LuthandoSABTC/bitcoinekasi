@@ -1462,6 +1462,12 @@ body {
         <div style="background:var(--bg2);border:2px solid var(--orange);border-radius:var(--radius);padding:28px;margin-bottom:20px;max-width:500px">
           <div style="font-size:18px;font-weight:800;margin-bottom:20px;font-family:Space Grotesk,sans-serif;color:var(--orange)">🎓 Enroll Postgrad Student</div>
           <div style="margin-bottom:16px">
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Link to Existing Graduate (optional)</label>
+            <select style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" id="pgLinkExisting" onchange="onPGLinkChange()">
+              <option value="">— New name (not previously in Bitcoin Diploma) —</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px">
             <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Full Name</label>
             <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" type="text" id="pgName" placeholder="Student full name">
           </div>
@@ -2189,7 +2195,7 @@ function renderLeaderboard() {
 
     banner.innerHTML =
       '<div class="highlights-banner" id="pdfSummaryBlock">' +
-      '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights \u2014 ' + periodLabel + '</span>' +
+      '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights — ' + periodLabel + '</span>' +
       '<button class="btn-pdf" onclick="downloadHighlightsPDF()">\u2B07\uFE0F Download PDF</button></div>' +
       '<div class="highlights-grid">' +
       '<div class="highlight-stat"><div class="highlight-stat-val">' + lbStudents.length + '</div><div class="highlight-stat-label">Total Students</div></div>' +
@@ -2281,7 +2287,7 @@ function renderRoster() {
     if (s.final_test_score != null) {
       var passed = s.final_test_score >= PASS_THRESHOLD;
       scoreLine = '<div style="font-size:10px;margin-top:2px;color:' + (passed ? "var(--green)" : "var(--red)") + '">' +
-        (passed ? "\u2713 Passed" : "\u2717 Did not pass") + ' \u2014 ' + s.final_test_score + '%</div>';
+        (passed ? "\u2713 Passed" : "\u2717 Did not pass") + ' — ' + s.final_test_score + '%</div>';
     }
     html += scoreLine;
     if (s.final_test_score != null && s.final_test_score < PASS_THRESHOLD) {
@@ -2390,8 +2396,8 @@ async function saveTestScore(studentId) {
   await sb("PATCH", "students", { final_test_score: score, final_test_date: today }, "?id=eq." + studentId);
   await loadStudents();
   renderRoster();
-  var result = score >= PASS_THRESHOLD ? "PASSED \u2713" : "did not pass \u2014 consider having them repeat";
-  alert(s.name + " scored " + score + "% \u2014 " + result);
+  var result = score >= PASS_THRESHOLD ? "PASSED \u2713" : "did not pass — consider having them repeat";
+  alert(s.name + " scored " + score + "% — " + result);
 }
 
 async function postgraduateStudent(id) {
@@ -2399,7 +2405,16 @@ async function postgraduateStudent(id) {
   if (!s) return;
   if (!confirm("Mark " + s.name + " as Postgraduate? This shows they're continuing in an advanced/extra program beyond the diploma.")) return;
   await sb("PATCH","students",{ status: "postgraduate" },"?id=eq." + id);
+  // Also link them into the postgrad program roster, instead of leaving
+  // that as a separate manual step someone might do with a retyped name.
+  try {
+    var existingPG = await sb("GET","postgrad_students",null,"?student_id=eq." + id);
+    if (!existingPG || !existingPG.length) {
+      await sb("POST","postgrad_students",{ name: s.name, student_id: id, cohort: s.cohort || ("Postgrad " + new Date().getFullYear()), status: "active", teacher_id: s.teacher_id || null }, null);
+    }
+  } catch(e) { console.log("postgraduateStudent: postgrad_students link failed:", e.message); }
   await loadStudents();
+  if (typeof loadPGStudents === "function") await loadPGStudents();
   renderAlumniWall();
   alert("🎓 " + s.name + " is now marked as Postgraduate!");
 }
@@ -3976,6 +3991,7 @@ async function loadPGStudents() {
     await loadPGExcuses();
     renderPGAttend();
     renderPGRoster();
+    populatePGLinkOptions();
     try { renderDashboard(); } catch(e) {}
   } catch(e) {
     console.log("loadPGStudents error:", e.message);
@@ -4075,6 +4091,34 @@ async function pgMarkAll() {
   await loadPGStudents();
 }
 
+function populatePGLinkOptions() {
+  var sel = document.getElementById("pgLinkExisting");
+  if (!sel) return;
+  var linkedIds = {};
+  pgStudents.forEach(function(p) { if (p.student_id) linkedIds[p.student_id] = true; });
+  var eligible = (typeof students !== "undefined" ? students : []).filter(function(s) {
+    return (s.status === "alumni" || s.status === "postgraduate") && !linkedIds[s.id];
+  });
+  var current = sel.value;
+  sel.innerHTML = '<option value="">— New name (not previously in Bitcoin Diploma) —</option>' +
+    eligible.map(function(s) { return '<option value="' + s.id + '">' + s.name + ' (' + s.status + ')</option>'; }).join("");
+  if (eligible.some(function(s){ return s.id === current; })) sel.value = current;
+}
+
+function onPGLinkChange() {
+  var sel = document.getElementById("pgLinkExisting");
+  var nameEl = document.getElementById("pgName");
+  if (!sel || !nameEl) return;
+  if (sel.value) {
+    var s = (typeof students !== "undefined" ? students : []).find(function(x){ return x.id === sel.value; });
+    nameEl.value = s ? s.name : "";
+    nameEl.readOnly = true;
+  } else {
+    nameEl.value = "";
+    nameEl.readOnly = false;
+  }
+}
+
 async function addPGStudent() {
   var name = document.getElementById("pgName").value.trim();
   var cohort = document.getElementById("pgCohort").value.trim() || "Postgrad 2026";
@@ -4083,11 +4127,20 @@ async function addPGStudent() {
   errEl.innerHTML = '<div class="alert alert-info">Adding student...</div>';
   try {
     var teacherId = typeof TEACHER_ID !== "undefined" ? TEACHER_ID : (typeof myTeacherId !== "undefined" ? myTeacherId : null);
+    var linkSel = document.getElementById("pgLinkExisting");
+    var linkedId = linkSel ? linkSel.value : "";
     var payload = { name: name, cohort: cohort, status: "active" };
     if (teacherId) payload.teacher_id = teacherId;
+    if (linkedId) {
+      var linkedStudent = students.find(function(x) { return x.id === linkedId; });
+      if (linkedStudent) payload.name = linkedStudent.name;
+      payload.student_id = linkedId;
+    }
     var result = await sb("POST","postgrad_students", payload, null);
     if (!result) throw new Error("No response from database");
     document.getElementById("pgName").value = "";
+    document.getElementById("pgName").readOnly = false;
+    if (linkSel) linkSel.value = "";
     errEl.innerHTML = '<div class="alert alert-ok">✓ ' + name + ' enrolled successfully</div>';
     setTimeout(function() { errEl.innerHTML = ""; }, 3000);
     await loadPGStudents();
