@@ -1467,6 +1467,12 @@ body {
         <div style="background:var(--bg2);border:2px solid var(--orange);border-radius:var(--radius);padding:28px;margin-bottom:20px;max-width:500px">
           <div style="font-size:18px;font-weight:800;margin-bottom:20px;font-family:Space Grotesk,sans-serif;color:var(--orange)">🎓 Enroll Postgrad Student</div>
           <div style="margin-bottom:16px">
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Link to Existing Graduate (optional)</label>
+            <select style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" id="pgLinkExisting" onchange="onPGLinkChange()">
+              <option value="">— New name (not previously in Bitcoin Diploma) —</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px">
             <label style="display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Full Name</label>
             <input style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:13px 16px;color:var(--text);font-size:14px;outline:none" type="text" id="pgName" placeholder="Student full name">
           </div>
@@ -2316,7 +2322,7 @@ function renderLeaderboard() {
 
     banner.innerHTML =
       '<div class="highlights-banner" id="pdfSummaryBlock">' +
-      '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights \u2014 ' + periodLabel + '</span>' +
+      '<div class="highlights-title"><span>\uD83D\uDCCB This Week\u2019s Highlights — ' + periodLabel + '</span>' +
       '<button class="btn-pdf" onclick="downloadHighlightsPDF()">\u2B07\uFE0F Download PDF</button></div>' +
       '<div class="highlights-grid">' +
       '<div class="highlight-stat"><div class="highlight-stat-val">' + students.length + '</div><div class="highlight-stat-label">Total Students</div></div>' +
@@ -4276,6 +4282,7 @@ async function loadPGStudents() {
     });
     renderPGAttend();
     renderPGRoster();
+    populatePGLinkOptions();
   } catch(e) {
     console.log("loadPGStudents error:", e.message);
   }
@@ -4361,6 +4368,34 @@ async function pgMarkAll() {
   await loadPGStudents();
 }
 
+function populatePGLinkOptions() {
+  var sel = document.getElementById("pgLinkExisting");
+  if (!sel) return;
+  var linkedIds = {};
+  pgStudents.forEach(function(p) { if (p.student_id) linkedIds[p.student_id] = true; });
+  var eligible = (typeof students !== "undefined" ? students : []).filter(function(s) {
+    return (s.status === "alumni" || s.status === "postgraduate") && !linkedIds[s.id];
+  });
+  var current = sel.value;
+  sel.innerHTML = '<option value="">— New name (not previously in Bitcoin Diploma) —</option>' +
+    eligible.map(function(s) { return '<option value="' + s.id + '">' + s.name + ' (' + s.status + ')</option>'; }).join("");
+  if (eligible.some(function(s){ return s.id === current; })) sel.value = current;
+}
+
+function onPGLinkChange() {
+  var sel = document.getElementById("pgLinkExisting");
+  var nameEl = document.getElementById("pgName");
+  if (!sel || !nameEl) return;
+  if (sel.value) {
+    var s = (typeof students !== "undefined" ? students : []).find(function(x){ return x.id === sel.value; });
+    nameEl.value = s ? s.name : "";
+    nameEl.readOnly = true;
+  } else {
+    nameEl.value = "";
+    nameEl.readOnly = false;
+  }
+}
+
 async function addPGStudent() {
   var nameEl = document.getElementById("pgName");
   var cohortEl = document.getElementById("pgCohort");
@@ -4373,11 +4408,20 @@ async function addPGStudent() {
   if (!name) { errEl.innerHTML = '<div class="alert alert-err">Please enter a name</div>'; return; }
   errEl.innerHTML = '<div class="alert alert-info">Adding student...</div>';
   try {
+    var linkSel = document.getElementById("pgLinkExisting");
+    var linkedId = linkSel ? linkSel.value : "";
     var payload = { name: name, cohort: cohort, status: "active" };
+    if (linkedId) {
+      var linkedStudent = students.find(function(x) { return x.id === linkedId; });
+      if (linkedStudent) payload.name = linkedStudent.name;
+      payload.student_id = linkedId;
+    }
     console.log("Posting payload:", payload);
     var result = await sb("POST","postgrad_students", payload, null);
     console.log("Post result:", result);
     nameEl.value = "";
+    nameEl.readOnly = false;
+    if (linkSel) linkSel.value = "";
     errEl.innerHTML = '<div class="alert alert-ok">✓ ' + name + ' enrolled successfully</div>';
     setTimeout(function() { errEl.innerHTML = ""; }, 3000);
     await loadPGStudents();
