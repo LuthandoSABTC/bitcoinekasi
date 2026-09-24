@@ -300,7 +300,7 @@ textarea.inp{resize:vertical;min-height:80px}
     <!-- PAYOUTS -->
     <div id="p-payout" class="page">
       <div id="payAlert"></div>
-      <button class="big-btn big-btn-orange" onclick="payAll()" style="margin-bottom:8px">⚡ Pay All Outstanding</button>
+      <button class="big-btn big-btn-orange" id="payAllBtn" onclick="payAll()" style="margin-bottom:8px">⚡ Pay All Outstanding</button>
       <div class="week-filter" id="payoutWeekFilter"></div>
       <div class="week-summary-strip" id="payoutWeekSummary"></div>
       <div id="payoutList"></div>
@@ -851,8 +851,10 @@ function renderPayout() {
 
 async function paySingle(id, owed) {
   if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
+  if (payStatus[id] === "loading") return; // already in flight — ignore duplicate click
   var s = students.find(function(x) { return x.id === id; });
   if (!s) return;
+  var expectedPaid = s.paid || 0;
   payStatus[id] = "loading"; renderPayout();
   try {
     var ctrl = new AbortController();
@@ -860,30 +862,41 @@ async function paySingle(id, owed) {
     var res = await fetch(BACKEND + "/pay", {
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey: apiKey, destination: s.destination, amount: owed })
+      body: JSON.stringify({ apiKey: apiKey, destination: s.destination, amount: owed, payTable: "students", payId: id, expectedPaid: expectedPaid, recipientLabel: s.name })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed");
-    await sb("PATCH","students",{ paid: (s.paid||0)+owed },"?id=eq." + id);
-    payStatus[id] = "ok:Sent " + owed;
+    // Backend now writes `paid` itself right after Blink confirms — no
+    // client-side PATCH here.
+    payStatus[id] = data.recordWarning ? "warn:Sent " + owed : "ok:Sent " + owed;
     await loadStudents();
   } catch(e) { payStatus[id] = "err:" + e.message; }
   renderPayout();
 }
 
+var payAllRunning = false;
 async function payAll() {
   if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
+  if (payAllRunning) return; // already running — ignore duplicate click
   var owing = students.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
   if (!owing.length) return;
+  payAllRunning = true;
+  var btn = document.getElementById("payAllBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Paying..."; }
   var alertEl = document.getElementById("payAlert");
-  for (var i = 0; i < owing.length; i++) {
-    var s = owing[i];
-    var owed = Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
-    alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + owing.length + '...</div>';
-    await paySingle(s.id, owed);
+  try {
+    for (var i = 0; i < owing.length; i++) {
+      var s = owing[i];
+      var owed = Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
+      alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + owing.length + '...</div>';
+      await paySingle(s.id, owed);
+    }
+    alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length!==1?'s':'') + ' sent!</div>';
+    setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
+  } finally {
+    payAllRunning = false;
+    if (btn) { btn.disabled = false; btn.textContent = "⚡ Pay All Outstanding"; }
   }
-  alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length!==1?'s':'') + ' sent!</div>';
-  setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
 }
 
 var apiKey = localStorage.getItem("ek_key") || "";

@@ -1249,7 +1249,7 @@ body {
           <div class="section-title">Lightning Payouts</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-outline btn-sm" id="bonusBtn" onclick="handleGrantBonus()" style="border-color:rgba(255,215,0,0.3);color:#ffd700">&#9889; Grant Perfect Week Bonus</button>
-            <button class="btn btn-primary" onclick="payAll()">Pay All Outstanding</button>
+            <button class="btn btn-primary" id="payAllBtn" onclick="payAll()">Pay All Outstanding</button>
           </div>
         </div>
         <div id="bonusAlert" style="margin-bottom:8px"></div>
@@ -1359,7 +1359,7 @@ body {
       <div id="p-staff-payouts" class="page">
         <div class="section-header">
           <div class="section-title">Staff Payouts</div>
-          <button class="btn btn-primary btn-sm" onclick="payAllStaff()">⚡ Pay All Outstanding</button>
+          <button class="btn btn-primary btn-sm" id="payAllStaffBtn" onclick="payAllStaff()">⚡ Pay All Outstanding</button>
         </div>
         <div id="staffPayAlert" style="margin-bottom:12px"></div>
         <div class="card">
@@ -2158,8 +2158,10 @@ function renderPayout() {
 }
 
 async function paySingle(id, owed) {
+  if (payStatus[id] === "loading") return; // already in flight — ignore duplicate click
   var s = students.find(function(x) { return x.id === id; });
   if (!s) return;
+  var expectedPaid = s.paid || 0;
   payStatus[id] = "loading"; renderPayout();
   try {
     var ctrl = new AbortController();
@@ -2171,13 +2173,18 @@ async function paySingle(id, owed) {
           apiKey: API_KEY,
           destination: s.destination,
           amount: owed,
-          memo: "Bitcoin Ekasi - Keep showing up, you are building your future!"
+          memo: "Bitcoin Ekasi - Keep showing up, you are building your future!",
+          payTable: "students",
+          payId: id,
+          expectedPaid: expectedPaid,
+          recipientLabel: s.name
         })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed");
-    await sb("PATCH","students",{ paid: (s.paid||0) + owed },"?id=eq." + id);
-    payStatus[id] = "ok:Sent " + owed + " sats";
+    // Backend now writes `paid` itself right after Blink confirms — no
+    // client-side PATCH here.
+    payStatus[id] = data.recordWarning ? "warn:Sent " + owed + " sats" : "ok:Sent " + owed + " sats";
     await loadStudents();
   } catch(e) {
     payStatus[id] = "err:" + e.message;
@@ -2188,18 +2195,28 @@ async function paySingle(id, owed) {
   renderPayout();
 }
 
+var payAllRunning = false;
 async function payAll() {
+  if (payAllRunning) return; // already running — ignore duplicate click
   var owing = students.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
   if (!owing.length) return;
+  payAllRunning = true;
+  var btn = document.getElementById("payAllBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Paying..."; }
   var alertEl = document.getElementById("payAlert");
-  for (var i = 0; i < owing.length; i++) {
-    var s = owing[i];
-    var owed = Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
-    alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + owing.length + '...</div>';
-    await paySingle(s.id, owed);
+  try {
+    for (var i = 0; i < owing.length; i++) {
+      var s = owing[i];
+      var owed = Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
+      alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + owing.length + '...</div>';
+      await paySingle(s.id, owed);
+    }
+    alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length!==1?'s':'') + ' sent!</div>';
+    setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
+  } finally {
+    payAllRunning = false;
+    if (btn) { btn.disabled = false; btn.textContent = "Pay All Outstanding"; }
   }
-  alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length!==1?'s':'') + ' sent!</div>';
-  setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
 }
 
 // ── Statistics (week filter) ──────────────────────────────────
@@ -3575,8 +3592,10 @@ function renderStaffPayouts() {
 }
 
 async function payStaffSingle(staffId, owed) {
+  if (staffPayStatus[staffId] === "loading") return; // already in flight — ignore duplicate click
   var s = staffMembers.find(function(x) { return x.id === staffId; });
   if (!s) return;
+  var expectedPaid = s.paid || 0;
   staffPayStatus[staffId] = "loading"; renderStaffPayouts();
   try {
     var ctrl = new AbortController();
@@ -3589,19 +3608,26 @@ async function payStaffSingle(staffId, owed) {
           apiKey: key,
           destination: s.destination,
           amount: owed,
-          memo: "Bitcoin Ekasi - Your dedication inspires the next generation. Thank you for everything you do!"
+          memo: "Bitcoin Ekasi - Your dedication inspires the next generation. Thank you for everything you do!",
+          payTable: "staff",
+          payId: staffId,
+          expectedPaid: expectedPaid,
+          recipientLabel: s.name
         })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed");
-    await sb("PATCH","staff",{ paid: (s.paid||0)+owed },"?id=eq." + staffId);
-    staffPayStatus[staffId] = "ok:Sent ⚡" + owed;
+    // Backend now writes `paid` itself right after Blink confirms — no
+    // client-side PATCH here.
+    staffPayStatus[staffId] = data.recordWarning ? "warn:Sent ⚡" + owed : "ok:Sent ⚡" + owed;
     await loadStaff();
   } catch(e) { staffPayStatus[staffId] = "err:" + e.message; }
   renderStaffPayouts();
 }
 
+var payAllStaffRunning = false;
 async function payAllStaff() {
+  if (payAllStaffRunning) return; // already running — ignore duplicate click
   var owing = staffMembers.filter(function(s) {
     var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
     return Math.max(0, totalEarned - (s.paid||0)) > 0;
@@ -3610,15 +3636,23 @@ async function payAllStaff() {
     document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff are fully paid up!</div>';
     return;
   }
-  for (var i = 0; i < owing.length; i++) {
-    var s = owing[i];
-    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
-    var owed = Math.max(0, totalEarned - (s.paid||0));
-    await payStaffSingle(s.id, owed);
-    await new Promise(function(r) { setTimeout(r, 500); });
+  payAllStaffRunning = true;
+  var btn = document.getElementById("payAllStaffBtn");
+  if (btn) { btn.disabled = true; }
+  try {
+    for (var i = 0; i < owing.length; i++) {
+      var s = owing[i];
+      var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR);
+      var owed = Math.max(0, totalEarned - (s.paid||0));
+      await payStaffSingle(s.id, owed);
+      await new Promise(function(r) { setTimeout(r, 500); });
+    }
+    document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff payments sent!</div>';
+    setTimeout(function() { document.getElementById("staffPayAlert").innerHTML = ""; }, 4000);
+  } finally {
+    payAllStaffRunning = false;
+    if (btn) { btn.disabled = false; }
   }
-  document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff payments sent!</div>';
-  setTimeout(function() { document.getElementById("staffPayAlert").innerHTML = ""; }, 4000);
 }
 
 function renderStaffRoster() {
