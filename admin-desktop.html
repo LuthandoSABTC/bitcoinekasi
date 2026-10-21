@@ -1416,13 +1416,13 @@ body {
             <div style="font-size:15px;font-weight:700;margin-bottom:20px">Security</div>
             <div class="inp-group">
               <label class="inp-label">New Admin Password</label>
-              <input class="inp" type="password" id="iPw" placeholder="Min 4 characters">
-              <div class="inp-hint" id="curPw">Current: ekasi_admin2024</div>
+              <input class="inp" type="password" id="iPw" placeholder="Min 6 characters">
+              <div class="inp-hint" id="curPw">Leave blank to keep the current password (min 6 characters)</div>
             </div>
             <div class="inp-group">
               <label class="inp-label">Teacher Password</label>
-              <input class="inp" type="password" id="iTeacherPw" placeholder="Min 4 characters">
-              <div class="inp-hint" id="curTeacherPw">Current: ekasi2024</div>
+              <input class="inp" type="password" id="iTeacherPw" placeholder="Min 6 characters">
+              <div class="inp-hint" id="curTeacherPw">Leave blank to keep the current password (min 6 characters)</div>
             </div>
             <div id="settingsMsg"></div>
             <div style="margin-top:20px;padding:16px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
@@ -1517,6 +1517,7 @@ body {
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="ekasi-auth.js"></script>
 <script>
 const SATS = 500;
 const PASS_THRESHOLD = 50; 
@@ -1582,8 +1583,6 @@ async function checkAndGrantBonuses() {
 }
 
 const BACKEND = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_URL = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
 function toLocalDateStr(d) {
   var y = d.getFullYear();
   var m = String(d.getMonth() + 1).padStart(2, "0");
@@ -1719,31 +1718,16 @@ var students = [];
 var attendance = [];
 var payStatus = {};
 var apiKey = localStorage.getItem("ek_key") || "";
-var adminPw = localStorage.getItem("ek_admin_pw") || "ekasi_admin2024";
-var teacherPw = localStorage.getItem("ek_pw") || "ekasi2024";
 var myTeacherId = null;
 
 async function sb(method, table, body, params) {
-  params = params || "";
-  var res = await fetch(SUPABASE_URL + "/rest/v1/" + table + params, {
-    method: method,
-    headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=representation" },
-    body: body ? JSON.stringify(body) : null
-  });
-  var text = await res.text();
-  if (!text) return [];
-  var parsed;
-  try { parsed = JSON.parse(text); } catch(e) { return []; }
-  if (!res.ok) {
-    var msg = (parsed && (parsed.message || parsed.error || parsed.hint)) || text.slice(0,200);
-    throw new Error(msg);
-  }
-  return parsed;
+  return EkAuth.sb(method, table, body, params);
 }
 
-function doLogin() {
+async function doLogin() {
   var val = document.getElementById("pwInput").value;
-  if (val === adminPw) {
+  var r = await EkAuth.login("admin", null, val);
+  if (r.ok) {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("app").style.display = "block";
     document.getElementById("settingsBtn").style.display = "";
@@ -1752,12 +1736,13 @@ function doLogin() {
     updateDate();
     loadTeacherAndStudents();
   } else {
-    document.getElementById("pwErr").innerHTML = '<div class="err-msg">Incorrect password</div>';
+    document.getElementById("pwErr").innerHTML = '<div class="err-msg">' + (r.error || "Incorrect password") + '</div>';
     document.getElementById("pwInput").value = "";
   }
 }
 
 function doLogout() {
+  EkAuth.logout();
   document.getElementById("loginPage").style.display = "flex";
   document.getElementById("app").style.display = "none";
   document.getElementById("pwInput").value = "";
@@ -2555,13 +2540,27 @@ async function testBlink() {
   }
 }
 
-function saveSettings() {
+async function saveSettings() {
   var k = document.getElementById("iKey").value.trim();
   var p = document.getElementById("iPw").value.trim();
   var tp = document.getElementById("iTeacherPw").value.trim();
   if (k) { apiKey = k; localStorage.setItem("ek_key", k); }
-  if (p.length >= 4) { adminPw = p; localStorage.setItem("ek_admin_pw", p); document.getElementById("curPw").textContent = "Current: " + p; }
-  if (tp.length >= 4) { teacherPw = tp; localStorage.setItem("ek_pw", tp); document.getElementById("curTeacherPw").textContent = "Current: " + tp; }
+  var msgEl = document.getElementById("settingsMsg");
+  try {
+    if (p) {
+      if (p.length < 6) throw new Error("Admin password must be at least 6 characters");
+      await EkAuth.changePassword("admin", null, p);
+      document.getElementById("iPw").value = "";
+    }
+    if (tp) {
+      if (tp.length < 6) throw new Error("Teacher password must be at least 6 characters");
+      await EkAuth.changePassword("teacher", myTeacherId, tp);
+      document.getElementById("iTeacherPw").value = "";
+    }
+  } catch (e) {
+    msgEl.innerHTML = '<div class="alert alert-err">' + e.message + '</div>';
+    return;
+  }
   updateKeyBadge();
   document.getElementById("settingsMsg").innerHTML = '<div class="alert alert-ok">Settings saved!</div>';
   setTimeout(function() { document.getElementById("settingsMsg").innerHTML = ""; }, 3000);
