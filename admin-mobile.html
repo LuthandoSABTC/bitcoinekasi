@@ -392,14 +392,14 @@ textarea.inp{resize:vertical;min-height:80px}
         <div class="settings-row"><div><div class="settings-label">Admin Password</div></div></div>
         <div style="padding:0 16px 16px">
           <input class="inp" type="password" id="iPw" placeholder="New admin password" style="margin-bottom:8px">
-          <div class="inp-hint" id="curPw">Current: ekasi_admin2024</div>
+          <div class="inp-hint" id="curPw">Leave blank to keep the current password (min 6 characters)</div>
         </div>
       </div>
       <div class="settings-section">
         <div class="settings-row"><div><div class="settings-label">Teacher Password</div></div></div>
         <div style="padding:0 16px 16px">
           <input class="inp" type="password" id="iTeacherPw" placeholder="New teacher password" style="margin-bottom:8px">
-          <div class="inp-hint" id="curTeacherPw">Current: ekasi2024</div>
+          <div class="inp-hint" id="curTeacherPw">Leave blank to keep the current password (min 6 characters)</div>
         </div>
       </div>
     </div>
@@ -491,11 +491,10 @@ textarea.inp{resize:vertical;min-height:80px}
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="ekasi-auth.js"></script>
 <script>
 const SATS = 500;
 const BACKEND = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_URL = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
 const TODAY = new Date().toISOString().split("T")[0];
 
 // Mobile nav
@@ -900,25 +899,16 @@ async function payAll() {
 }
 
 var apiKey = localStorage.getItem("ek_key") || "";
-var adminPw = localStorage.getItem("ek_admin_pw") || "ekasi_admin2024";
-var teacherPw = localStorage.getItem("ek_pw") || "ekasi2024";
 var myTeacherId = null;
 
 async function sb(method, table, body, params) {
-  params = params || "";
-  var res = await fetch(SUPABASE_URL + "/rest/v1/" + table + params, {
-    method: method,
-    headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=representation" },
-    body: body ? JSON.stringify(body) : null
-  });
-  var text = await res.text();
-  if (!text) return [];
-  try { return JSON.parse(text); } catch(e) { return []; }
+  return EkAuth.sb(method, table, body, params);
 }
 
-function doLogin() {
+async function doLogin() {
   var val = document.getElementById("pwInput").value;
-  if (val === adminPw) {
+  var r = await EkAuth.login("admin", null, val);
+  if (r.ok) {
     document.getElementById("loginPage").style.display = "none";
     var appEl = document.getElementById("app");
     appEl.style.display = "flex";
@@ -928,12 +918,13 @@ function doLogin() {
     updateDate();
     loadTeacherAndStudents();
   } else {
-    document.getElementById("pwErr").innerHTML = '<div class="err-msg">Incorrect password</div>';
+    document.getElementById("pwErr").innerHTML = '<div class="err-msg">' + (r.error || "Incorrect password") + '</div>';
     document.getElementById("pwInput").value = "";
   }
 }
 
 function doLogout() {
+  EkAuth.logout();
   document.getElementById("loginPage").style.display = "flex";
   var appEl = document.getElementById("app");
   appEl.style.display = "none";
@@ -950,7 +941,8 @@ function updateDate() {
   var d = new Date();
   var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  document.getElementById("dateEl").textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+  var dateEl = document.getElementById("dateEl"); if (!dateEl) return;
+  dateEl.textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
 }
 
 async function loadTeacherAndStudents() {
@@ -958,8 +950,7 @@ async function loadTeacherAndStudents() {
   if (teachers && teachers.length) {
     myTeacherId = teachers[0].id;
     var badge = document.getElementById("nb-teachers");
-    badge.textContent = teachers.length;
-    badge.style.display = "";
+    if (badge) { badge.textContent = teachers.length; badge.style.display = ""; }
   }
   await loadStudents();
 }
@@ -1052,13 +1043,27 @@ async function testBlink() {
   }
 }
 
-function saveSettings() {
+async function saveSettings() {
   var k = document.getElementById("iKey").value.trim();
   var p = document.getElementById("iPw").value.trim();
-  var tp = document.getElementById("iTeacherPw").value.trim();
+  var tpEl = document.getElementById("iTeacherPw"); var tp = tpEl ? tpEl.value.trim() : "";
   if (k) { apiKey = k; localStorage.setItem("ek_key", k); }
-  if (p.length >= 4) { adminPw = p; localStorage.setItem("ek_admin_pw", p); document.getElementById("curPw").textContent = "Current: " + p; }
-  if (tp.length >= 4) { teacherPw = tp; localStorage.setItem("ek_pw", tp); document.getElementById("curTeacherPw").textContent = "Current: " + tp; }
+  var msgEl = document.getElementById("settingsMsg");
+  try {
+    if (p) {
+      if (p.length < 6) throw new Error("Admin password must be at least 6 characters");
+      await EkAuth.changePassword("admin", null, p);
+      document.getElementById("iPw").value = "";
+    }
+    if (tp) {
+      if (tp.length < 6) throw new Error("Teacher password must be at least 6 characters");
+      await EkAuth.changePassword("teacher", myTeacherId, tp);
+      tpEl.value = "";
+    }
+  } catch (e) {
+    msgEl.innerHTML = '<div class="alert alert-err">' + e.message + '</div>';
+    return;
+  }
   updateKeyBadge();
   document.getElementById("settingsMsg").innerHTML = '<div class="alert alert-ok">Settings saved!</div>';
   setTimeout(function() { document.getElementById("settingsMsg").innerHTML = ""; }, 3000);
