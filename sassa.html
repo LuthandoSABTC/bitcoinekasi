@@ -1925,6 +1925,15 @@ function updateDate() {
   document.getElementById("dateEl").textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
 }
 
+var stackIn = {};
+async function loadStackLogins() {
+  stackIn = {};
+  try {
+    var rows = await sb("GET","stack_logins",null,"?date=eq." + TODAY + "&kind=eq.diploma&select=student_id,in_class");
+    (rows || []).forEach(function(r) { stackIn[r.student_id] = r.in_class ? "class" : "away"; });
+  } catch (e) {}
+}
+
 async function loadStudents() {
   var raw = await sb("GET","students",null,"?teacher_id=eq." + TEACHER_ID + "&order=created_at.asc");
   if (!raw || !raw.length) { students = []; attendance = []; renderAll(); return; }
@@ -1937,6 +1946,7 @@ async function loadStudents() {
     return Object.assign({}, s, { att: att });
   });
   await loadExcuses();
+  await loadStackLogins();
   renderAll();
 }
 
@@ -1980,7 +1990,7 @@ function renderAttend() {
   if (!classDay) {
     html += '<div style="background:var(--red-bg);border-bottom:1px solid rgba(239,68,68,0.2);padding:12px 20px;font-size:12px;color:var(--red);font-family:\'JetBrains Mono\',monospace">' + getClassDayMessage() + '</div>';
   }
-  payoutStudents.forEach(function(s) {
+  students.filter(function(s) { return !s.status || s.status === "active"; }).forEach(function(s) {
     var here = !!(s.att && s.att[TODAY]);
     var days = Object.keys(s.att || {}).length;
     var excuseReason = excusesMap[s.id] && excusesMap[s.id][TODAY];
@@ -1988,6 +1998,8 @@ function renderAttend() {
     html += '<div class="attend-row" style="flex-wrap:wrap">';
     html += '<div style="flex:1;min-width:160px"><div class="attend-name">' + s.name + '</div>';
     var subLine = days + ' days &middot; ' + (days * SATS) + ' sats earned';
+    if (stackIn[s.id] === 'class') subLine += ' &middot; <span style="color:var(--green)">Logged in on Stack &amp; Study</span>';
+    else if (stackIn[s.id] === 'away') subLine += ' &middot; <span style="color:var(--orange)">Stack &amp; Study login (not in class)</span>';
     if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
     html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {

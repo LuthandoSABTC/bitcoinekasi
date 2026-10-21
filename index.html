@@ -1908,6 +1908,15 @@ async function loadTeacherAndStudents() {
   await loadStudents();
 }
 
+var stackIn = {};
+async function loadStackLogins() {
+  stackIn = {};
+  try {
+    var rows = await sb("GET","stack_logins",null,"?date=eq." + TODAY + "&kind=eq.diploma&select=student_id,in_class");
+    (rows || []).forEach(function(r) { stackIn[r.student_id] = r.in_class ? "class" : "away"; });
+  } catch (e) {}
+}
+
 async function loadStudents() {
   if (!myTeacherId) { students = []; attendance = []; renderAll(); return; }
   var raw = await sb("GET","students",null,"?teacher_id=eq." + myTeacherId + "&order=created_at.asc");
@@ -1921,6 +1930,7 @@ async function loadStudents() {
     return Object.assign({}, s, { att: att });
   });
   await loadExcuses();
+  await loadStackLogins();
   renderAll();
 }
 
@@ -1968,6 +1978,8 @@ function renderAttend() {
     var excuseType = excuseReason ? getExcuseType(excuseReason) : null;
     html += '<div class="attend-row" style="flex-wrap:wrap"><div style="cursor:pointer;flex:1;min-width:160px" onclick="openProfile(\'' + s.id + '\')"><div class="attend-name">' + s.name + ' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
     var subLine = days + ' days &middot; ' + (days*SATS) + ' sats earned';
+    if (stackIn[s.id] === 'class') subLine += ' &middot; <span style="color:var(--green)">Logged in on Stack &amp; Study</span>';
+    else if (stackIn[s.id] === 'away') subLine += ' &middot; <span style="color:var(--orange)">Stack &amp; Study login (not in class)</span>';
     if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
     html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {
