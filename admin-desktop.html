@@ -1398,6 +1398,14 @@ body {
           <div id="staffRosterErr"></div>
           <button class="btn btn-primary" style="width:100%;padding:12px" onclick="addStaff()">+ Add Staff Member</button>
         </div>
+        <div class="card" style="padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:15px;font-weight:700">&#9889; Blink wallet balances</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">Only for staff who agreed and gave a read-only Blink key. Read-only keys can't move money.</div>
+          </div>
+          <div id="staffWalletStatus" style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace"></div>
+          <button class="btn btn-outline btn-sm" onclick="loadStaffWallets(true)">&#10227; Check balances</button>
+        </div>
         <div id="staffRosterList"></div>
       </div>
 
@@ -1795,6 +1803,7 @@ function go(name) {
     if (!students.length) { setTimeout(renderProfiles, 1000); setTimeout(renderProfiles, 2000); }
   }
   if (name === "test")        renderTest();
+  if (name === "staff-roster") loadStaffWallets(false);
 }
 
 function openSidebar() { document.getElementById("sidebar").classList.add("open"); document.getElementById("overlay").classList.add("show"); }
@@ -3601,12 +3610,93 @@ function renderStaffRoster() {
     html += '<div class="staff-avatar">' + s.name.charAt(0).toUpperCase() + '</div>';
     html += '<div style="flex:1"><div style="font-weight:700">' + s.name + '</div>';
     html += '<div style="font-size:11px;color:#3b82f6">' + s.role + '</div>';
-    html += '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px">' + s.destination + '</div></div>';
+    html += '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px">' + s.destination + '</div>';
+    html += staffWalletLine(s) + '</div>';
     html += '<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:#3b82f6;font-family:JetBrains Mono,monospace">' + totalHours.toFixed(1) + ' hrs</div>';
     html += '<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="deleteStaff(\'' + s.id + '\')" >Remove</button></div></div>';
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+// ── Staff Blink wallet balances (read-only keys, with the staff member's agreement) ──
+var staffWallets = {};      // staffId -> { keyHint, bal }
+var staffWalletsLoaded = false;
+function swEsc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+async function staffWalletApi(method, path, body) {
+  var res = await fetch(BACKEND + "/staff-wallets" + path, { method: method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : null });
+  var data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error((data && data.error) || ("Error " + res.status));
+  return data;
+}
+
+async function loadStaffWallets(fresh) {
+  var st = document.getElementById("staffWalletStatus");
+  if (st) st.textContent = "checking…";
+  try {
+    var linked = await staffWalletApi("GET", "");
+    var next = {};
+    linked.forEach(function(w){ next[w.staffId] = { keyHint: w.keyHint, bal: (staffWallets[w.staffId] || {}).bal }; });
+    staffWallets = next;
+    if (linked.length) {
+      var bals = await staffWalletApi("GET", "/balances" + (fresh ? "?fresh=1" : ""));
+      bals.forEach(function(b){ if (staffWallets[b.staffId]) staffWallets[b.staffId].bal = b; });
+    }
+    staffWalletsLoaded = true;
+    if (st) st.textContent = linked.length ? ("updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })) : "no wallets linked yet";
+  } catch (e) {
+    if (st) st.textContent = e.message;
+  }
+  renderStaffRoster();
+}
+
+function staffWalletLine(s) {
+  var box = '<div style="margin-top:6px;font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  var w = staffWallets[s.id];
+  if (!staffWalletsLoaded) return '';
+  if (!w) {
+    return box + '<span style="color:var(--text3)">Wallet balance: not linked</span>' +
+      '<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:11px" onclick="linkStaffWallet(\'' + s.id + '\')">Link Blink</button></div>';
+  }
+  var b = w.bal, txt;
+  if (!b) txt = '<span style="color:var(--text3)">checking…</span>';
+  else if (!b.ok) txt = '<span style="color:var(--red)">&#9888; ' + swEsc(b.error) + '</span>';
+  else {
+    txt = '<span style="font-weight:700;color:var(--orange);font-family:JetBrains Mono,monospace">&#9889; ' + Number(b.btcSats).toLocaleString() + ' sats</span>';
+    if (b.pendingSats) txt += ' <span style="color:var(--text3)">(+' + Number(b.pendingSats).toLocaleString() + ' incoming)</span>';
+    if (b.hasUsdWallet && b.usdCents) txt += ' <span style="color:var(--text2);font-family:JetBrains Mono,monospace">+ $' + (b.usdCents / 100).toFixed(2) + ' Stablesats</span>';
+  }
+  return box + txt + '<span style="color:var(--text3);font-size:10px">key ' + swEsc(w.keyHint) + '</span>' +
+    '<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:11px" onclick="unlinkStaffWallet(\'' + s.id + '\')">Unlink</button></div>';
+}
+
+async function linkStaffWallet(staffId) {
+  var s = staffMembers.find(function(x){ return x.id === staffId; });
+  var name = s ? s.name : "this staff member";
+  if (!confirm("Has " + name + " agreed to let the admin see their Blink balance?\n\nIt shows their WHOLE wallet balance, not only what Bitcoin Ekasi paid them.")) return;
+  var key = prompt("Paste " + name + "'s Blink API key.\n\nThey make it at dashboard.blink.sv → API Keys → +, with ONLY \"Read\" ticked. Keys that can receive or send are refused.");
+  if (!key) return;
+  var st = document.getElementById("staffWalletStatus");
+  if (st) st.textContent = "checking key…";
+  try {
+    var bal = await staffWalletApi("POST", "/" + staffId, { apiKey: key.trim(), consent: true });
+    staffWallets[staffId] = { keyHint: "…" + key.trim().slice(-4), bal: bal };
+    if (st) st.textContent = "linked " + name;
+  } catch (e) {
+    alert("Not linked: " + e.message);
+    if (st) st.textContent = "";
+  }
+  renderStaffRoster();
+}
+
+async function unlinkStaffWallet(staffId) {
+  var s = staffMembers.find(function(x){ return x.id === staffId; });
+  if (!confirm("Stop showing " + (s ? s.name : "this person") + "'s wallet balance? The stored key will be deleted. (They can also delete the key in Blink.)")) return;
+  try { await staffWalletApi("DELETE", "/" + staffId); delete staffWallets[staffId]; }
+  catch (e) { alert("Could not unlink: " + e.message); }
+  renderStaffRoster();
 }
 
 async function addStaff() {
