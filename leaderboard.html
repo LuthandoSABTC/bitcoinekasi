@@ -450,46 +450,25 @@
 
 <script>
 const BACKEND = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_URL = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
-
-async function fetchSupabase(table, params = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`
-    }
-  });
-  return res.json();
-}
+const API = "https://tracker.learn-bitcoinekasi.it.com";
 
 async function loadLeaderboard() {
   try {
     // Fetch students and attendance
-    const [students, attendance] = await Promise.all([
-      fetchSupabase('students', '?select=*'),
-      fetchSupabase('attendance', '?select=*')
-    ]);
+    const students = await (await fetch(API + '/public/leaderboard')).json();
 
     if (!students.length) {
       renderEmpty();
       return;
     }
 
-    // Count days per student
-    const dayCounts = {};
-    attendance.forEach(a => {
-      if (a.present) {
-        dayCounts[a.student_id] = (dayCounts[a.student_id] || 0) + 1;
-      }
-    });
 
     // Build leaderboard data
     const data = students.map(s => ({
       id: s.id,
       name: s.name,
-      class: s.class_name || 'Bitcoin Diploma',
-      days: dayCounts[s.id] || 0
+      class: 'Bitcoin Diploma',
+      days: s.days || 0
     }));
 
     // Sort by days descending

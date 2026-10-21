@@ -1660,6 +1660,7 @@ body {
   </div>
 </div>
 
+<script src="ekasi-auth.js"></script>
 <script>
 const SATS = 500;
 // ── Perfect Week Bonus ────────────────────────────────────────
@@ -1724,11 +1725,8 @@ async function checkAndGrantBonuses() {
 }
 
 const BACKEND = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_URL = "https://tracker.learn-bitcoinekasi.it.com";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudGVvd3Z5aW9wdGx2b2h5ZXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2NTUsImV4cCI6MjA5NTYzNDY1NX0._-PZgmwe7CGi9aDeoOh_LsauaRru6LGgxxVZj9pv0MY";
 const TEACHER_ID = "fee45b1a-c503-453e-9ae8-5c08f9b71a0f";
 let API_KEY = localStorage.getItem("ek_key") || "";
-let PW = localStorage.getItem("ek_sassa_pw") || "ekasi2024";
 function toLocalDateStr(d) {
   var y = d.getFullYear();
   var m = String(d.getMonth() + 1).padStart(2, "0");
@@ -1834,25 +1832,12 @@ var attendance = [];
 var payStatus = {};
 
 async function sb(method, table, body, params) {
-  params = params || "";
-  var res = await fetch(SUPABASE_URL + "/rest/v1/" + table + params, {
-    method: method,
-    headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=representation" },
-    body: body ? JSON.stringify(body) : null
-  });
-  var text = await res.text();
-  if (!text) return [];
-  var parsed;
-  try { parsed = JSON.parse(text); } catch(e) { return []; }
-  if (!res.ok) {
-    var msg = (parsed && (parsed.message || parsed.error || parsed.hint)) || text.slice(0,200);
-    throw new Error(msg);
-  }
-  return parsed;
+  return EkAuth.sb(method, table, body, params);
 }
 
-function doLogin() {
-  if (document.getElementById("pwInput").value === PW) {
+async function doLogin() {
+  var r = await EkAuth.login("teacher", TEACHER_ID, document.getElementById("pwInput").value);
+  if (r.ok) {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("app").style.display = "block";
     API_KEY = localStorage.getItem("ek_key") || "";
@@ -1864,12 +1849,13 @@ function doLogin() {
       }, 500);
     }
   } else {
-    document.getElementById("pwErr").innerHTML = '<div class="err-msg">Incorrect password</div>';
+    document.getElementById("pwErr").innerHTML = '<div class="err-msg">' + (r.error || "Incorrect password") + '</div>';
     document.getElementById("pwInput").value = "";
   }
 }
 
 function doLogout() {
+  EkAuth.logout();
   document.getElementById("loginPage").style.display = "flex";
   document.getElementById("app").style.display = "none";
   document.getElementById("pwInput").value = "";
@@ -2560,12 +2546,12 @@ function saveTeacherSettings() {
 }
 
 
-function saveTeacherPassword() {
+async function saveTeacherPassword() {
   var p = document.getElementById("tNewPw").value.trim();
   var msg = document.getElementById("tPwMsg");
-  if (!p || p.length < 4) { msg.innerHTML = '<div class="alert alert-err">Password must be at least 4 characters</div>'; return; }
-  PW = p;
-  localStorage.setItem("ek_sassa_pw", p);
+  if (!p || p.length < 6) { msg.innerHTML = '<div class="alert alert-err">Password must be at least 6 characters</div>'; return; }
+  try { await EkAuth.changePassword("teacher", null, p); }
+  catch (e) { document.getElementById("tSettingsMsg").innerHTML = '<div class="alert alert-err">' + e.message + '</div>'; return; }
   document.getElementById("tNewPw").value = "";
   msg.innerHTML = '<div class="alert alert-ok">Password updated!</div>';
   setTimeout(function() { msg.innerHTML = ""; }, 3000);
