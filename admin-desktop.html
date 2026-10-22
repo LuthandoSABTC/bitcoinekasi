@@ -1254,6 +1254,15 @@ body {
           <div class="section-title">Lightning Payouts</div>
           <button class="btn btn-primary" id="payAllBtn" onclick="payAll()">Pay All Outstanding</button>
         </div>
+        <!-- Rewards earned in Stack & Study: approve here, then they are paid with everything else -->
+        <div class="card" id="rewardsCard" style="margin-bottom:16px;display:none;padding:14px 16px">
+          <div class="section-header" style="margin-bottom:8px">
+            <div class="section-title" style="font-size:16px">Stack &amp; Study rewards</div>
+            <button class="btn btn-outline btn-sm" onclick="loadRewards()">Refresh</button>
+          </div>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sats earned by passing a chapter review or a book test. Approve a reward and it is added to the student's owed amount, so <b>Pay All Outstanding</b> pays it with their attendance sats.</div>
+          <div id="rewardsList"></div>
+        </div>
         <!-- Week filter for payouts -->
         <div class="week-filter" id="payoutWeekFilter"></div>
         <div class="week-summary-strip" id="payoutWeekSummary"></div>
@@ -1789,7 +1798,7 @@ function go(name) {
   document.getElementById("pageTitle").textContent = t[0];
   document.getElementById("pageSub").textContent = t[1];
   closeSidebar();
-  if (name === "payout")      renderPayout();
+  if (name === "payout")      { renderPayout(); loadRewards(); }
   if (name === "stats")       renderStats();
   if (name === "leaderboard") renderLeaderboard();
   if (name === "roster")      renderRoster();
@@ -2066,6 +2075,50 @@ async function paySingle(id, owed) {
     return;
   }
   renderPayout();
+}
+
+// ── Stack & Study rewards (approve / reject) ──
+async function loadRewards() {
+  var card = document.getElementById("rewardsCard"), box = document.getElementById("rewardsList");
+  if (!card || !box) return;
+  try {
+    var res = await fetch(BACKEND + "/rewards");
+    if (!res.ok) { card.style.display = "none"; return; }
+    var rows = await res.json();
+    var waiting = rows.filter(function(r) { return r.status === "pending"; });
+    var approved = rows.filter(function(r) { return r.status === "approved"; });
+    card.style.display = (waiting.length || approved.length) ? "" : "none";
+    box.innerHTML = "";
+    waiting.forEach(function(r) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border)";
+      var t = document.createElement("div");
+      t.style.cssText = "flex:1;min-width:180px";
+      t.textContent = r.student_name + " \u00b7 " + r.label + " \u00b7 " + r.amount_sats + " sats";
+      var ok = document.createElement("button"); ok.className = "btn btn-primary btn-sm"; ok.textContent = "Approve";
+      ok.onclick = function() { rewardAct(r.id, "approve", ok); };
+      var no = document.createElement("button"); no.className = "btn btn-outline btn-sm"; no.textContent = "Reject";
+      no.onclick = function() { rewardAct(r.id, "reject", no); };
+      row.appendChild(t); row.appendChild(ok); row.appendChild(no); box.appendChild(row);
+    });
+    if (approved.length) {
+      var note = document.createElement("div");
+      note.style.cssText = "padding-top:8px;border-top:1px solid var(--border);font-size:13px;color:var(--text3)";
+      note.textContent = approved.length + " approved reward" + (approved.length > 1 ? "s" : "") + " (" + approved.reduce(function(a, r) { return a + r.amount_sats; }, 0) + " sats) waiting to be paid with Pay All Outstanding.";
+      box.appendChild(note);
+    }
+  } catch (e) { card.style.display = "none"; }
+}
+async function rewardAct(id, act, btn) {
+  btn.disabled = true;
+  try {
+    var res = await fetch(BACKEND + "/rewards/" + encodeURIComponent(id) + "/" + act, { method: "POST" });
+    var data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) { alert(data.error || "Could not save that. Try again."); }
+    else if (act === "approve") { await loadStudents(); }
+  } catch (e) { alert("Could not reach the server."); }
+  loadRewards();
 }
 
 var payAllRunning = false;
