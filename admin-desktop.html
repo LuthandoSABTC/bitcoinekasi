@@ -1067,6 +1067,34 @@ body {
 .pay-fail-history-item:last-child { border-bottom:none;padding-bottom:0; }
 .pay-fail-btns { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
 
+/* Payout confirmation + log */
+.cs-modal { position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:710;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px); }
+.cs-box { background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+.cs-title { font-family:Space Grotesk,sans-serif;font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px; }
+.cs-sub { font-size:13px;color:var(--text3);margin-bottom:14px; }
+.cs-list { overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg3);margin-bottom:14px;min-height:60px; }
+.cs-row { display:flex;gap:10px;align-items:baseline;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px; }
+.cs-row:last-child { border-bottom:none; }
+.cs-name { flex:1;min-width:0;color:var(--text);font-weight:600;overflow-wrap:anywhere; }
+.cs-name small { display:block;font-weight:400;color:var(--text3);font-size:11px;font-family:JetBrains Mono,monospace; }
+.cs-amt { font-family:JetBrains Mono,monospace;font-weight:700;color:var(--orange);white-space:nowrap; }
+.cs-row.cs-skip .cs-name, .cs-row.cs-skip .cs-amt { color:var(--text3);text-decoration:line-through; }
+.cs-total { display:flex;justify-content:space-between;align-items:baseline;font-family:Space Grotesk,sans-serif;font-weight:800;font-size:16px;color:var(--text);margin-bottom:12px; }
+.cs-total span:last-child { font-family:JetBrains Mono,monospace;color:var(--orange);font-size:20px; }
+.cs-check { display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);margin-bottom:14px;cursor:pointer; }
+.cs-check input { margin-top:3px; }
+.cs-btns { display:grid;grid-template-columns:1fr 2fr;gap:10px; }
+.cs-btns button:disabled { opacity:0.4;cursor:not-allowed; }
+.pl-row { display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);font-size:13px; }
+.pl-time { color:var(--text3);font-family:JetBrains Mono,monospace;font-size:11px;min-width:118px; }
+.pl-who { flex:1;min-width:140px;color:var(--text);font-weight:600; }
+.pl-who small { display:block;font-weight:400;color:var(--text3);font-size:11px; }
+.pl-amt { font-family:JetBrains Mono,monospace;font-weight:700;color:var(--orange); }
+.pl-tag { font-size:11px;font-weight:700;border-radius:100px;padding:2px 9px;border:1px solid var(--border);color:var(--text2); }
+.pl-tag.ok { color:var(--green);border-color:var(--green); }
+.pl-tag.bad { color:var(--red);border-color:var(--red); }
+.pl-tag.hold { color:var(--orange);border-color:var(--orange); }
+
 /* Postgrad */
 .pg-badge { background:rgba(168,85,247,0.1);color:#C084FC;border:1px solid rgba(168,85,247,0.25);padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;font-family:JetBrains Mono,monospace; }
 .pg-avatar { width:40px;height:40px;border-radius:50%;background:rgba(168,85,247,0.12);border:2px solid rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#C084FC;flex-shrink:0;font-family:Space Grotesk,sans-serif; }
@@ -1275,6 +1303,14 @@ body {
             <div style="text-align:right">Action</div>
           </div>
           <div id="payoutList"></div>
+        </div>
+        <div class="card" id="payLogCard" style="margin-top:16px;padding:14px 16px">
+          <div class="section-header" style="margin-bottom:6px">
+            <div class="section-title" style="font-size:16px">Payout log</div>
+            <button class="btn btn-outline btn-sm" onclick="loadPayLog()">Refresh</button>
+          </div>
+          <div id="payLogSummary" style="font-size:13px;color:var(--text3);margin-bottom:6px"></div>
+          <div id="payLogList"></div>
         </div>
       </div>
 
@@ -1798,7 +1834,7 @@ function go(name) {
   document.getElementById("pageTitle").textContent = t[0];
   document.getElementById("pageSub").textContent = t[1];
   closeSidebar();
-  if (name === "payout")      { renderPayout(); loadRewards(); }
+  if (name === "payout")      { renderPayout(); loadRewards(); loadPayLog(); }
   if (name === "stats")       renderStats();
   if (name === "leaderboard") renderLeaderboard();
   if (name === "roster")      renderRoster();
@@ -2011,7 +2047,7 @@ function renderPayout() {
       if (ps === "loading") action = '<span class="badge badge-orange"><span class="spinner"></span></span>';
       else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
       else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px;font-family:\'DM Mono\',monospace">' + ps.slice(4).slice(0,25) + '</span>';
-      else if (realOwed > 0) action = '<button class="btn btn-green btn-sm" onclick="paySingle(\'' + s.id + '\',' + realOwed + ')">Pay ' + realOwed + '</button>';
+      else if (realOwed > 0) action = '<button class="btn btn-green btn-sm" onclick="payAsk(\'' + s.id + '\',' + realOwed + ')">Pay ' + realOwed + '</button>';
       else if (allTimeEarned > 0) action = '<span class="badge badge-green">Paid</span>';
       else action = '<span class="badge badge-gray">No earnings</span>';
       html += '<div class="payout-row" style="grid-template-columns:1fr 90px 90px 90px 140px"><div><div style="font-weight:600">' + s.name + '</div><div class="payout-dest">' + (s.destination||'No address') + '</div></div>';
@@ -2068,6 +2104,7 @@ async function paySingle(id, owed) {
     // the source of truth (data.newPaid) — no client-side PATCH here.
     payStatus[id] = data.recordWarning ? "warn:Sent " + owed : "ok:Sent " + owed;
     await loadStudents();
+    loadPayLog();
   } catch(e) {
     payStatus[id] = "err:" + e.message;
     renderPayout();
@@ -2121,30 +2158,123 @@ async function rewardAct(id, act, btn) {
   loadRewards();
 }
 
+// ── Confirmation before any money is sent ──
+function confirmSend(opts) {
+  var m = document.getElementById("confirmSendModal");
+  var list = document.getElementById("csList"), chk = document.getElementById("csCheck"), go = document.getElementById("csGo");
+  document.getElementById("csTitle").textContent = opts.title || "This is what will be sent";
+  document.getElementById("csSub").textContent = opts.sub || "Check each name and amount before you send.";
+  list.innerHTML = "";
+  var count = 0, total = 0;
+  opts.rows.forEach(function(r) {
+    var row = document.createElement("div"); row.className = "cs-row" + (r.skip ? " cs-skip" : "");
+    var n = document.createElement("div"); n.className = "cs-name"; n.textContent = r.name;
+    var small = document.createElement("small"); small.textContent = r.skip ? r.skip : (r.detail || ""); n.appendChild(small);
+    var a = document.createElement("div"); a.className = "cs-amt"; a.textContent = "\u26a1" + r.amount.toLocaleString();
+    row.appendChild(n); row.appendChild(a); list.appendChild(row);
+    if (!r.skip) { count++; total += r.amount; }
+  });
+  document.getElementById("csCount").textContent = count + " payment" + (count === 1 ? "" : "s");
+  document.getElementById("csTotal").textContent = total.toLocaleString() + " sats";
+  chk.checked = false; go.disabled = true;
+  go.textContent = count ? "Send " + total.toLocaleString() + " sats to " + count + (count === 1 ? " person" : " people") : "Nothing to send";
+  chk.onchange = function() { go.disabled = !(chk.checked && count > 0); };
+  function close() { m.style.display = "none"; document.body.style.overflow = ""; document.removeEventListener("keydown", esc); }
+  function esc(e) { if (e.key === "Escape") close(); }
+  document.getElementById("csCancel").onclick = close;
+  go.onclick = function() { if (go.disabled) return; go.disabled = true; close(); opts.onGo(); };
+  document.addEventListener("keydown", esc);
+  m.style.display = "flex"; document.body.style.overflow = "hidden";
+}
+
+function studentOwed(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)); }
+function staffOwedNow(s) { return Math.max(0, Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR) + (s.bonus || 0) - (s.paid||0)); }
+
+function payAsk(id, owed) {
+  if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
+  var s = students.find(function(x) { return x.id === id; });
+  if (!s) return;
+  confirmSend({
+    rows: [{ name: s.name, detail: s.destination || "", amount: owed, skip: s.destination ? "" : "No Lightning address saved" }],
+    onGo: function() { if (studentOwed(s) !== owed) { alert("The amount for " + s.name + " changed. Look at the list again."); renderPayout(); return; } paySingle(id, owed); }
+  });
+}
+function payStaffAsk(id, owed) {
+  var s = staffMembers.find(function(x) { return x.id === id; });
+  if (!s) return;
+  confirmSend({
+    rows: [{ name: s.name, detail: s.destination || "", amount: owed, skip: s.destination ? "" : "No Lightning address saved" }],
+    onGo: function() { if (staffOwedNow(s) !== owed) { alert("The amount for " + s.name + " changed. Look at the list again."); renderStaffPayouts(); return; } payStaffSingle(id, owed); }
+  });
+}
+
 var payAllRunning = false;
-async function payAll() {
+function payAll() {
   if (!apiKey) { alert("Set your Blink API key in Settings first"); return; }
   if (payAllRunning) return; // already running — ignore duplicate click
-  var activeOnly = students.filter(function(s) { return !s.status || s.status === "active"; });
-  var owing = activeOnly.filter(function(s) { return Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0)) > 0; });
-  if (!owing.length) return;
+  var owing = students.filter(function(s) { return (!s.status || s.status === "active") && studentOwed(s) > 0; });
+  if (!owing.length) { document.getElementById("payAlert").innerHTML = '<div class="alert alert-ok">Everyone is paid up. Nothing to send.</div>'; return; }
+  var plan = owing.map(function(s) { return { id: s.id, name: s.name, amount: studentOwed(s), detail: s.destination || "", skip: s.destination ? "" : "No Lightning address saved" }; });
+  confirmSend({
+    sub: "Check each name and amount. Students without an address are skipped.",
+    rows: plan,
+    onGo: function() { runPayAll(plan.filter(function(r) { return !r.skip; })); }
+  });
+}
+async function runPayAll(plan) {
+  if (payAllRunning) return;
   payAllRunning = true;
   var btn = document.getElementById("payAllBtn");
   if (btn) { btn.disabled = true; btn.textContent = "Paying..."; }
   var alertEl = document.getElementById("payAlert");
+  var sentCount = 0;
   try {
-    for (var i = 0; i < owing.length; i++) {
-      var s = owing[i];
-      var owed = Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
-      alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + owing.length + '...</div>';
-      await paySingle(s.id, owed);
+    for (var i = 0; i < plan.length; i++) {
+      var row = plan[i];
+      var s = students.find(function(x) { return x.id === row.id; });
+      if (!s || studentOwed(s) !== row.amount) {
+        alertEl.innerHTML = '<div class="alert alert-info">Stopped: the amount for ' + (s ? s.name : "a student") + ' changed after you checked the list. Nothing more was sent. Press Pay All Outstanding again to see the new list.</div>';
+        return;
+      }
+      alertEl.innerHTML = '<div class="alert alert-info">Sending payment ' + (i+1) + ' of ' + plan.length + '...</div>';
+      await paySingle(s.id, row.amount);
+      sentCount++;
     }
-    alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + owing.length + ' payment' + (owing.length!==1?'s':'') + ' sent!</div>';
+    alertEl.innerHTML = '<div class="alert alert-ok">Done! ' + sentCount + ' payment' + (sentCount!==1?'s':'') + ' sent!</div>';
     setTimeout(function() { alertEl.innerHTML = ""; }, 5000);
   } finally {
     payAllRunning = false;
     if (btn) { btn.disabled = false; btn.textContent = "Pay All Outstanding"; }
+    loadPayLog();
   }
+}
+
+// ── Payout log (admin only; the server writes every row) ──
+var payLogAt = 0;
+async function loadPayLog() {
+  var card = document.getElementById("payLogCard"), box = document.getElementById("payLogList"), sum = document.getElementById("payLogSummary");
+  if (!card || !box) return;
+  payLogAt = Date.now();
+  try {
+    var res = await fetch(BACKEND + "/db/payments?select=created_at,recipient_name,amount,event,paid_by,detail&order=created_at.desc&limit=80");
+    if (!res.ok) { box.textContent = "The log could not be loaded."; return; }
+    var rows = await res.json();
+    var monday = new Date(); monday.setHours(0,0,0,0); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    var week = rows.filter(function(r) { return r.event === "sent" && new Date(r.created_at) >= monday; });
+    sum.textContent = "Sent since Monday: " + week.reduce(function(a, r) { return a + r.amount; }, 0).toLocaleString() + " sats in " + week.length + " payment" + (week.length === 1 ? "" : "s") + ". Showing the last " + rows.length + " entries.";
+    box.innerHTML = "";
+    if (!rows.length) { box.textContent = "No payments yet."; return; }
+    var names = { sent: ["Sent", "ok"], failed: ["Failed", "bad"], blocked_stale: ["Blocked: already paid", "hold"], blocked_duplicate: ["Blocked: sent minutes ago", "hold"], blocked_in_flight: ["Blocked: already in progress", "hold"] };
+    rows.forEach(function(r) {
+      var row = document.createElement("div"); row.className = "pl-row";
+      var t = document.createElement("div"); t.className = "pl-time"; t.textContent = new Date(r.created_at).toLocaleString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      var w = document.createElement("div"); w.className = "pl-who"; w.textContent = r.recipient_name || "Unknown";
+      var by = document.createElement("small"); by.textContent = r.paid_by ? "by " + r.paid_by : ""; w.appendChild(by);
+      var a = document.createElement("div"); a.className = "pl-amt"; a.textContent = "\u26a1" + (r.amount || 0).toLocaleString();
+      var tag = document.createElement("span"); var nm = names[r.event] || [r.event, ""]; tag.className = "pl-tag " + nm[1]; tag.textContent = nm[0];
+      row.appendChild(t); row.appendChild(w); row.appendChild(a); row.appendChild(tag); box.appendChild(row);
+    });
+  } catch (e) { box.textContent = "The log could not be loaded."; }
 }
 
 // ── Statistics (with week filter) ─────────────────────────────
@@ -3572,7 +3702,7 @@ function renderStaffPayouts() {
     if (ps === "loading") action = '<span class="badge badge-orange"><span class="spinner"></span> Sending</span>';
     else if (ps && ps.indexOf("ok:") === 0) action = '<span class="badge badge-green">' + ps.slice(3) + '</span>';
     else if (ps && ps.indexOf("err:") === 0) action = '<span style="color:var(--red);font-size:11px">' + ps.slice(4).slice(0,30) + '</span>';
-    else if (owed > 0) { var staffOwed2 = owed; var staffId2 = s.id; action = '<button class="btn btn-green btn-sm" onclick="payStaffSingle(this.dataset.sid,this.dataset.owed|0)" data-sid="' + staffId2 + '" data-owed="' + staffOwed2 + '">Pay ' + staffOwed2 + '</button>'; }
+    else if (owed > 0) { var staffOwed2 = owed; var staffId2 = s.id; action = '<button class="btn btn-green btn-sm" onclick="payStaffAsk(this.dataset.sid,this.dataset.owed|0)" data-sid="' + staffId2 + '" data-owed="' + staffOwed2 + '">Pay ' + staffOwed2 + '</button>'; }
     else action = '<span class="badge badge-green">All paid</span>';
     html += '<div class="staff-payout-row">';
     html += '<div><div style="font-weight:600">' + s.name + '</div><div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace">' + s.role + ' · ' + s.destination + '</div></div>';
@@ -3623,29 +3753,39 @@ async function payStaffSingle(staffId, owed) {
 }
 
 var payAllStaffRunning = false;
-async function payAllStaff() {
+function payAllStaff() {
   if (payAllStaffRunning) return; // already running — ignore duplicate click
-  var owing = staffMembers.filter(function(s) {
-    var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR) + (s.bonus || 0);
-    return Math.max(0, totalEarned - (s.paid||0)) > 0;
-  });
+  var owing = staffMembers.filter(function(s) { return staffOwedNow(s) > 0; });
   if (!owing.length) {
     document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff are fully paid up!</div>';
     return;
   }
+  var plan = owing.map(function(s) { return { id: s.id, name: s.name, amount: staffOwedNow(s), detail: s.destination || "", skip: s.destination ? "" : "No Lightning address saved" }; });
+  confirmSend({
+    sub: "Check each name and amount. Staff without an address are skipped.",
+    rows: plan,
+    onGo: function() { runPayAllStaff(plan.filter(function(r) { return !r.skip; })); }
+  });
+}
+async function runPayAllStaff(plan) {
+  if (payAllStaffRunning) return;
   payAllStaffRunning = true;
   var btn = document.getElementById("payAllStaffBtn");
   if (btn) { btn.disabled = true; }
+  var alertEl = document.getElementById("staffPayAlert");
   try {
-    for (var i = 0; i < owing.length; i++) {
-      var s = owing[i];
-      var totalEarned = Math.round(Object.values(s.att).reduce(function(a,b){ return a+b; }, 0) * STAFF_SATS_PER_HOUR) + (s.bonus || 0);
-      var owed = Math.max(0, totalEarned - (s.paid||0));
-      await payStaffSingle(s.id, owed);
+    for (var i = 0; i < plan.length; i++) {
+      var row = plan[i];
+      var s = staffMembers.find(function(x) { return x.id === row.id; });
+      if (!s || staffOwedNow(s) !== row.amount) {
+        alertEl.innerHTML = '<div class="alert alert-info">Stopped: the amount for ' + (s ? s.name : "a staff member") + ' changed after you checked the list. Nothing more was sent. Press Pay All Outstanding again to see the new list.</div>';
+        return;
+      }
+      await payStaffSingle(s.id, row.amount);
       await new Promise(function(r) { setTimeout(r, 500); });
     }
-    document.getElementById("staffPayAlert").innerHTML = '<div class="alert alert-ok">All staff payments sent!</div>';
-    setTimeout(function() { document.getElementById("staffPayAlert").innerHTML = ""; }, 4000);
+    alertEl.innerHTML = '<div class="alert alert-ok">All staff payments sent!</div>';
+    setTimeout(function() { alertEl.innerHTML = ""; }, 4000);
   } finally {
     payAllStaffRunning = false;
     if (btn) { btn.disabled = false; }
@@ -4383,6 +4523,21 @@ async function deletePGStudent(id) {
         <div id="excuseErr"></div>
         <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveExcuse()">✓ Save Excuse</button>
         <button class="btn btn-outline" style="width:100%;padding:13px;margin-top:8px" onclick="closeExcuseModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payout confirmation -->
+  <div id="confirmSendModal" class="cs-modal" role="dialog" aria-modal="true" aria-labelledby="csTitle">
+    <div class="cs-box">
+      <div class="cs-title" id="csTitle">This is what will be sent</div>
+      <div class="cs-sub" id="csSub">Check each name and amount before you send.</div>
+      <div class="cs-list" id="csList"></div>
+      <div class="cs-total"><span id="csCount">0 payments</span><span id="csTotal">0 sats</span></div>
+      <label class="cs-check"><input type="checkbox" id="csCheck"><span>I have checked the names and amounts above.</span></label>
+      <div class="cs-btns">
+        <button class="btn btn-outline" style="padding:13px;justify-content:center" id="csCancel">Cancel</button>
+        <button class="btn btn-primary" style="padding:13px;justify-content:center" id="csGo" disabled>Send</button>
       </div>
     </div>
   </div>
