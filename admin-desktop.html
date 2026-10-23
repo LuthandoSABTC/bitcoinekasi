@@ -4552,6 +4552,27 @@ async function deletePGStudent(id) {
     </div>
   </div>
 
+  <!-- Edit Student Modal -->
+  <div id="editModal" class="edit-modal" style="display:none" onclick="if(event.target===this)closeEdit()">
+    <div class="edit-box">
+      <div class="edit-box-title">✏️ Edit Student</div>
+      <input type="hidden" id="editStudentId">
+      <div class="inp-group">
+        <label class="inp-label" for="editName">Full Name</label>
+        <input class="inp" id="editName" placeholder="Student full name">
+      </div>
+      <div class="inp-group">
+        <label class="inp-label" for="editDest">Lightning Address / Bolt Card LNURL</label>
+        <input class="inp" id="editDest" placeholder="name@blink.sv or lnurl...">
+      </div>
+      <div id="editMsg"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeEdit()">Cancel</button>
+        <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Payout confirmation -->
   <div id="confirmSendModal" class="cs-modal" role="dialog" aria-modal="true" aria-labelledby="csTitle">
     <div class="cs-box">
