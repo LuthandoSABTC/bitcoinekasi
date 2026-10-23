@@ -1254,10 +1254,10 @@ body {
           <div class="section-title">Lightning Payouts</div>
           <button class="btn btn-primary" id="payAllBtn" onclick="payAll()">Pay All Outstanding</button>
         </div>
-        <!-- Rewards earned in Stack & Study: approve here, then they are paid with everything else -->
+        <!-- Rewards earned in Study & Stack: approve here, then they are paid with everything else -->
         <div class="card" id="rewardsCard" style="margin-bottom:16px;display:none;padding:14px 16px">
           <div class="section-header" style="margin-bottom:8px">
-            <div class="section-title" style="font-size:16px">Stack &amp; Study rewards</div>
+            <div class="section-title" style="font-size:16px">Study &amp; Stack rewards</div>
             <button class="btn btn-outline btn-sm" onclick="loadRewards()">Refresh</button>
           </div>
           <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sats earned by passing a chapter review or a book test. Approve a reward and it is added to the student's owed amount, so <b>Pay All Outstanding</b> pays it with their attendance sats.</div>
@@ -1908,8 +1908,8 @@ function renderAttend() {
     var excuseType = excuseReason ? getExcuseType(excuseReason) : null;
     html += '<div class="attend-row" style="flex-wrap:wrap"><div style="cursor:pointer;flex:1;min-width:160px" onclick="openProfile(\'' + s.id + '\')"><div class="attend-name">' + s.name + ' <span style="font-size:10px;color:var(--text3)">↗</span></div>';
     var subLine = days + ' days &middot; ' + (days*SATS) + ' sats earned';
-    if (stackIn[s.id] === 'class') subLine += ' &middot; <span style="color:var(--green)">Logged in on Stack &amp; Study</span>';
-    else if (stackIn[s.id] === 'away') subLine += ' &middot; <span style="color:var(--orange)">Stack &amp; Study login (not in class)</span>';
+    if (stackIn[s.id] === 'class') subLine += ' &middot; <span style="color:var(--green)">Logged in on Study &amp; Stack</span>';
+    else if (stackIn[s.id] === 'away') subLine += ' &middot; <span style="color:var(--orange)">Study &amp; Stack login (not in class)</span>';
     if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
     html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {
@@ -2077,7 +2077,7 @@ async function paySingle(id, owed) {
   renderPayout();
 }
 
-// ── Stack & Study rewards (approve / reject) ──
+// ── Study & Stack rewards (approve / reject) ──
 async function loadRewards() {
   var card = document.getElementById("rewardsCard"), box = document.getElementById("rewardsList");
   if (!card || !box) return;
