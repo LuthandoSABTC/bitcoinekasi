@@ -1081,6 +1081,10 @@ body {
 .cs-row.cs-skip .cs-name, .cs-row.cs-skip .cs-amt { color:var(--text3);text-decoration:line-through; }
 .cs-total { display:flex;justify-content:space-between;align-items:baseline;font-family:Space Grotesk,sans-serif;font-weight:800;font-size:16px;color:var(--text);margin-bottom:12px; }
 .cs-total span:last-child { font-family:JetBrains Mono,monospace;color:var(--orange);font-size:20px; }
+.cs-bal { font-size:13px;margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);color:var(--text2);display:none; }
+.cs-bal.ok { display:block;color:var(--green);border-color:var(--green); }
+.cs-bal.short { display:block;color:var(--red);border-color:var(--red);font-weight:700; }
+.cs-bal.wait, .cs-bal.unk { display:block; }
 .cs-check { display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);margin-bottom:14px;cursor:pointer; }
 .cs-check input { margin-top:3px; }
 .cs-btns { display:grid;grid-template-columns:1fr 2fr;gap:10px; }
@@ -2178,7 +2182,28 @@ function confirmSend(opts) {
   document.getElementById("csTotal").textContent = total.toLocaleString() + " sats";
   chk.checked = false; go.disabled = true;
   go.textContent = count ? "Send " + total.toLocaleString() + " sats to " + count + (count === 1 ? " person" : " people") : "Nothing to send";
-  chk.onchange = function() { go.disabled = !(chk.checked && count > 0); };
+  var short = false;
+  function refresh() { go.disabled = !(chk.checked && count > 0 && !short); }
+  chk.onchange = refresh;
+  var bal = document.getElementById("csBal");
+  bal.className = "cs-bal"; bal.textContent = "";
+  var thisRun = (confirmSend.run = (confirmSend.run || 0) + 1);
+  if (count > 0) {
+    bal.className = "cs-bal wait"; bal.textContent = "Checking your Blink wallet balance...";
+    var need = total + Math.ceil(total * 0.01); // small margin for network fees
+    fetch(BACKEND + "/wallet-balance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apiKey: apiKey || localStorage.getItem("ek_key") || "" }) })
+      .then(function(r) { return r.json().then(function(j) { if (!r.ok) throw new Error(j.error || "failed"); return j; }); })
+      .then(function(j) {
+        if (thisRun !== confirmSend.run) return;
+        if (j.sats >= need) { bal.className = "cs-bal ok"; bal.textContent = "Wallet has " + j.sats.toLocaleString() + " sats. This run needs " + total.toLocaleString() + ". Enough."; }
+        else { short = true; bal.className = "cs-bal short"; bal.textContent = "Wallet has " + j.sats.toLocaleString() + " sats but this run needs " + need.toLocaleString() + " (including a small fee margin). Short by " + (need - j.sats).toLocaleString() + " sats. Top up the wallet first."; }
+        refresh();
+      })
+      .catch(function() {
+        if (thisRun !== confirmSend.run) return;
+        bal.className = "cs-bal unk"; bal.textContent = "Could not read the wallet balance. Check it in your Blink app before you send.";
+      });
+  }
   function close() { m.style.display = "none"; document.body.style.overflow = ""; document.removeEventListener("keydown", esc); }
   function esc(e) { if (e.key === "Escape") close(); }
   document.getElementById("csCancel").onclick = close;
@@ -4534,6 +4559,7 @@ async function deletePGStudent(id) {
       <div class="cs-sub" id="csSub">Check each name and amount before you send.</div>
       <div class="cs-list" id="csList"></div>
       <div class="cs-total"><span id="csCount">0 payments</span><span id="csTotal">0 sats</span></div>
+      <div class="cs-bal" id="csBal"></div>
       <label class="cs-check"><input type="checkbox" id="csCheck"><span>I have checked the names and amounts above.</span></label>
       <div class="cs-btns">
         <button class="btn btn-outline" style="padding:13px;justify-content:center" id="csCancel">Cancel</button>
