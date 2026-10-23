@@ -2001,8 +2001,8 @@ function renderAttend() {
     html += '<div class="attend-row" style="flex-wrap:wrap">';
     html += '<div style="flex:1;min-width:160px"><div class="attend-name">' + s.name + '</div>';
     var subLine = days + ' days &middot; ' + (days * SATS) + ' sats earned';
-    if (stackIn[s.id] === 'class') subLine += ' &middot; <span style="color:var(--green)">Logged in on Stack &amp; Study</span>';
-    else if (stackIn[s.id] === 'away') subLine += ' &middot; <span style="color:var(--orange)">Stack &amp; Study login (not in class)</span>';
+    if (stackIn[s.id] === 'class') subLine += ' &middot; <span style="color:var(--green)">Logged in on Study &amp; Stack</span>';
+    else if (stackIn[s.id] === 'away') subLine += ' &middot; <span style="color:var(--orange)">Study &amp; Stack login (not in class)</span>';
     if (excuseReason) subLine += ' &middot; <span style="color:var(--orange)">' + excuseReason + '</span>';
     html += '<div class="attend-sub">' + subLine + '</div></div>';
     if (classDay) {
