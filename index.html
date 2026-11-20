@@ -1205,7 +1205,7 @@ body {
         <div class="btc-price-divider"></div>
         <div class="btc-price-stat">
           <div class="btc-price-stat-val" id="btc500SatVal">—</div>
-          <div class="btc-price-stat-label">500 SATS in ZAR</div>
+          <div class="btc-price-stat-label">1,000 SATS in ZAR</div>
         </div>
         <div class="btc-price-divider"></div>
         <div class="btc-price-sats" id="btcWeekSats"></div>
@@ -1518,7 +1518,7 @@ body {
               <div style="font-size:12px;color:var(--text3);font-family:JetBrains Mono,monospace;line-height:1.8">
                 Bitcoin Ekasi Diploma Tracker v3.1<br>
                 Mossel Bay, South Africa<br>
-                500 sats/day per student<br>
+                1,000 sats/day per student<br>
                 Powered by Lightning Network
               </div>
             </div>
@@ -4009,7 +4009,7 @@ function updatePriceWidget(price, change) {
   if (satEl) satEl.textContent = "R" + satPrice.toFixed(4);
 
   var sat500El = document.getElementById("btc500SatVal");
-  if (sat500El) sat500El.textContent = "R" + (satPrice * 500).toFixed(2);
+  if (sat500El) sat500El.textContent = "R" + (satPrice * 1000).toFixed(2);
 
   updateWeekSatsValue();
 }
