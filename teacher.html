@@ -4127,7 +4127,7 @@ function updateWeekSatsValue() {
   var el = document.getElementById("btcWeekSats");
   if (!el || !btcPriceZAR || !students.length) return;
   var satPrice = btcPriceZAR / 100000000;
-  var totalOwed = students.reduce(function(a,s) {
+  var totalOwed = students.filter(function(s) { return !s.status || s.status === "active"; }).reduce(function(a,s) {
     return a + Math.max(0, Object.keys(s.att||{}).length*SATS+(s.bonus||0)-(s.paid||0));
   }, 0);
   if (totalOwed > 0) {
