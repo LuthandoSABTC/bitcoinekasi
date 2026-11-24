@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs or updates the Painted Shacks admin app on an Ubuntu server (built for "ekasi-server", Ubuntu 22.04, 1 GB RAM).
+# Installs or updates the Painted Shacks admin + inspector apps on an Ubuntu server (built for "ekasi-server", Ubuntu 22.04, 1 GB RAM).
 #
 # Usage (as root):   bash setup-server.sh 89-125-10-8.sslip.io
 #                    (later, with your own domain: bash setup-server.sh admin.bitcoinekasi.com)
@@ -85,6 +85,11 @@ $DOMAIN {
   handle /api/* {
     reverse_proxy 127.0.0.1:3417
   }
+  redir /inspect /inspect/
+  handle_path /inspect/* {
+    root * $APP/inspector
+    file_server
+  }
   handle {
     root * $APP/admin
     file_server
@@ -95,7 +100,7 @@ $DOMAIN {
     X-Frame-Options DENY
     Referrer-Policy no-referrer
     Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"
     -Server
   }
 }
@@ -104,7 +109,8 @@ caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 systemctl enable --now caddy >/dev/null; systemctl reload caddy || systemctl restart caddy
 
 echo
-echo "All done. Open https://$DOMAIN"
+echo "All done. Admin app:     https://$DOMAIN"
+echo "          Inspector app: https://$DOMAIN/inspect"
 if [[ -z "$(cd "$APP/server" && sudo -u painted-shacks DB_PATH=/var/lib/painted-shacks/painted-shacks.db node --disable-warning=ExperimentalWarning admin-user.js list)" ]]; then
   echo
   echo "No admin account yet. Create yours with:"

@@ -183,14 +183,17 @@ const db = {
     if (res.status === 401) return null;
     if (!res.ok) throw new Error("Could not reach the server.");
     const u = await res.json();
+    if (u.role === "inspector") { location.replace("/inspect/"); return new Promise(() => {}); }
     if (u.role !== "admin") throw new Error("This account is not an admin.");
     return u;
   },
   async signOut() { if (!DEMO) await call("POST", "/api/logout", {}).catch(() => {}); location.hash = ""; location.reload(); },
   async loadAll() {
-    if (DEMO) { const d = window.PS_DEMO_DATA || {}; TABLES.forEach(t => cache[t] = cache[t] || structuredClone(d[t] || [])); return; }
+    if (DEMO) { const d = window.PS_DEMO_DATA || {}; TABLES.forEach(t => cache[t] = cache[t] || structuredClone(d[t] || [])); cache.inspections = cache.inspections || d.inspections || []; cache.inspection_photos = cache.inspection_photos || d.inspection_photos || []; return; }
     const d = await call("GET", "/api/data");
     TABLES.forEach(t => cache[t] = d[t.replace(/^ps_/, "")] || []);
+    cache.inspections = d.inspections || []; cache.inspection_photos = d.inspection_photos || [];
+    if (d.inspection_rules) RULES = d.inspection_rules;
   },
   async save(table, row) {
     const clean = {...row};
@@ -216,6 +219,23 @@ const shacksOf = ownerId => cache.ps_shacks.filter(s => s.owner_id === ownerId).
 const ownerLabel = o => o ? (o.full_name || "Name not added yet") : "No owner linked";
 const sponsorName = id => byId("ps_sponsors", id)?.name || "No logo set";
 
+/* ============================================================ inspections */
+let RULES = {every_days: 90, due_soon_days: 14};
+const RESULT = {good: ["Good", "p-good"], touch_up: ["Needs attention", "p-warn"], repaint: ["Needs repaint", "p-bad"]};
+const ANSWER = {good: "Good", fading: "Fading", damaged: "Damaged", yes: "Yes", partly: "Partly", no: "No"};
+const inspectionsOf = shackId => (cache.inspections || []).filter(i => i.shack_id === shackId);   // newest first (server order)
+const lastInspection = shackId => inspectionsOf(shackId)[0];
+const photosOf = inspId => (cache.inspection_photos || []).filter(p => p.inspection_id === inspId);
+const saToday = () => new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 10);
+function inspectionDue(s) {
+  if (s.status === "removed") return "ok";
+  const last = lastInspection(s.id);
+  if (!last) return "overdue";
+  const due = new Date(Date.parse(last.inspected_on + "T00:00:00Z") + RULES.every_days * 864e5).toISOString().slice(0, 10);
+  return due <= saToday() ? "overdue" : "ok";
+}
+const hasPhoto = s => !!s.photo_url || (cache.inspections || []).some(i => i.shack_id === s.id && photosOf(i.id).length);
+
 /* ============================================================ what needs fixing */
 function issuesFor(kind, r) {
   const out = [];
@@ -226,7 +246,7 @@ function issuesFor(kind, r) {
   }
   if (kind === "shack") {
     if (!r.owner_id) out.push("No owner");
-    if (!r.photo_url) out.push("No photo");
+    if (!hasPhoto(r)) out.push("No photo");
     if (r.needs_maintenance) out.push("Needs maintenance");
   }
   return out;
@@ -277,7 +297,10 @@ pages.home = () => {
   const noName = O.filter(o => !o.full_name).length;
   const noLn = O.filter(o => !o.lightning_address).length;
   const maint = S.filter(s => s.needs_maintenance).length;
-  const noPhoto = S.filter(s => !s.photo_url).length;
+  const noPhoto = S.filter(s => !hasPhoto(s)).length;
+  const overdue = S.filter(s => inspectionDue(s) === "overdue").length;
+  const month = saToday().slice(0, 7);
+  const inspectedMonth = new Set((cache.inspections || []).filter(i => i.inspected_on.startsWith(month)).map(i => i.shack_id)).size;
   const sats = P.reduce((a, p) => a + Number(p.amount_sats || 0), 0);
   const payingCount = SP.filter(s => s.payment_status === "paying").length;
   const upcoming = P.filter(p => p.renews_on).sort((a, b) => a.renews_on.localeCompare(b.renews_on))[0];
@@ -294,10 +317,14 @@ pages.home = () => {
       <h2>Data still to fill in</h2>
       <div class="list">
         ${[["#/owners?f=noname", "Owners without a name", noName], ["#/owners?f=noln", "Owners without a Lightning address", noLn],
-           ["#/shacks?f=nophoto", "Shacks without a working photo link", noPhoto], ["#/shacks?f=maint", "Shacks that need maintenance", maint]]
+           ["#/shacks?f=nophoto", "Shacks without a working photo link", noPhoto], ["#/shacks?f=maint", "Shacks that need maintenance", maint],
+           ["#/shacks?f=overdue", `Shacks not inspected in the last ${RULES.every_days} days`, overdue]]
           .map(([h, l, n]) => `<a class="item" href="${h}"><div class="main"><b>${l}</b></div><span class="pill ${n ? "p-warn" : "p-good"}">${n || "All done"}</span></a>`).join("")}
       </div>
     </div>
+    <div class="card"><h2>Inspections</h2>
+      <p style="margin:0"><b>${inspectedMonth}</b> shack${inspectedMonth === 1 ? "" : "s"} inspected this month. ${(cache.inspections || []).length} inspections in total.
+      <a href="/inspect/">Open the inspector app</a> · <a href="#/settings">Add an inspector</a></p></div>
     ${upcoming ? `<div class="card"><h2>Next sponsor renewal</h2><p style="margin:0"><b>${esc(sponsorName(upcoming.sponsor_id))}</b> on ${fmtDate(upcoming.renews_on)} <span class="muted">(${fmtSats(upcoming.amount_sats)} sats last time)</span></p></div>` : ""}
   `);
 };
@@ -306,22 +333,24 @@ pages.home = () => {
 let shackFilter = "all", shackQuery = "";
 pages.shacks = params => {
   if (params.get("f")) shackFilter = params.get("f");
-  const filters = [["all", "All"], ["maint", "Needs maintenance"], ["nophoto", "No photo"], ["noowner", "No owner"]];
+  const filters = [["all", "All"], ["maint", "Needs maintenance"], ["overdue", "Inspection overdue"], ["nophoto", "No photo"], ["noowner", "No owner"]];
   const draw = () => {
     const q = shackQuery.toLowerCase();
     const rows = cache.ps_shacks.slice().sort((a, b) => a.shack_no - b.shack_no).filter(s => {
       const o = byId("ps_owners", s.owner_id);
       if (shackFilter === "maint" && !s.needs_maintenance) return false;
-      if (shackFilter === "nophoto" && s.photo_url) return false;
+      if (shackFilter === "nophoto" && hasPhoto(s)) return false;
+      if (shackFilter === "overdue" && inspectionDue(s) !== "overdue") return false;
       if (shackFilter === "noowner" && s.owner_id) return false;
       if (!q) return true;
       return [s.shack_no, sponsorName(s.sponsor_id), o?.full_name, o?.lightning_address, s.area].join(" ").toLowerCase().includes(q);
     });
     $("#rows").innerHTML = rows.length ? rows.map(s => {
-      const o = byId("ps_owners", s.owner_id);
+      const o = byId("ps_owners", s.owner_id), li = lastInspection(s.id);
       return `<a class="item" href="#/shack/${s.id}"><span class="no">${s.shack_no}</span>
-        <div class="main"><b>${esc(sponsorName(s.sponsor_id))}</b><small>${esc(ownerLabel(o))}${o?.lightning_address ? " · " + esc(o.lightning_address) : ""}</small></div>
-        <div class="end">${s.needs_maintenance ? '<span class="pill p-warn">Maintenance</span>' : ""}${s.status !== "painted" ? `<span class="pill">${STATUS[s.status]}</span>` : ""}${!s.photo_url ? '<span class="pill p-bad">No photo</span>' : ""}</div></a>`;
+        <div class="main"><b>${esc(sponsorName(s.sponsor_id))}</b><small>${esc(ownerLabel(o))}${o?.lightning_address ? " · " + esc(o.lightning_address) : ""}</small>
+          <small>${li ? `Inspected ${fmtDate(li.inspected_on)}: ${RESULT[li.result][0]}` : "Never inspected"}</small></div>
+        <div class="end">${s.needs_maintenance ? '<span class="pill p-warn">Maintenance</span>' : ""}${s.status !== "painted" ? `<span class="pill">${STATUS[s.status]}</span>` : ""}${inspectionDue(s) === "overdue" ? '<span class="pill p-bad">Inspection due</span>' : ""}${!hasPhoto(s) ? '<span class="pill p-bad">No photo</span>' : ""}</div></a>`;
     }).join("") : '<div class="empty">No shacks match.</div>';
     $("#count").textContent = `${rows.length} of ${cache.ps_shacks.length}`;
   };
@@ -368,13 +397,45 @@ pages.shack = id => {
         ${s.photo_url ? `<a class="btn ghost" href="${esc(s.photo_url)}" target="_blank" rel="noopener">Open photo</a>` : ""}
         ${o ? `<a class="btn ghost" href="#/owner/${o.id}">Open owner</a>` : ""}
         ${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
-    </form>`);
+    </form>
+    ${isNew ? "" : inspectionHistory(s)}`);
+  bindInspectionHistory();
   bindForm("ps_shacks", s, f => ({
     shack_no: Number(f.shack_no), status: f.status, sponsor_id: f.sponsor_id, owner_id: f.owner_id, first_painted_on: f.first_painted_on,
     area: f.area, needs_maintenance: !!f.needs_maintenance, photo_url: f.photo_url, x_post_url: f.x_post_url,
     latitude: f.latitude === "" ? null : Number(f.latitude), longitude: f.longitude === "" ? null : Number(f.longitude), notes: f.notes
   }), r => "#/shack/" + r.id, "#/shacks", `Delete shack ${s.shack_no}? This cannot be undone.`);
 };
+
+function inspectionHistory(s) {
+  const list = inspectionsOf(s.id);
+  const due = inspectionDue(s);
+  return `<div class="card" id="inspections">
+    <div class="head" style="margin:0"><div><h2>Inspections</h2><p class="sub">${list.length ? `Every ${RULES.every_days} days. ${due === "overdue" ? "Next one is overdue." : ""}` : "Not inspected yet."}</p></div>
+      <a class="btn ghost small" href="/inspect/#/inspect/${esc(s.id)}">Inspect now</a></div>
+    ${list.map(i => {
+      const ph = photosOf(i.id);
+      return `<div class="insp" style="border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${fmtDate(i.inspected_on)}</b><span class="pill ${RESULT[i.result][1]}">${RESULT[i.result][0]}</span>
+          <span class="muted" style="font-size:13px">by ${esc(i.inspector_name || "unknown")}</span>
+          <button class="btn danger small" type="button" data-del-insp="${esc(i.id)}" style="margin-left:auto">Delete</button></div>
+        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b></div>
+        ${i.notes ? `<div style="font-size:14px">${esc(i.notes)}</div>` : ""}
+        ${ph.length ? `<div style="display:flex;gap:8px;overflow-x:auto">${ph.map(p => `<a href="/api/photos/${esc(p.id)}" target="_blank" rel="noopener"><img src="/api/photos/${esc(p.id)}" alt="${esc(p.label || "Inspection")} photo" loading="lazy" style="width:120px;height:120px;object-fit:cover;border-radius:10px;background:var(--raise)"></a>`).join("")}</div>` : ""}
+        ${i.photo_count > ph.length ? `<div class="muted" style="font-size:13px">${i.photo_count - ph.length} photo(s) still uploading from the inspector's phone.</div>` : ""}
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+function bindInspectionHistory() {
+  document.querySelectorAll("[data-del-insp]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("Delete this inspection and its photos? This cannot be undone.")) return;
+    try {
+      if (!DEMO) await call("DELETE", "/api/inspections/" + b.dataset.delInsp);
+      await db.loadAll(); toast("Inspection deleted"); route();
+    } catch (err) { toast(friendlyError(err), true); }
+  }));
+}
 
 /* ---------- Owners */
 let ownerFilter = "all", ownerQuery = "";
@@ -582,6 +643,20 @@ pages.settings = () => {
       <div class="actions"><button class="btn" type="submit">Change password</button></div>
     </form>
     <div class="card">
+      <h2>Inspectors and admins</h2>
+      <p class="muted" style="margin:0">Inspectors sign in at <a href="/inspect/">${esc(location.host)}/inspect</a>. They see shacks, logos and photos only: no payments, phone numbers or Lightning addresses.</p>
+      <div class="list" id="staff"><div class="empty">Loading…</div></div>
+      <form class="f" id="addstaff">
+        <div class="fields">
+          <label class="fld">Full name<input type="text" name="full_name" required></label>
+          <label class="fld">Email<input type="email" name="email" required></label>
+          <label class="fld">Role<select name="role"><option value="inspector">Inspector</option><option value="admin">Admin</option></select></label>
+        </div>
+        <div class="actions"><button class="btn" type="submit">Add person</button></div>
+      </form>
+      <div id="newpw"></div>
+    </div>
+    <div class="card">
       <h2>Backups</h2>
       <p class="muted" style="margin:0">The server saves a copy of the database every night and keeps 30 days. Download a copy now and then to keep one off the server too.</p>
       <div class="actions"><a class="btn ghost" href="/api/backup" download>Download backup</a></div>
@@ -594,6 +669,7 @@ pages.settings = () => {
     </form>
     <div class="card"><div class="actions"><button class="btn ghost" id="out2">Sign out</button></div></div>`);
   $("#out2").addEventListener("click", db.signOut);
+  bindStaff();
   $("#pw").addEventListener("submit", async e => {
     e.preventDefault(); const f = new FormData(e.target), btn = e.target.querySelector("button"); btn.disabled = true;
     try { if (DEMO) throw new Error("Not available in the preview."); await call("POST", "/api/password", {current: f.get("current"), next: f.get("next")}); e.target.reset(); toast("Password changed"); }
@@ -610,6 +686,36 @@ pages.settings = () => {
     } catch (err) { toast(err instanceof SyntaxError ? "That file is not valid JSON." : friendlyError(err), true); } finally { btn.disabled = false; }
   });
 };
+
+async function bindStaff() {
+  const showPw = (who, pw) => { $("#newpw").innerHTML = `<div class="note" style="color:var(--fg)"><b>Password for ${esc(who)}:</b> <span class="mono" style="font-size:15px">${esc(pw)}</span><br><span class="muted">Copy it now and give it to them privately. It is shown only once. They can change it in the app under Me.</span></div>`; };
+  const draw = async () => {
+    if (DEMO) { $("#staff").innerHTML = '<div class="empty">Not available in the preview.</div>'; return; }
+    let rows;
+    try { rows = await call("GET", "/api/staff"); } catch (err) { $("#staff").innerHTML = `<div class="empty">${esc(friendlyError(err))}</div>`; return; }
+    $("#staff").innerHTML = rows.map(r => `<div class="item"><div class="main"><b>${esc(r.full_name)}</b><small>${esc(r.email)} · ${r.role === "admin" ? "Admin" : "Inspector"}${r.role === "inspector" ? ` · ${r.inspections} inspection${r.inspections === 1 ? "" : "s"}` : ""}</small></div>
+      <div class="end">${r.disabled ? '<span class="pill p-bad">Can\'t sign in</span>' : ""}
+        ${r.email.toLowerCase() === String(me?.email || "").toLowerCase() ? '<span class="pill">You</span>' : `
+        <button class="btn ghost small" data-act="reset" data-id="${esc(r.id)}" data-who="${esc(r.full_name)}">New password</button>
+        <button class="btn ${r.disabled ? "ghost" : "danger"} small" data-act="${r.disabled ? "enable" : "disable"}" data-id="${esc(r.id)}" data-who="${esc(r.full_name)}">${r.disabled ? "Allow sign-in" : "Block"}</button>`}</div></div>`).join("") || '<div class="empty">No accounts.</div>';
+    document.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+      const act = b.dataset.act, who = b.dataset.who;
+      if (act === "disable" && !confirm(`Block ${who}? They are signed out and can't sign in until you allow it again.`)) return;
+      if (act === "reset" && !confirm(`Make a new password for ${who}? Their old password stops working.`)) return;
+      try { const r = await call("POST", `/api/staff/${b.dataset.id}/${act}`, {}); if (r.password) showPw(who, r.password); toast("Done"); draw(); }
+      catch (err) { toast(friendlyError(err), true); }
+    }));
+  };
+  $("#addstaff").addEventListener("submit", async e => {
+    e.preventDefault(); const f = new FormData(e.target), btn = e.target.querySelector("button"); btn.disabled = true;
+    try {
+      if (DEMO) throw new Error("Not available in the preview.");
+      const r = await call("POST", "/api/staff", {full_name: f.get("full_name"), email: f.get("email"), role: f.get("role")});
+      e.target.reset(); showPw(r.full_name, r.password); toast("Account created"); draw();
+    } catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+  draw();
+}
 
 function notFound() { shell("", `<div class="card"><h1>Not found</h1><p class="muted">That record no longer exists.</p><a class="btn ghost" href="#/home">Back to overview</a></div>`); }
 
@@ -675,7 +781,7 @@ function loginView(msg) {
     e.preventDefault();
     const btn = e.target.querySelector("button"); btn.disabled = true;
     const f = new FormData(e.target);
-    try { me = await db.signIn(f.get("email"), f.get("password")); await start(); }
+    try { me = await db.signIn(f.get("email"), f.get("password")); if (me.role === "inspector") return location.replace("/inspect/"); await start(); }
     catch (err) { loginView(friendlyError(err)); }
   });
 }
