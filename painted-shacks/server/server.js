@@ -272,10 +272,10 @@ async function handle(req, res) {
 }
 
 /* ------------------------------------------------------------------ inspections */
-const PAINT = ["good", "fading", "damaged"], LOGO = ["yes", "partly", "no"], STRUCT = ["sound", "leaking", "broken"];
+const PAINT = ["good", "fading", "damaged"], LOGO = ["yes", "partly", "no"];
 function resultOf(i) {
   if (i.paint === "damaged" || i.logo === "no") return "repaint";
-  if (i.paint === "fading" || i.logo === "partly" || i.structure !== "sound") return "touch_up";
+  if (i.paint === "fading" || i.logo === "partly") return "touch_up";
   return "good";
 }
 const today = () => new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 10);   // South Africa time
@@ -355,7 +355,7 @@ async function inspectorRoutes(req, res, p, method, user, url) {
 
   // My own inspections (last 120 days).
   if (p === "/api/inspector/mine" && method === "GET") {
-    const rows = db.prepare(`select i.id, i.shack_id, s.shack_no, i.inspected_on, i.paint, i.logo, i.structure, i.result, i.notes, i.photo_count,
+    const rows = db.prepare(`select i.id, i.shack_id, s.shack_no, i.inspected_on, i.paint, i.logo, i.result, i.notes, i.photo_count,
                                (select count(*) from inspection_photos where inspection_id = i.id) as photos_received
                              from inspections i join shacks s on s.id = i.shack_id
                              where i.inspector_id = ? and i.inspected_on >= ? order by i.inspected_on desc, i.created_at desc`).all(user.id, addDays(today(), -120));
@@ -370,12 +370,12 @@ async function inspectorRoutes(req, res, p, method, user, url) {
     const existing = db.prepare("select * from inspections where id = ?").get(id);
     if (existing) return send(res, 200, existing);     // already received (sent twice on bad signal)
     if (!db.prepare("select 1 from shacks where id = ?").get(String(b.shack_id || ""))) throw new Bad("That shack no longer exists. Ask the admin.", 404);
-    if (!PAINT.includes(b.paint) || !LOGO.includes(b.logo) || !STRUCT.includes(b.structure)) throw new Bad("Please answer all three checks.");
+    if (!PAINT.includes(b.paint) || !LOGO.includes(b.logo)) throw new Bad("Please answer both checks.");
     const on = String(b.inspected_on || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(on) || on > addDays(today(), 1) || on < addDays(today(), -60)) throw new Bad("The inspection date is not valid.");
     const notes = b.notes == null ? null : String(b.notes).trim().slice(0, 2000) || null;
     const photoCount = Math.max(0, Math.min(8, Number(b.photo_count) || 0));
-    const row = { id, shack_id: b.shack_id, inspector_id: user.id, inspected_on: on, paint: b.paint, logo: b.logo, structure: b.structure,
+    const row = { id, shack_id: b.shack_id, inspector_id: user.id, inspected_on: on, paint: b.paint, logo: b.logo,
                   result: resultOf(b), notes, photo_count: photoCount };
     const saved = tx(() => {
       const cols = Object.keys(row);

@@ -222,7 +222,7 @@ const sponsorName = id => byId("ps_sponsors", id)?.name || "No logo set";
 /* ============================================================ inspections */
 let RULES = {every_days: 90, due_soon_days: 14};
 const RESULT = {good: ["Good", "p-good"], touch_up: ["Needs attention", "p-warn"], repaint: ["Needs repaint", "p-bad"]};
-const ANSWER = {good: "Good", fading: "Fading", damaged: "Damaged", yes: "Yes", partly: "Partly", no: "No", sound: "Sound", leaking: "Leaking", broken: "Broken"};
+const ANSWER = {good: "Good", fading: "Fading", damaged: "Damaged", yes: "Yes", partly: "Partly", no: "No"};
 const inspectionsOf = shackId => (cache.inspections || []).filter(i => i.shack_id === shackId);   // newest first (server order)
 const lastInspection = shackId => inspectionsOf(shackId)[0];
 const photosOf = inspId => (cache.inspection_photos || []).filter(p => p.inspection_id === inspId);
@@ -419,7 +419,7 @@ function inspectionHistory(s) {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${fmtDate(i.inspected_on)}</b><span class="pill ${RESULT[i.result][1]}">${RESULT[i.result][0]}</span>
           <span class="muted" style="font-size:13px">by ${esc(i.inspector_name || "unknown")}</span>
           <button class="btn danger small" type="button" data-del-insp="${esc(i.id)}" style="margin-left:auto">Delete</button></div>
-        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b> · Roof and walls: <b>${ANSWER[i.structure]}</b></div>
+        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b></div>
         ${i.notes ? `<div style="font-size:14px">${esc(i.notes)}</div>` : ""}
         ${ph.length ? `<div style="display:flex;gap:8px;overflow-x:auto">${ph.map(p => `<a href="/api/photos/${esc(p.id)}" target="_blank" rel="noopener"><img src="/api/photos/${esc(p.id)}" alt="${esc(p.label || "Inspection")} photo" loading="lazy" style="width:120px;height:120px;object-fit:cover;border-radius:10px;background:var(--raise)"></a>`).join("")}</div>` : ""}
         ${i.photo_count > ph.length ? `<div class="muted" style="font-size:13px">${i.photo_count - ph.length} photo(s) still uploading from the inspector's phone.</div>` : ""}

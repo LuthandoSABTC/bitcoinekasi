@@ -48,8 +48,8 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 
 - Add inspectors in the admin app under **Settings > Inspectors and admins**. It shows their password once.
 - Each shack is due for an inspection every 90 days (set `INSPECT_EVERY_DAYS` in the service file to change it). Never-inspected shacks count as overdue.
-- The checklist is Paint (good / fading / damaged), Logo visible from the road (yes / partly / no), Roof and walls (sound / leaking / broken).
-  Result: **Needs repaint** if paint is damaged or the logo is not visible, **Needs attention** for anything else that isn't perfect, otherwise **Good**.
+- The checklist is Paint (good / fading / damaged), Logo visible from the road (yes / partly / no).
+  Result: **Needs repaint** if paint is damaged or the logo is not visible, **Needs attention** if paint is fading or the logo is only partly visible, otherwise **Good**.
 - The newest inspection sets the shack's "Needs maintenance" flag and moves it between Painted and Needs repaint (other statuses are left alone).
 - On the phone, an inspection and its photos are saved in the browser (IndexedDB) first, then sent. Each one has an id made on the phone, so sending twice on bad signal stores it once.
 - Photos are shrunk on the phone to at most 1280 px (JPEG, usually 150-300 KB) before upload. The server only accepts JPEG up to 1.5 MB.

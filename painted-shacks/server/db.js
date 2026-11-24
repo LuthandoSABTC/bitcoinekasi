@@ -113,7 +113,6 @@ create table if not exists inspections (
   inspected_on  text not null,
   paint         text not null check (paint in ('good','fading','damaged')),
   logo          text not null check (logo in ('yes','partly','no')),
-  structure     text not null check (structure in ('sound','leaking','broken')),
   result        text not null check (result in ('good','touch_up','repaint')),
   notes         text,
   photo_count   integer not null default 0,
@@ -150,6 +149,9 @@ function open(file) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec(SCHEMA);
+  // 2026-11-24: the "Roof and walls" check was removed from inspections.
+  if (db.prepare("select 1 from pragma_table_info('inspections') where name = 'structure'").get())
+    db.exec("alter table inspections drop column structure");
   return db;
 }
 

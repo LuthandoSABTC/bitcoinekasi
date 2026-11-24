@@ -133,13 +133,12 @@ const DUE = {overdue: ["Overdue", "p-bad"], due_soon: ["Due soon", "p-warn"], ok
 const Q = [
   ["paint", "Paint", [["good", "Good", "g"], ["fading", "Fading", "w"], ["damaged", "Damaged", "b"]]],
   ["logo", "Logo visible from the road", [["yes", "Yes", "g"], ["partly", "Partly", "w"], ["no", "No", "b"]]],
-  ["structure", "Roof and walls", [["sound", "Sound", "g"], ["leaking", "Leaking", "w"], ["broken", "Broken", "b"]]],
 ];
 const SLOTS = ["Front", "Logo", "Side"];
 const MAX_PHOTOS = 6;
 function resultOf(i) {          // same rule as the server
   if (i.paint === "damaged" || i.logo === "no") return "repaint";
-  if (i.paint === "fading" || i.logo === "partly" || i.structure !== "sound") return "touch_up";
+  if (i.paint === "fading" || i.logo === "partly") return "touch_up";
   return "good";
 }
 
@@ -213,7 +212,7 @@ async function sync({quiet} = {}) {
       try {
         if (!item.sent) {
           await call("POST", "/api/inspections", {id: item.id, shack_id: item.shack_id, inspected_on: item.inspected_on,
-            paint: item.paint, logo: item.logo, structure: item.structure, notes: item.notes, photo_count: item.photos.length});
+            paint: item.paint, logo: item.logo, notes: item.notes, photo_count: item.photos.length});
           item.sent = true; item.error = null; await idb.put(item);
         }
         for (const p of item.photos) {
