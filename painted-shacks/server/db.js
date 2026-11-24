@@ -104,6 +104,35 @@ create table if not exists shacks (
 create index if not exists shacks_owner_idx on shacks(owner_id);
 create index if not exists shacks_sponsor_idx on shacks(sponsor_id);
 
+-- Inspections. The id is made on the inspector's phone, so an inspection saved offline
+-- and sent twice (bad signal) is only stored once.
+create table if not exists inspections (
+  id            text primary key,
+  shack_id      text not null references shacks(id) on delete cascade,
+  inspector_id  text references staff(id) on delete set null,
+  inspected_on  text not null,
+  paint         text not null check (paint in ('good','fading','damaged')),
+  logo          text not null check (logo in ('yes','partly','no')),
+  structure     text not null check (structure in ('sound','leaking','broken')),
+  result        text not null check (result in ('good','touch_up','repaint')),
+  notes         text,
+  photo_count   integer not null default 0,
+  created_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+create index if not exists inspections_shack_idx on inspections(shack_id, inspected_on);
+create index if not exists inspections_inspector_idx on inspections(inspector_id, inspected_on);
+
+-- Photo files live on disk in PHOTO_DIR (compressed JPEG made on the phone); this table only holds where.
+create table if not exists inspection_photos (
+  id            text primary key,
+  inspection_id text not null references inspections(id) on delete cascade,
+  label         text,
+  file          text not null,
+  bytes         integer not null,
+  created_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+create index if not exists inspection_photos_insp_idx on inspection_photos(inspection_id);
+
 create table if not exists audit_log (
   id          integer primary key autoincrement,
   at          text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),

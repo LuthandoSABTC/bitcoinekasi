@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b0a09">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Painted Shacks Inspector</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0b0a09; --panel:#151311; --raise:#1e1b18; --line:#2c2824;
+  --fg:#f3efe9; --muted:#a59d93; --dim:#7a7268;
+  --orange:#f7931a; --orange-ink:#1a0f00; --orange-soft:rgba(247,147,26,.14);
+  --good:#4cc38a; --good-soft:rgba(76,195,138,.14);
+  --warn:#e8b339; --warn-soft:rgba(232,179,57,.14);
+  --bad:#ef6b5b; --bad-soft:rgba(239,107,91,.14);
+  --display:"Space Grotesk",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.45;min-height:100vh;-webkit-tap-highlight-color:transparent}
+a{color:var(--orange)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+main{max-width:560px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;gap:12px;margin:4px 0 16px}
+.top img{width:40px;height:40px;border-radius:50%;background:#000;flex:none}
+.top .k{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+h1{font:700 24px/1.15 var(--display);margin:0}
+h2{font:600 16px/1.2 var(--display);margin:0}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.back{display:inline-flex;align-items:center;gap:4px;color:var(--muted);text-decoration:none;font-weight:600;margin:0 0 8px;background:none;border:0;padding:6px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px;margin-bottom:14px}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.item{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit;width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.item:last-child{border-bottom:0}
+.item .main{flex:1;min-width:0}
+.item b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item small{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no{width:44px;height:44px;border-radius:12px;background:var(--raise);display:grid;place-items:center;font:700 15px var(--mono);color:var(--orange);flex:none}
+.sect{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:18px 2px 8px;display:flex;justify-content:space-between}
+.pill{font:600 12px var(--body);padding:3px 10px;border-radius:99px;white-space:nowrap;background:var(--raise);color:var(--muted);flex:none}
+.p-good{background:var(--good-soft);color:var(--good)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.p-or{background:var(--orange-soft);color:var(--orange)}
+.muted{color:var(--muted)}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+.note{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;overflow-wrap:anywhere}
+.note.good{background:var(--good-soft);color:var(--good)}
+.note.bad{background:var(--bad-soft);color:var(--bad)}
+.banner{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat .lbl{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.stat .val{font:700 26px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stat.hero{background:var(--orange);color:var(--orange-ink);border-color:transparent}
+.stat.hero .lbl{color:var(--orange-ink);opacity:.75}
+input[type=text],input[type=email],input[type=password],input[type=search],input[type=date],textarea{
+  width:100%;background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--fg);font-size:16px}
+textarea{min-height:90px;resize:vertical}
+label.fld{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.btn{border:0;border-radius:14px;padding:14px 18px;font-weight:700;background:var(--orange);color:var(--orange-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.ghost{background:var(--raise);color:var(--fg)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.small{padding:8px 12px;font-size:14px;border-radius:10px}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.5}
+
+/* Inspection form */
+.q{display:grid;gap:8px}
+.q .lbl{font-weight:600}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:block;text-align:center;padding:12px 4px;border-radius:12px;background:var(--raise);border:1px solid var(--line);font-weight:600;cursor:pointer;user-select:none}
+.seg input:checked + label.g{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.seg input:checked + label.w{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.seg input:checked + label.b{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.seg input:focus-visible + label{outline:2px solid var(--orange);outline-offset:2px}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ph{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--raise);border:1px dashed var(--line);display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph .tag{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;padding:2px 7px;border-radius:99px}
+.ph .x{position:absolute;right:4px;top:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:16px;line-height:1}
+.ph input{position:absolute;opacity:0;width:1px;height:1px}
+.ph.filled{border-style:solid}
+.result{display:flex;align-items:center;gap:10px;font-weight:600}
+.lastbox{display:grid;gap:4px;font-size:14px}
+.gal{display:flex;gap:8px;overflow-x:auto}
+.gal img{width:84px;height:84px;object-fit:cover;border-radius:10px;flex:none;background:var(--raise)}
+
+.tabbar{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 0;position:relative}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--orange)}
+.tab .dot{position:absolute;top:2px;left:calc(50% + 8px);background:var(--warn);color:#000;font-size:10px;font-weight:700;border-radius:99px;padding:0 5px;line-height:16px}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;max-width:calc(100vw - 32px);text-align:center}
+.toast.err{background:var(--bad);color:#fff}
+.login{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.login .card{width:100%;max-width:380px}
+.login img{width:72px;height:72px;border-radius:50%;background:#000;justify-self:center}
+.login h1{text-align:center}
+.offline{background:var(--raise);color:var(--muted);font:600 12px var(--mono);text-align:center;padding:6px 12px;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="net" class="offline" hidden>NO SIGNAL · inspections are saved on this phone</div>
+<div id="app"></div>
+
+<script>
+"use strict";
+/* ============================================================ helpers */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(3, "0");
+const localDate = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const fmtDate = d => d ? new Date(d + "T00:00:00").toLocaleDateString("en-ZA", {day: "numeric", month: "short"}) : "";
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+const firstName = n => String(n || "").trim().split(/\s+/)[0] || "";
+
+const RESULT = {good: ["Good", "p-good"], touch_up: ["Needs attention", "p-warn"], repaint: ["Needs repaint", "p-bad"]};
+const DUE = {overdue: ["Overdue", "p-bad"], due_soon: ["Due soon", "p-warn"], ok: ["Up to date", "p-good"]};
+const Q = [
+  ["paint", "Paint", [["good", "Good", "g"], ["fading", "Fading", "w"], ["damaged", "Damaged", "b"]]],
+  ["logo", "Logo visible from the road", [["yes", "Yes", "g"], ["partly", "Partly", "w"], ["no", "No", "b"]]],
+  ["structure", "Roof and walls", [["sound", "Sound", "g"], ["leaking", "Leaking", "w"], ["broken", "Broken", "b"]]],
+];
+const SLOTS = ["Front", "Logo", "Side"];
+const MAX_PHOTOS = 6;
+function resultOf(i) {          // same rule as the server
+  if (i.paint === "damaged" || i.logo === "no") return "repaint";
+  if (i.paint === "fading" || i.logo === "partly" || i.structure !== "sound") return "touch_up";
+  return "good";
+}
+
+function toast(msg, err) {
+  document.querySelectorAll(".toast").forEach(x => x.remove());
+  const t = document.createElement("div");
+  t.className = "toast" + (err ? " err" : "");
+  t.setAttribute("role", "status");
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), err ? 6000 : 3000);
+}
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem("psi_" + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem("psi_" + k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem("psi_" + k); } catch (e) {} },
+};
+
+/* ============================================================ server */
+class Offline extends Error {}
+class SignedOut extends Error {}
+async function call(method, url, body, type) {
+  let res;
+  const headers = {"X-PS-Admin": "1"};
+  if (body !== undefined) headers["Content-Type"] = type || "application/json";
+  try {
+    res = await fetch(url, {method, credentials: "same-origin", headers,
+      body: body === undefined ? undefined : type ? body : JSON.stringify(body)});
+  } catch (e) { throw new Offline("No signal"); }
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (res.status === 401 && !/\/api\/login$/.test(url)) throw new SignedOut(data.error || "Please sign in.");
+  if (!res.ok) { const e = new Error(data.error || "Something went wrong (" + res.status + ")."); e.status = res.status; throw e; }
+  return data;
+}
+
+/* ============================================================ offline queue (IndexedDB)
+   Each inspection is saved here first, with its photos, then sent when there is signal. */
+const idb = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((resolve, reject) => {
+    const r = indexedDB.open("painted-shacks-inspector", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("queue", {keyPath: "id"});
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  }));
+  const run = (mode, fn) => open().then(db => new Promise((resolve, reject) => {
+    const t = db.transaction("queue", mode), s = t.objectStore("queue");
+    const req = fn(s);
+    t.oncomplete = () => resolve(req && req.result);
+    t.onerror = () => reject(t.error);
+  }));
+  return {
+    all: () => run("readonly", s => s.getAll()),
+    put: v => run("readwrite", s => s.put(v)),
+    del: id => run("readwrite", s => s.delete(id)),
+  };
+})();
+let queue = [];
+async function loadQueue() { try { queue = (await idb.all()) || []; } catch (e) { queue = []; } queue.sort((a, b) => a.saved_at.localeCompare(b.saved_at)); }
+
+let syncing = false;
+async function sync({quiet} = {}) {
+  if (syncing) return;
+  await loadQueue();
+  if (!queue.length) return;
+  syncing = true; drawBadge();
+  let sent = 0, problem = null;
+  try {
+    for (const item of queue) {
+      try {
+        if (!item.sent) {
+          await call("POST", "/api/inspections", {id: item.id, shack_id: item.shack_id, inspected_on: item.inspected_on,
+            paint: item.paint, logo: item.logo, structure: item.structure, notes: item.notes, photo_count: item.photos.length});
+          item.sent = true; item.error = null; await idb.put(item);
+        }
+        for (const p of item.photos) {
+          if (p.sent) continue;
+          await call("PUT", `/api/inspections/${item.id}/photos/${p.id}?label=${encodeURIComponent(p.label || "")}`, p.blob, "image/jpeg");
+          p.sent = true; await idb.put(item);
+        }
+        await idb.del(item.id); sent++;
+      } catch (e) {
+        if (e instanceof Offline || e instanceof SignedOut) throw e;
+        item.error = e.message; await idb.put(item);   // this one has a problem; keep it and try the next one
+        problem = e.message;
+      }
+    }
+  } catch (e) {
+    if (e instanceof SignedOut) problem = "signin";
+    else if (!quiet) toast("No signal yet. Your inspections are safe on this phone.", true);
+  } finally {
+    syncing = false;
+    await loadQueue();
+    if (sent) { toast(sent === 1 ? "1 inspection sent" : `${sent} inspections sent`); refreshFromServer(); }
+    if (problem === "signin") { toast("Sign in again to send your inspections.", true); return loginView("Sign in again to send the inspections saved on this phone."); }
+    if (problem && !quiet) toast(problem, true);
+    rerender();
+  }
+}
+
+/* ============================================================ data from the server, kept for offline use */
+let me = store.get("me");
+let shacks = store.get("shacks") || [];
+let mine = store.get("mine") || [];
+let fetchedAt = store.get("fetched_at");
+let rules = store.get("rules") || {every_days: 90};
+
+async function refreshFromServer() {
+  try {
+    const [s, m] = await Promise.all([call("GET", "/api/inspector/shacks"), call("GET", "/api/inspector/mine")]);
+    shacks = s.shacks; rules = s.rules; mine = m; fetchedAt = new Date().toISOString();
+    store.set("shacks", shacks); store.set("rules", rules); store.set("mine", mine); store.set("fetched_at", fetchedAt);
+    rerender();
+    return true;
+  } catch (e) {
+    if (e instanceof SignedOut) { loginView("Your sign-in has ended. Please sign in again."); return false; }
+    if (!(e instanceof Offline)) toast(e.message, true);
+    return false;
+  }
+}
+
+// The shack list with inspections still on this phone counted as done.
+function shackList() {
+  const t = localDate();
+  const addDays = (d, n) => new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  return shacks.map(s => {
+    const local = queue.filter(q => q.shack_id === s.id).sort((a, b) => b.inspected_on.localeCompare(a.inspected_on))[0];
+    if (!local || (s.last_on && s.last_on > local.inspected_on)) return s;
+    const dueOn = addDays(local.inspected_on, rules.every_days || 90);
+    return {...s, last_on: local.inspected_on, last_result: resultOf(local), last_notes: local.notes, due_on: dueOn, due: dueOn <= t ? "overdue" : "ok", pending: true};
+  });
+}
+
+/* ============================================================ icons + shell */
+const IC = {
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 9v11h14V9"/><rect x="9" y="13" width="6" height="7"/></svg>',
+  done: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  me: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  cam: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>',
+};
+function shell(active, body) {
+  const waiting = queue.length;
+  $("#app").innerHTML = `<main>${body}</main>
+    <nav class="tabbar" aria-label="Main">
+      <a class="tab" href="#/list" ${active === "list" ? 'aria-current="page"' : ""}>${IC.list}To inspect</a>
+      <a class="tab" href="#/done" ${active === "done" ? 'aria-current="page"' : ""}>${IC.done}Done${waiting ? `<span class="dot" id="qdot">${waiting}</span>` : ""}</a>
+      <a class="tab" href="#/me" ${active === "me" ? 'aria-current="page"' : ""}>${IC.me}Me</a>
+    </nav>`;
+}
+function drawBadge() { const b = $("#send"); if (b) { b.disabled = syncing; b.textContent = syncing ? "Sending…" : "Send now"; } }
+function queueBanner() {
+  if (!queue.length) return "";
+  const err = queue.find(q => q.error);
+  return `<div class="note banner${err ? " bad" : ""}"><span>${queue.length === 1 ? "1 inspection" : queue.length + " inspections"} waiting to upload${err ? ". One has a problem: see Done." : ""}</span>
+    <button class="btn small" id="send" ${syncing ? "disabled" : ""}>${syncing ? "Sending…" : "Send now"}</button></div>`;
+}
+function bindSend() { $("#send")?.addEventListener("click", () => sync()); }
+
+/* ============================================================ pages */
+const pages = {};
+let query = "";
+
+pages.list = () => {
+  const list = shackList();
+  const month = localDate().slice(0, 7);
+  const doneMonth = new Set([...mine.filter(m => m.inspected_on.startsWith(month)).map(m => m.shack_id),
+                             ...queue.filter(q => q.inspected_on.startsWith(month)).map(q => q.shack_id)]).size;
+  const counts = {overdue: 0, due_soon: 0, ok: 0};
+  list.forEach(s => counts[s.due]++);
+  shell("list", `
+    <div class="top"><img src="logo.png" alt=""><div><div class="k">Molo${me ? ", " + esc(firstName(me.name)) : ""} · Inspector</div><h1>Shacks to inspect</h1></div></div>
+    ${queueBanner()}
+    <div class="stats">
+      <div class="stat hero"><div class="lbl">To do now</div><div class="val">${counts.overdue}</div></div>
+      <div class="stat"><div class="lbl">Done this month</div><div class="val">${doneMonth}</div></div>
+    </div>
+    <input type="search" id="q" placeholder="Search number, logo, owner, area" value="${esc(query)}" aria-label="Search shacks">
+    <div id="rows"></div>
+    <p class="muted" style="font-size:12px">Each shack is checked about every ${rules.every_days || 90} days. ${fetchedAt ? "List updated " + new Date(fetchedAt).toLocaleString("en-ZA", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) + "." : ""}</p>`);
+  const draw = () => {
+    const q = query.toLowerCase();
+    const rows = list.filter(s => !q || [pad(s.shack_no), s.shack_no, s.logo, s.owner_name, s.area].join(" ").toLowerCase().includes(q));
+    const group = (key, title) => {
+      const g = rows.filter(s => s.due === key);
+      if (!g.length) return "";
+      return `<div class="sect"><span>${title}</span><span>${g.length}</span></div><div class="list">${g.map(s => `
+        <a class="item" href="#/inspect/${esc(s.id)}"><span class="no">${pad(s.shack_no)}</span>
+          <div class="main"><b>${esc(s.logo || "No logo set")}</b>
+            <small>${esc([s.owner_name, s.area].filter(Boolean).join(" · ") || "No owner linked")}</small>
+            <small>${s.last_on ? "Last checked " + fmtDate(s.last_on) + (s.pending ? " · on this phone" : "") : "Never inspected"}</small></div>
+          <span class="pill ${DUE[s.due][1]}">${s.due === "ok" && s.last_result && s.last_result !== "good" ? RESULT[s.last_result][0] : DUE[s.due][0]}</span></a>`).join("")}</div>`;
+    };
+    $("#rows").innerHTML = rows.length ? group("overdue", "To do now") + group("due_soon", "Due soon") + group("ok", "Up to date")
+      : `<div class="empty">${shacks.length ? "No shacks match." : "No shacks loaded yet. Open the app once with signal."}</div>`;
+  };
+  $("#q").addEventListener("input", e => { query = e.target.value; draw(); });
+  bindSend(); draw();
+};
+
+/* ---------- the inspection form */
+let draft = null;      // {shack_id, photos: [{id,label,blob,url}]}
+pages.inspect = id => {
+  const s = shackList().find(x => x.id === id);
+  if (!s) return notFound();
+  if (!draft || draft.shack_id !== id) { clearDraft(); draft = {shack_id: id, photos: [], answers: {}, notes: "", inspected_on: localDate()}; }
+  const last = s.last_on ? `<div class="lastbox"><span>Last checked <b>${fmtDate(s.last_on)}</b> · <span class="pill ${RESULT[s.last_result]?.[1] || ""}">${RESULT[s.last_result]?.[0] || ""}</span></span>
+      ${s.last_notes ? `<span class="muted">“${esc(s.last_notes)}”</span>` : ""}</div>` : '<div class="muted" style="font-size:14px">Never inspected before.</div>';
+  shell("list", `
+    <button class="back" id="back">${IC.back}Shacks</button>
+    <div class="top" style="margin-top:0"><span class="no">${pad(s.shack_no)}</span><div style="flex:1;min-width:0"><div class="k">New inspection</div><h1>Shack #${pad(s.shack_no)}</h1></div>
+      <span class="pill ${DUE[s.due][1]}">${DUE[s.due][0]}</span></div>
+    <div class="card">
+      <div><b>${esc(s.logo || "No logo set")}</b><div class="muted" style="font-size:14px">${esc([s.owner_name, s.area].filter(Boolean).join(" · ") || "No owner linked")}</div></div>
+      ${last}
+      ${s.latitude != null && s.longitude != null ? `<a class="btn ghost small" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.latitude + "," + s.longitude)}" target="_blank" rel="noopener">Show on map</a>` : ""}
+    </div>
+    <form id="form" class="card" novalidate>
+      ${Q.map(([k, label, opts]) => `<fieldset class="q" style="border:0;margin:0;padding:0"><legend class="lbl" style="padding:0;margin-bottom:8px">${label}</legend><div class="seg">
+        ${opts.map(([v, t, c]) => `<input type="radio" name="${k}" id="${k}-${v}" value="${v}" ${draft.answers[k] === v ? "checked" : ""}><label class="${c}" for="${k}-${v}">${t}</label>`).join("")}
+      </div></fieldset>`).join("")}
+      <div class="q"><div class="lbl">Photos <span class="muted" style="font-weight:400;font-size:13px">front, logo and side</span></div>
+        <div class="photos" id="photos"></div></div>
+      <label class="fld">Notes<textarea name="notes" placeholder="What did you see? e.g. logo peeling on the right corner">${esc(draft.notes)}</textarea></label>
+      <label class="fld">Date of inspection<input type="date" name="inspected_on" value="${esc(draft.inspected_on)}" max="${localDate()}"></label>
+      <div id="res" class="result"></div>
+      <button class="btn wide" type="submit" id="save">Save inspection</button>
+      <p class="muted" style="font-size:12px;margin:0">Saved on this phone first, then sent when there is signal.</p>
+    </form>`);
+  $("#back").addEventListener("click", () => { location.hash = "#/list"; });
+  const form = $("#form");
+  const showResult = () => {
+    const a = draft.answers;
+    $("#res").innerHTML = Q.every(([k]) => a[k]) ? (([t, c]) => `Result: <span class="pill ${c}">${t}</span>`)(RESULT[resultOf(a)]) : "";
+  };
+  form.addEventListener("change", e => {
+    if (e.target.type === "radio") draft.answers[e.target.name] = e.target.value;
+    if (e.target.name === "inspected_on") draft.inspected_on = e.target.value;
+    showResult();
+  });
+  form.notes.addEventListener("input", e => { draft.notes = e.target.value; });
+  drawPhotos(); showResult();
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const missing = Q.filter(([k]) => !draft.answers[k]).map(([, l]) => l);
+    if (missing.length) return toast("Please answer: " + missing.join(", "), true);
+    if (!draft.photos.length && !confirm("No photos added. Save without photos?")) return;
+    const on = draft.inspected_on || localDate();
+    if (on > localDate()) return toast("The date can't be in the future.", true);
+    const btn = $("#save"); btn.disabled = true;
+    const item = {id: uid(), shack_id: s.id, shack_no: s.shack_no, logo_name: s.logo, owner_name: s.owner_name, inspected_on: on,
+      ...draft.answers, notes: draft.notes.trim() || null, saved_at: new Date().toISOString(), sent: false,
+      photos: draft.photos.map(p => ({id: p.id, label: p.label, blob: p.blob, sent: false}))};
+    try { await idb.put(item); }
+    catch (err) { btn.disabled = false; return toast("Could not save on this phone: " + (err.message || err), true); }
+    clearDraft();
+    await loadQueue();
+    toast(navigator.onLine ? "Saved. Sending now…" : "Saved on this phone. It will send when there's signal.");
+    location.hash = "#/done";
+    sync({quiet: true});
+  });
+};
+
+function clearDraft() { draft?.photos.forEach(p => URL.revokeObjectURL(p.url)); draft = null; }
+
+function drawPhotos() {
+  const box = $("#photos"); if (!box) return;
+  const used = new Set(draft.photos.map(p => p.label));
+  const nextLabel = SLOTS.find(l => !used.has(l)) || "Extra";
+  box.innerHTML = draft.photos.map((p, i) => `<div class="ph filled"><img src="${p.url}" alt="${esc(p.label)} photo"><span class="tag">${esc(p.label)}</span>
+      <button type="button" class="x" data-del="${i}" aria-label="Remove ${esc(p.label)} photo">×</button></div>`).join("")
+    + (draft.photos.length < MAX_PHOTOS ? `<label class="ph">${IC.cam}<span>Add ${esc(nextLabel.toLowerCase())} photo</span>
+        <input type="file" accept="image/*" capture="environment" id="pick" data-label="${esc(nextLabel)}"></label>` : "");
+  $$("[data-del]", box).forEach(b => b.addEventListener("click", () => {
+    const [p] = draft.photos.splice(Number(b.dataset.del), 1); URL.revokeObjectURL(p.url); drawPhotos();
+  }));
+  $("#pick")?.addEventListener("change", async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const label = e.target.dataset.label;
+    try {
+      const blob = await shrink(file);
+      draft.photos.push({id: uid(), label, blob, url: URL.createObjectURL(blob)});
+      drawPhotos();
+    } catch (err) { toast("Could not read that photo. Try again.", true); }
+  });
+}
+
+// Make photos small before saving: longest side 1280 px, JPEG quality 0.72 (about 150-300 KB).
+async function shrink(file, max = 1280, quality = 0.72) {
+  let src;
+  try { src = await createImageBitmap(file, {imageOrientation: "from-image"}); }
+  catch (e) {
+    src = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = URL.createObjectURL(file); });
+  }
+  const w0 = src.width || src.naturalWidth, h0 = src.height || src.naturalHeight;
+  const k = Math.min(1, max / Math.max(w0, h0));
+  const c = document.createElement("canvas");
+  c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  if (src.close) src.close(); else if (src.src) URL.revokeObjectURL(src.src);
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", quality));
+  if (!blob) throw new Error("Could not compress");
+  return blob;
+}
+
+/* ---------- my inspections */
+pages.done = () => {
+  const urls = [];
+  const pend = queue.slice().reverse().map(q => {
+    const [t, c] = RESULT[resultOf(q)];
+    const sentPhotos = q.photos.filter(p => p.sent).length;
+    const thumbs = q.photos.map(p => { const u = URL.createObjectURL(p.blob); urls.push(u); return `<img src="${u}" alt="">`; }).join("");
+    return `<div class="card" style="gap:8px">
+      <div style="display:flex;gap:12px;align-items:center"><span class="no">${pad(q.shack_no)}</span>
+        <div style="flex:1;min-width:0"><b>${esc(q.logo_name || "Shack " + q.shack_no)}</b><div class="muted" style="font-size:13px">${fmtDate(q.inspected_on)} · ${q.photos.length} photo${q.photos.length === 1 ? "" : "s"}${q.sent ? ` · ${sentPhotos} of ${q.photos.length} sent` : ""}</div></div>
+        <span class="pill ${c}">${t}</span></div>
+      ${thumbs ? `<div class="gal">${thumbs}</div>` : ""}
+      ${q.error ? `<div class="note bad">${esc(q.error)}</div><div><button class="btn danger small" data-drop="${esc(q.id)}">Delete this inspection</button></div>`
+                : '<div class="muted" style="font-size:13px">Waiting for signal to upload</div>'}
+    </div>`;
+  }).join("");
+  const sentList = mine.map(m => {
+    const [t, c] = RESULT[m.result];
+    const ph = m.photos_received < m.photo_count ? `${m.photos_received} of ${m.photo_count} photos` : `${m.photo_count} photo${m.photo_count === 1 ? "" : "s"}`;
+    return `<div class="item"><span class="no">${pad(m.shack_no)}</span><div class="main"><b>${fmtDate(m.inspected_on)}</b><small>${ph} · uploaded${m.notes ? " · " + esc(m.notes) : ""}</small></div><span class="pill ${c}">${t}</span></div>`;
+  }).join("");
+  shell("done", `
+    <div class="top"><img src="logo.png" alt=""><div><div class="k">My inspections</div><h1>Done</h1></div></div>
+    ${queueBanner()}
+    ${pend ? `<div class="sect"><span>On this phone</span><span>${queue.length}</span></div>${pend}` : ""}
+    <div class="sect"><span>Uploaded</span><span>${mine.length}</span></div>
+    <div class="list">${sentList || '<div class="empty">Nothing uploaded in the last 4 months.</div>'}</div>`);
+  window.addEventListener("hashchange", () => urls.forEach(u => URL.revokeObjectURL(u)), {once: true});
+  bindSend();
+  $$("[data-drop]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("Delete this inspection from the phone? It has not reached the server.")) return;
+    await idb.del(b.dataset.drop); await loadQueue(); route();
+  }));
+};
+
+/* ---------- me */
+pages.me = () => {
+  shell("me", `
+    <div class="top"><img src="logo.png" alt=""><div><div class="k">Signed in</div><h1>${esc(me?.name || "")}</h1><p class="sub">${esc(me?.email || "")}</p></div></div>
+    <form class="card" id="pw">
+      <h2>Change password</h2>
+      <label class="fld">Current password<input type="password" name="current" required autocomplete="current-password"></label>
+      <label class="fld">New password<input type="password" name="next" required minlength="12" autocomplete="new-password"><span class="muted" style="font-weight:400;font-size:12px">At least 12 characters.</span></label>
+      <button class="btn" type="submit">Change password</button>
+    </form>
+    <div class="card">
+      <h2>This app</h2>
+      <p class="muted" style="margin:0;font-size:14px">This app shows shacks, logos and photos only. It has no payments or Lightning addresses. To keep it on your phone, use your browser's menu and choose "Add to Home screen".</p>
+      <button class="btn ghost" id="refresh">Update shack list</button>
+      ${me?.role === "admin" ? '<a class="btn ghost" href="/">Open the admin app</a>' : ""}
+      <button class="btn danger" id="out">Sign out</button>
+    </div>`);
+  $("#refresh").addEventListener("click", async () => { if (await refreshFromServer()) toast("Shack list updated"); else if (!navigator.onLine) toast("No signal right now.", true); });
+  $("#out").addEventListener("click", signOut);
+  $("#pw").addEventListener("submit", async e => {
+    e.preventDefault(); const f = new FormData(e.target), btn = e.target.querySelector("button"); btn.disabled = true;
+    try { await call("POST", "/api/password", {current: f.get("current"), next: f.get("next")}); e.target.reset(); toast("Password changed"); }
+    catch (err) { toast(err instanceof Offline ? "You need signal to change your password." : err.message, true); }
+    finally { btn.disabled = false; }
+  });
+};
+
+async function signOut() {
+  await loadQueue();
+  if (queue.length && !confirm(`${queue.length} inspection(s) are not uploaded yet. If you sign out they stay on this phone and send after the next sign-in. Sign out?`)) return;
+  try { await call("POST", "/api/logout", {}); } catch (e) {}
+  ["me", "shacks", "mine", "fetched_at"].forEach(store.del);
+  me = null; shacks = []; mine = [];
+  location.hash = "";
+  loginView();
+}
+
+function notFound() { shell("list", `<div class="card"><h1>Not found</h1><p class="muted">That shack is not in your list. Update the list under Me.</p><a class="btn ghost" href="#/list">Back</a></div>`); }
+
+/* ============================================================ router + start */
+function route() {
+  if (!me) return;
+  const [page, id] = (location.hash.slice(2) || "list").split("/");
+  if (page !== "inspect" && draft) { clearDraft(); }
+  (pages[page] || pages.list)(id);
+}
+
+// Redraw after background work, but never under someone filling in the inspection form.
+function rerender() { if (!location.hash.startsWith("#/inspect/")) route(); }
+
+function loginView(msg) {
+  $("#app").innerHTML = `<div class="login"><form class="card" id="login">
+      <img src="logo.png" alt="Bitcoin Ekasi">
+      <h1>Painted Shacks Inspector</h1>
+      ${msg ? `<div class="note">${esc(msg)}</div>` : ""}
+      <label class="fld">Email<input type="email" name="email" required autocomplete="username"></label>
+      <label class="fld">Password<input type="password" name="password" required autocomplete="current-password"></label>
+      <button class="btn" type="submit">Sign in</button>
+    </form></div>`;
+  $("#login").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector("button"); btn.disabled = true;
+    const f = new FormData(e.target);
+    try {
+      const u = await call("POST", "/api/login", {email: f.get("email"), password: f.get("password")});
+      if (u.role !== "inspector" && u.role !== "admin") throw new Error("This account can't use the inspector app.");
+      me = u; store.set("me", me);
+      await start();
+    } catch (err) { loginView(err instanceof Offline ? "No signal. You need signal to sign in the first time." : err.message); }
+  });
+}
+
+async function start() {
+  await loadQueue();
+  window.removeEventListener("hashchange", route); window.addEventListener("hashchange", route);
+  route();
+  if (await refreshFromServer()) sync({quiet: true});
+}
+
+function showNet() { $("#net").hidden = navigator.onLine; }
+window.addEventListener("online", () => { showNet(); if (me) { refreshFromServer(); sync({quiet: true}); } });
+window.addEventListener("offline", showNet);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && me && navigator.onLine) sync({quiet: true}); });
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+(async function boot() {
+  showNet();
+  try {
+    const u = await call("GET", "/api/me");
+    if (u.role !== "inspector" && u.role !== "admin") return loginView("This account can't use the inspector app.");
+    me = u; store.set("me", me);
+  } catch (e) {
+    if (e instanceof SignedOut) { me = null; store.del("me"); await loadQueue(); return loginView(queue.length ? "Sign in to send the inspections saved on this phone." : ""); }
+    if (!(e instanceof Offline) || !me) return loginView(e instanceof Offline ? "No signal. You need signal to sign in the first time." : e.message);
+    // No signal but signed in before: keep working from the saved list.
+  }
+  start();
+})();
+</script>
+</body>
+</html>
