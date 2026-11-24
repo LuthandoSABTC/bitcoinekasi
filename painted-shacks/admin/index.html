@@ -46,7 +46,7 @@ main{padding:24px clamp(16px,4vw,40px) 96px;max-width:980px;width:100%;min-width
   .shell{grid-template-columns:1fr}
   nav.side{display:none}
   main{padding:16px max(16px,env(safe-area-inset-left)) calc(96px + env(safe-area-inset-bottom))}
-  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
+  .tabbar{display:grid;grid-template-columns:repeat(6,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
   .tabbar .navbtn{flex-direction:column;gap:2px;font-size:11px;padding:6px 0;justify-content:center;align-items:center}
   .tabbar .navbtn .badge{display:none}
 }
@@ -792,11 +792,13 @@ async function start() {
   window.addEventListener("hashchange", route);
   route();
 }
-(async function boot() {
+// Starts once every script on the page (including payments.js) has loaded.
+document.addEventListener("DOMContentLoaded", async function boot() {
   if (DEMO) { me = {name: "Demo admin"}; return start(); }
   try { me = await db.me(); } catch (err) { return loginView(err.message); }
   me ? start() : loginView();
-})();
+});
 </script>
+<script src="payments.js"></script>
 </body>
 </html>
