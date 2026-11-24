@@ -5,7 +5,7 @@ const http = require("node:http");
 const crypto = require("node:crypto");
 const { open } = require("./db");
 
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 3417);
 const HOST = process.env.HOST || "127.0.0.1";
 const DB_PATH = process.env.DB_PATH || "/var/lib/painted-shacks/painted-shacks.db";
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "0";

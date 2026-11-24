@@ -43,6 +43,10 @@ if ss -ltnp | grep -E ':(80|443)\s' | grep -vq caddy; then
   echo "Stopping here so nothing breaks. Send this output to Claude."; exit 1
 fi
 
+if ss -ltn | grep -q '127.0.0.1:3417\s' && ! systemctl is-active --quiet painted-shacks; then
+  echo "Port 3417 is already used by another program. Send this output to Claude."; ss -ltnp | grep ':3417'; exit 1
+fi
+
 echo "==> 4/7 Swap and firewall"
 if ! swapon --show | grep -q .; then
   fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
@@ -70,7 +74,7 @@ systemctl enable --now painted-shacks-backup.timer >/dev/null
 systemctl enable painted-shacks >/dev/null
 systemctl restart painted-shacks
 sleep 2
-curl -fsS http://127.0.0.1:3000/api/health >/dev/null || { echo "The app did not start. Log:"; journalctl -u painted-shacks -n 30 --no-pager; exit 1; }
+curl -fsS http://127.0.0.1:3417/api/health >/dev/null || { echo "The app did not start. Log:"; journalctl -u painted-shacks -n 30 --no-pager; exit 1; }
 
 echo "==> 7/7 HTTPS"
 mkdir -p /etc/caddy/sites
@@ -79,7 +83,7 @@ cat > /etc/caddy/sites/painted-shacks <<EOF
 $DOMAIN {
   encode gzip
   handle /api/* {
-    reverse_proxy 127.0.0.1:3000
+    reverse_proxy 127.0.0.1:3417
   }
   handle {
     root * $APP/admin

@@ -6,7 +6,7 @@ After=network.target
 User=painted-shacks
 Group=painted-shacks
 WorkingDirectory=/opt/painted-shacks/server
-Environment=NODE_ENV=production PORT=3000 HOST=127.0.0.1 DB_PATH=/var/lib/painted-shacks/painted-shacks.db
+Environment=NODE_ENV=production PORT=3417 HOST=127.0.0.1 DB_PATH=/var/lib/painted-shacks/painted-shacks.db
 ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server.js
 Restart=on-failure
 RestartSec=3
