@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Sets up the Painted Shacks admin app on a fresh Ubuntu/Debian server (e.g. a Nymbox VPS).
 # Usage (as root):  bash setup-server.sh admin.example.com
+# No domain yet? Use  89-125-10-8.sslip.io  (a free name that points at the IP; HTTPS still works).
 # What it does:
 #   1. Installs Caddy (web server with automatic HTTPS certificates).
 #   2. Downloads the admin app from GitHub into /srv/painted-shacks/admin.
@@ -25,9 +26,21 @@ if ! command -v caddy >/dev/null; then
   apt-get update -y && apt-get install -y caddy
 fi
 
-echo "==> Firewall: allow SSH and web only"
-ufw allow OpenSSH >/dev/null; ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null
-ufw --force enable >/dev/null
+echo "==> Checking ports 80 and 443 are free"
+if ss -ltnp | grep -E ':(80|443)\s' | grep -vq caddy; then
+  echo "Something else is already using port 80 or 443:"; ss -ltnp | grep -E ':(80|443)\s'
+  echo "Stopping here so nothing breaks. Send this output to Claude."; exit 1
+fi
+
+echo "==> Swap (this server has little memory)"
+if ! swapon --show | grep -q .; then
+  fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+echo "==> Firewall: open web ports (existing rules are kept)"
+ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null
+if ufw status | grep -q inactive; then echo "Note: the ufw firewall is off. Not switching it on, so your other services keep working."; fi
 
 echo "==> Getting the latest app"
 tmp="$(mktemp -d)"
@@ -42,7 +55,9 @@ rm -rf "$tmp"
 chown -R caddy:caddy "$WEBROOT"
 
 echo "==> Web server config"
-cat > /etc/caddy/Caddyfile <<EOF
+mkdir -p /etc/caddy/sites
+grep -q 'import sites/\*' /etc/caddy/Caddyfile 2>/dev/null || { [ -s /etc/caddy/Caddyfile ] && cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak; echo 'import sites/*' > /etc/caddy/Caddyfile; }
+cat > /etc/caddy/sites/painted-shacks <<EOF
 $DOMAIN {
   root * $WEBROOT/admin
   file_server
@@ -58,7 +73,8 @@ $DOMAIN {
   }
 }
 EOF
-systemctl reload caddy || systemctl restart caddy
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+systemctl enable --now caddy >/dev/null; systemctl reload caddy || systemctl restart caddy
 
 echo
 echo "Done. Open https://$DOMAIN"
