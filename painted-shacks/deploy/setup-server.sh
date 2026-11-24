@@ -73,7 +73,7 @@ systemctl daemon-reload
 systemctl enable --now painted-shacks-backup.timer >/dev/null
 systemctl enable painted-shacks >/dev/null
 systemctl restart painted-shacks
-sleep 2
+for i in $(seq 1 15); do curl -fsS http://127.0.0.1:3417/api/health >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS http://127.0.0.1:3417/api/health >/dev/null || { echo "The app did not start. Log:"; journalctl -u painted-shacks -n 30 --no-pager; exit 1; }
 
 echo "==> 7/7 HTTPS"
