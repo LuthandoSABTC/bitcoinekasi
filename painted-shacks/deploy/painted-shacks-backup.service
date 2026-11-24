@@ -1,0 +1,13 @@
+[Unit]
+Description=Painted Shacks nightly database backup
+
+[Service]
+Type=oneshot
+User=painted-shacks
+Group=painted-shacks
+Environment=DB_PATH=/var/lib/painted-shacks/painted-shacks.db BACKUP_DIR=/var/backups/painted-shacks KEEP_DAYS=30
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning /opt/painted-shacks/server/backup.js
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/painted-shacks /var/backups/painted-shacks
