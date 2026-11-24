@@ -132,6 +132,89 @@ create table if not exists inspection_photos (
 );
 create index if not exists inspection_photos_insp_idx on inspection_photos(inspection_id);
 
+-- ---------------------------------------------------------------- Lightning payouts to shack owners
+-- One row of settings. Changes are kept in audit_log.
+create table if not exists pay_settings (
+  id                 integer primary key check (id = 1),
+  sats_per_week      integer not null default 7000 check (sats_per_week between 1 and 1000000),
+  max_weeks          integer not null default 4 check (max_weeks between 1 and 5),
+  draft_days_before  integer not null default 2 check (draft_days_before between 0 and 14),
+  batch_limit_sats   integer not null default 1200000 check (batch_limit_sats > 0),
+  single_limit_sats  integer not null default 50000 check (single_limit_sats > 0),
+  max_fee_sats       integer not null default 100 check (max_fee_sats >= 0),
+  updated_at         text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+insert or ignore into pay_settings(id) values (1);
+
+-- A batch = the monthly payout run (period set) or a hand-made group.
+create table if not exists payout_batches (
+  id          text primary key,
+  period      text unique,                 -- '2026-12' for the monthly run
+  title       text not null,
+  pay_date    text,
+  status      text not null default 'open' check (status in ('open','closed')),
+  created_by  text,
+  notes       text,
+  created_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- One payment to one owner. Nothing is sent unless an admin approved it (approved_by + approved_at).
+-- pending = waiting for approval, approved = queued to send, sending = sent to Blink (outcome being checked),
+-- paid, failed (can be retried), cancelled.
+create table if not exists payouts (
+  id                text primary key,
+  batch_id          text references payout_batches(id) on delete restrict,
+  owner_id          text not null references owners(id) on delete restrict,
+  period            text,
+  reason            text not null default 'weekly_learning' check (reason in ('weekly_learning','bonus','correction','other')),
+  weeks_earned      integer check (weeks_earned is null or weeks_earned between 0 and 5),
+  amount_sats       integer not null check (amount_sats >= 0),
+  note              text,
+  lightning_address text,
+  status            text not null default 'pending' check (status in ('pending','approved','sending','paid','failed','cancelled')),
+  approved_by       text,
+  approved_by_name  text,
+  approved_at       text,
+  payment_request   text,
+  payment_hash      text,
+  blink_tx_id       text,
+  fee_sats          integer,
+  paid_at           text,
+  failure_reason    text,
+  attempts          integer not null default 0,
+  sending_since     text,
+  created_by        text,
+  created_at        text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at        text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+-- An owner is paid for learning only once per month.
+create unique index if not exists payouts_learning_once on payouts(owner_id, period) where reason = 'weekly_learning' and status <> 'cancelled';
+create unique index if not exists payouts_hash_uq on payouts(payment_hash) where payment_hash is not null;
+create index if not exists payouts_batch_idx on payouts(batch_id);
+create index if not exists payouts_status_idx on payouts(status);
+
+-- Every try to send a payout, for checking and retries.
+create table if not exists payout_attempts (
+  id            integer primary key autoincrement,
+  payout_id     text not null references payouts(id) on delete cascade,
+  at            text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  payment_hash  text,
+  result        text not null,
+  message       text
+);
+create index if not exists payout_attempts_idx on payout_attempts(payout_id);
+
+-- Last check of each owner's Lightning address (works for any wallet, not only Blink).
+create table if not exists address_checks (
+  owner_id    text primary key references owners(id) on delete cascade,
+  address     text not null,
+  ok          integer not null,
+  message     text,
+  min_sats    integer,
+  max_sats    integer,
+  checked_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 create table if not exists audit_log (
   id          integer primary key autoincrement,
   at          text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),

@@ -7,6 +7,9 @@ User=painted-shacks
 Group=painted-shacks
 WorkingDirectory=/opt/painted-shacks/server
 Environment=NODE_ENV=production PORT=3417 HOST=127.0.0.1 DB_PATH=/var/lib/painted-shacks/painted-shacks.db
+# Blink payout wallet key. Only root can read this file; it is never in the database, backups or GitHub.
+# Set it with: bash /opt/painted-shacks/deploy/set-blink-key.sh
+EnvironmentFile=-/etc/painted-shacks/blink.env
 ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server.js
 Restart=on-failure
 RestartSec=3

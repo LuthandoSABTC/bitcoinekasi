@@ -2,7 +2,7 @@
 
 Mobile-friendly apps for the Bitcoin Ekasi Painted Shacks project:
 
-- **Admin app** (`/`): shacks, owners, sponsor logos, sponsor contacts, sponsor funding, inspection results, and the accounts of inspectors.
+- **Admin app** (`/`): shacks, owners, sponsor logos, sponsor contacts, sponsor funding, inspection results, the accounts of inspectors, and **Lightning payouts** to shack owners.
 - **Inspector app** (`/inspect`): phone-first. Shacks to inspect (overdue first), a checklist with photos, works with no signal and uploads later. Inspectors never see payments, phone numbers or Lightning addresses.
 It runs entirely on our own server. No Supabase, no outside database, no npm packages.
 
@@ -21,9 +21,15 @@ nightly 01:30 -> database copy to /var/backups/painted-shacks (kept 30 days), ne
 | Path | What it is |
 |---|---|
 | `admin/index.html` | The admin app. Plain HTML + JS. |
+| `admin/payments.js` | The Payments screens (monthly batches, approval, single payments, reports). |
 | `inspector/` | The inspector app: `index.html`, `sw.js` (keeps it working offline), icons. |
 | `server/server.js` | The API: sign-in, data, audit log, import, backup download. |
 | `server/db.js` | Database tables. Created automatically on first start. |
+| `server/payments.js` | Payouts: monthly drafts, approval, sending, checking, funding summary, CSV reports. |
+| `server/lightning.js` | Reads any Lightning address (LNURL-pay) and checks the invoice it returns. |
+| `server/blink.js` | Talks to the Blink API to pay invoices from Bitcoin Ekasi's wallet. |
+| `server/payments.test.js` | Tests with a fake Blink and fake wallets: `node --test --disable-warning=ExperimentalWarning payments.test.js` |
+| `deploy/set-blink-key.sh` | Saves the Blink key on the server (root only) and tests it. |
 | `server/admin-user.js` | Add, reset or disable admin accounts from the server's command line. |
 | `server/backup.js` | Nightly backup (run by a systemd timer). |
 | `deploy/setup-server.sh` | One command that installs or updates everything on Ubuntu. |
@@ -63,7 +69,27 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 - Every change is recorded in `audit_log` (who, when, before, after).
 - The API listens on 127.0.0.1 only and runs as its own locked-down system user.
 - Inspector accounts can only use the inspector endpoints; every admin endpoint answers "Admins only".
-- No payment keys anywhere yet. Blink payouts will run on this server in a later step.
+- The Blink key is only in `/etc/painted-shacks/blink.env` (root-only, loaded by systemd). Never in the database, backups, browser or GitHub.
+- No payment is sent without an admin approving it with their password. Timers only draft the monthly list and check payments already sent.
+
+## Payments (Lightning payouts to owners)
+
+- Owners earn 7,000 sats per finished week (lesson and quiz in the app), up to 28,000 sats a month. Change it under Payments > Settings.
+- Pay day is the **last Friday** of the month. Two days before, the server drafts that month's list (one line per active owner). Nothing is sent.
+- An admin checks the weeks per owner, then presses **Approve and send** and types their password. Only then does the server pay.
+- Owners can use **any** Lightning address (Blink, Fedi, Aqua, Wallet of Satoshi, Phoenix, Coinos, ...). The server asks the owner's wallet for an invoice of the exact amount (LNURL-pay), checks the amount, and pays it from the Blink wallet. Bitcoin Ekasi pays the network fee.
+- Safety: one learning payout per owner per month (database rule); the payment hash is saved before paying, and a payment whose answer was lost is checked with Blink, never sent again; limits per approval, per single payment and per fee; the wallet balance is checked before approving; inspectors can't see payments.
+- Statuses: waiting for approval, approved (in queue), sending, paid, failed (retry needs approval again), cancelled.
+- Reports: payments CSV (any date range or status, or one batch) and a funding statement CSV (sponsor money in, payouts out, running balance).
+
+Connect the wallet once on the server (it asks for the key without showing it):
+
+```
+sudo -i
+bash /opt/painted-shacks/deploy/set-blink-key.sh
+```
+
+Start with a **Read** only key to test, then use a key with **Read + Write** to send. Use a separate Blink account for payouts that holds about one month of payouts.
 
 ## Try it locally
 

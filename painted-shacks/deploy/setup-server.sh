@@ -59,6 +59,7 @@ if ufw status | grep -q inactive; then echo "    (ufw firewall is off; leaving i
 echo "==> 5/7 App files"
 id painted-shacks >/dev/null 2>&1 || useradd --system --home /var/lib/painted-shacks --shell /usr/sbin/nologin painted-shacks
 install -d -o painted-shacks -g painted-shacks -m 700 /var/lib/painted-shacks /var/backups/painted-shacks
+install -d -o root -g root -m 700 /etc/painted-shacks   # holds the Blink key (root only)
 tmp="$(mktemp -d)"
 git clone -q --depth 1 --branch "$BRANCH" "$REPO" "$tmp/repo"
 rm -rf "$APP.new" && cp -r "$tmp/repo/painted-shacks" "$APP.new"
@@ -111,6 +112,11 @@ systemctl enable --now caddy >/dev/null; systemctl reload caddy || systemctl res
 echo
 echo "All done. Admin app:     https://$DOMAIN"
 echo "          Inspector app: https://$DOMAIN/inspect"
+if [[ ! -s /etc/painted-shacks/blink.env ]]; then
+  echo
+  echo "Payments: no Blink wallet key yet. When you're ready to pay owners, run:"
+  echo "  bash $APP/deploy/set-blink-key.sh"
+fi
 if [[ -z "$(cd "$APP/server" && sudo -u painted-shacks DB_PATH=/var/lib/painted-shacks/painted-shacks.db node --disable-warning=ExperimentalWarning admin-user.js list)" ]]; then
   echo
   echo "No admin account yet. Create yours with:"

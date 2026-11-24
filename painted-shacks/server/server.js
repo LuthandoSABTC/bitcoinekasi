@@ -4,6 +4,7 @@
 const http = require("node:http");
 const crypto = require("node:crypto");
 const { open } = require("./db");
+const payments = require("./payments");
 
 const PORT = Number(process.env.PORT || 3417);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -91,6 +92,7 @@ function friendly(e) {
   if (/UNIQUE.*shacks\.shack_no/.test(m)) return "That shack number is already used.";
   if (/UNIQUE.*sponsors\.name/.test(m)) return "A sponsor with that name already exists.";
   if (/owners_lnaddr_uq|UNIQUE.*lightning_address/i.test(m)) return "Another owner already has that Lightning address.";
+  if (/UNIQUE.*payouts\.owner_id/.test(m)) return "This owner already has a learning payment for that month.";
   if (/FOREIGN KEY/.test(m)) return "This is still linked to other records (for example payments). Remove those first.";
   if (/CHECK constraint/.test(m)) return "One of the values is not allowed.";
   return null;
@@ -191,6 +193,9 @@ async function handle(req, res) {
   if (await inspectorRoutes(req, res, p, method, user, url)) return;
 
   if (user.role !== "admin") throw new Bad("Admins only.", 403);
+
+  // Lightning payouts to owners (server/payments.js). Sending always needs an admin's password.
+  if (await pay.routes(req, res, p, method, user, url)) return;
 
   if (p === "/api/data" && method === "GET") {
     const out = {};
@@ -500,7 +505,10 @@ function importSeed(d, user) {
 }
 
 /* ------------------------------------------------------------------ start */
+const pay = payments.init({ db, audit, tx, Bad, readJson, send, checkPassword });
+
 if (require.main === module) {
+  pay.startTimers();
   http.createServer(async (req, res) => {
     try { await handle(req, res); }
     catch (e) {
@@ -511,4 +519,4 @@ if (require.main === module) {
   }).listen(PORT, HOST, () => console.log(`Painted Shacks API on http://${HOST}:${PORT}, database ${DB_PATH}`));
 }
 
-module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR };
+module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay };
