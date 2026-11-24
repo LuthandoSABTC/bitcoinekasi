@@ -1,0 +1,29 @@
+[Unit]
+Description=Painted Shacks admin API
+After=network.target
+
+[Service]
+User=painted-shacks
+Group=painted-shacks
+WorkingDirectory=/opt/painted-shacks/server
+Environment=NODE_ENV=production PORT=3000 HOST=127.0.0.1 DB_PATH=/var/lib/painted-shacks/painted-shacks.db
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server.js
+Restart=on-failure
+RestartSec=3
+MemoryMax=200M
+# Lock the process down: it can only write its own data folder.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/painted-shacks
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+RestrictSUIDSGID=yes
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

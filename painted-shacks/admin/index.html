@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Painted Shacks Admin</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
 <style>
 :root{
   color-scheme: dark;
@@ -130,8 +128,6 @@ table.t td.r,table.t th.r{text-align:right}
 <body>
 <div id="app"></div>
 
-<script src="config.js" onerror="window.PS_CONFIG=window.PS_CONFIG||null"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
 /* ============================================================ helpers */
@@ -161,50 +157,57 @@ function toast(msg, err) {
 /* ============================================================ data layer
    One interface, two backends: Supabase (real) and an in-memory demo. */
 const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments"];
-const cfg = window.PS_CONFIG;
-const DEMO = !cfg || !cfg.supabaseUrl || /YOUR-PROJECT/.test(cfg.supabaseUrl) || new URLSearchParams(location.search).has("demo");
-let sb = null;
+const DEMO = !!window.PS_DEMO_DATA || new URLSearchParams(location.search).has("demo");
 const cache = {};
+const api = (t) => "/api/" + t.replace(/^ps_/, "");
+
+async function call(method, url, body) {
+  const res = await fetch(url, {method, credentials: "same-origin",
+    headers: body !== undefined ? {"Content-Type": "application/json", "X-PS-Admin": "1"} : {"X-PS-Admin": "1"},
+    body: body !== undefined ? JSON.stringify(body) : undefined});
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (res.status === 401 && !/\/api\/(login|password)$/.test(url)) { loginView("Your session ended. Please sign in again."); throw new Error("Please sign in."); }
+  if (!res.ok) throw new Error(data.error || "Something went wrong (" + res.status + ").");
+  return data;
+}
 
 const db = {
   async signIn(email, password) {
     if (DEMO) return {name: "Demo admin"};
-    const {error} = await sb.auth.signInWithPassword({email, password});
-    if (error) throw error;
-    return db.me();
+    return call("POST", "/api/login", {email, password});
   },
   async me() {
     if (DEMO) return {name: "Demo admin"};
-    const {data: {user}} = await sb.auth.getUser();
-    if (!user) return null;
-    const {data, error} = await sb.from("ps_staff").select("full_name, role").eq("user_id", user.id).maybeSingle();
-    if (error) throw error;
-    if (!data || data.role !== "admin") { await sb.auth.signOut(); throw new Error("This account is not an admin. Ask Luthando to add you."); }
-    return {name: data.full_name, email: user.email};
+    const res = await fetch("/api/me", {credentials: "same-origin"});
+    if (res.status === 401) return null;
+    if (!res.ok) throw new Error("Could not reach the server.");
+    const u = await res.json();
+    if (u.role !== "admin") throw new Error("This account is not an admin.");
+    return u;
   },
-  async signOut() { if (!DEMO) await sb.auth.signOut(); location.hash = ""; location.reload(); },
+  async signOut() { if (!DEMO) await call("POST", "/api/logout", {}).catch(() => {}); location.hash = ""; location.reload(); },
   async loadAll() {
     if (DEMO) { const d = window.PS_DEMO_DATA || {}; TABLES.forEach(t => cache[t] = cache[t] || structuredClone(d[t] || [])); return; }
-    const res = await Promise.all(TABLES.map(t => sb.from(t).select("*")));
-    res.forEach((r, i) => { if (r.error) throw r.error; cache[TABLES[i]] = r.data; });
+    const d = await call("GET", "/api/data");
+    TABLES.forEach(t => cache[t] = d[t.replace(/^ps_/, "")] || []);
   },
   async save(table, row) {
     const clean = {...row};
     Object.keys(clean).forEach(k => { if (clean[k] === "") clean[k] = null; });
+    let data;
     if (DEMO) {
-      if (!clean.id) { clean.id = crypto.randomUUID(); clean.created_at = new Date().toISOString(); cache[table].push(clean); }
-      else Object.assign(cache[table].find(r => r.id === clean.id), clean);
-      return clean;
+      data = clean.id ? Object.assign(cache[table].find(r => r.id === clean.id), clean) : {...clean, id: crypto.randomUUID(), created_at: new Date().toISOString()};
+    } else {
+      const {id, ...body} = clean;
+      data = id ? await call("PATCH", api(table) + "/" + id, body) : await call("POST", api(table), body);
     }
-    const q = clean.id ? sb.from(table).update(clean).eq("id", clean.id) : sb.from(table).insert(clean);
-    const {data, error} = await q.select().single();
-    if (error) throw error;
     const i = cache[table].findIndex(r => r.id === data.id);
     if (i >= 0) cache[table][i] = data; else cache[table].push(data);
     return data;
   },
   async remove(table, id) {
-    if (!DEMO) { const {error} = await sb.from(table).delete().eq("id", id); if (error) throw error; }
+    if (!DEMO) await call("DELETE", api(table) + "/" + id);
     cache[table] = cache[table].filter(r => r.id !== id);
   }
 };
@@ -237,6 +240,7 @@ const I = {
   star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
   wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/></svg>',
   back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>'
 };
 const NAV = [["home", "Overview", I.home], ["shacks", "Shacks", I.shack], ["owners", "Owners", I.user], ["sponsors", "Sponsors", I.star], ["funding", "Funding", I.wallet]];
@@ -254,6 +258,7 @@ function shell(active, body) {
         <div class="brand"><img src="${LOGO}" alt=""><div><b>Painted Shacks</b><small>Admin</small></div></div>
         ${links()}
         <div class="spacer"></div>
+        <a class="navbtn" href="#/settings" ${active === "settings" ? 'aria-current="page"' : ""}>${I.gear}<span>Settings</span></a>
         <div class="who-am-i">Signed in as ${esc(me?.name)}</div>
         <button class="navbtn" id="signout">${I.out}<span>Sign out</span></button>
       </nav>
@@ -278,7 +283,7 @@ pages.home = () => {
   const upcoming = P.filter(p => p.renews_on).sort((a, b) => a.renews_on.localeCompare(b.renews_on))[0];
   shell("home", `
     <div class="head"><div><h1>Overview</h1><p class="sub">Live numbers from the database.</p></div>
-      <a class="btn" href="#/shack/new">Add shack</a></div>
+      <div class="actions"><a class="btn ghost" href="#/settings">Settings</a><a class="btn" href="#/shack/new">Add shack</a></div></div>
     <div class="stats">
       <a class="stat hero" href="#/funding"><span class="lbl">Sponsor sats received</span><span class="val">${fmtSats(sats)}</span></a>
       <a class="stat" href="#/shacks"><span class="lbl">Painted shacks</span><span class="val">${S.filter(s => s.status !== "removed").length}</span></a>
@@ -565,6 +570,47 @@ pages.funding = () => {
     <p class="hint" style="margin:0">Weeks covered = total sats ÷ (7,000 sats × active owners). Owner payouts will be subtracted here once the payout screen is built.</p></div>`);
 };
 
+pages.settings = () => {
+  shell("settings", `
+    <div class="head"><div><h1>Settings</h1><p class="sub">Signed in as ${esc(me?.name)}${me?.email ? " (" + esc(me.email) + ")" : ""}</p></div></div>
+    <form class="card f" id="pw">
+      <h2>Change password</h2>
+      <div class="fields">
+        <label class="fld">Current password<input type="password" name="current" required autocomplete="current-password"></label>
+        <label class="fld">New password<input type="password" name="next" required minlength="12" autocomplete="new-password"><span class="hint">At least 12 characters.</span></label>
+      </div>
+      <div class="actions"><button class="btn" type="submit">Change password</button></div>
+    </form>
+    <div class="card">
+      <h2>Backups</h2>
+      <p class="muted" style="margin:0">The server saves a copy of the database every night and keeps 30 days. Download a copy now and then to keep one off the server too.</p>
+      <div class="actions"><a class="btn ghost" href="/api/backup" download>Download backup</a></div>
+    </div>
+    <form class="card f" id="imp">
+      <h2>Import data file</h2>
+      <p class="muted" style="margin:0">Loads shacks, owners, sponsors and payments from a Painted Shacks data file (seed.json). Anything already in the app is kept, so it's safe to run twice.</p>
+      <label class="fld">Data file<input type="file" name="file" accept=".json,application/json" required></label>
+      <div class="actions"><button class="btn" type="submit">Import</button></div>
+    </form>
+    <div class="card"><div class="actions"><button class="btn ghost" id="out2">Sign out</button></div></div>`);
+  $("#out2").addEventListener("click", db.signOut);
+  $("#pw").addEventListener("submit", async e => {
+    e.preventDefault(); const f = new FormData(e.target), btn = e.target.querySelector("button"); btn.disabled = true;
+    try { if (DEMO) throw new Error("Not available in the preview."); await call("POST", "/api/password", {current: f.get("current"), next: f.get("next")}); e.target.reset(); toast("Password changed"); }
+    catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+  $("#imp").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true;
+    try {
+      if (DEMO) throw new Error("Not available in the preview.");
+      const data = JSON.parse(await e.target.file.files[0].text());
+      const n = await call("POST", "/api/import", data);
+      await db.loadAll();
+      toast(`Imported ${n.shacks} shacks, ${n.owners} owners, ${n.sponsors} sponsors, ${n.payments} payments`);
+    } catch (err) { toast(err instanceof SyntaxError ? "That file is not valid JSON." : friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+};
+
 function notFound() { shell("", `<div class="card"><h1>Not found</h1><p class="muted">That record no longer exists.</p><a class="btn ghost" href="#/home">Back to overview</a></div>`); }
 
 /* ---------- shared form wiring */
@@ -630,7 +676,7 @@ function loginView(msg) {
     const btn = e.target.querySelector("button"); btn.disabled = true;
     const f = new FormData(e.target);
     try { me = await db.signIn(f.get("email"), f.get("password")); await start(); }
-    catch (err) { loginView(/invalid login/i.test(err.message) ? "Wrong email or password." : friendlyError(err)); }
+    catch (err) { loginView(friendlyError(err)); }
   });
 }
 async function start() {
@@ -642,7 +688,6 @@ async function start() {
 }
 (async function boot() {
   if (DEMO) { me = {name: "Demo admin"}; return start(); }
-  sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {auth: {persistSession: true, storageKey: "ps-admin-auth"}});
   try { me = await db.me(); } catch (err) { return loginView(err.message); }
   me ? start() : loginView();
 })();
