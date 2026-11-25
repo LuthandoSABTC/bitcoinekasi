@@ -72,7 +72,7 @@ h1{font-size:24px;line-height:1.2;margin:4px 0 12px}
 .err{background:var(--bad-soft);color:var(--bad);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-weight:600}
 label.f{display:grid;gap:6px;font-weight:600;margin-bottom:14px}
 label.f small{font-weight:400;color:var(--muted)}
-input[type=text],input[type=tel],input[type=password]{width:100%;border:2px solid var(--line);border-radius:12px;padding:14px;font-size:20px;background:#fff}
+input[type=text],input[type=tel],input[type=password],select{width:100%;border:2px solid var(--line);border-radius:12px;padding:14px;font-size:20px;background:#fff}
 input.pin{letter-spacing:.4em;font-variant-numeric:tabular-nums}
 /* Lesson reading */
 .page{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 18px;margin-bottom:14px;min-height:50vh}
@@ -114,8 +114,8 @@ input.pin{letter-spacing:.4em;font-variant-numeric:tabular-nums}
 const T = {
   xh: {
     app: "Funda i-Bitcoin", sub: "Painted Shacks · Bitcoin Ekasi",
-    signin: "Ngena", who: "Inombolo yeshack yakho", who_hint: "Okanye inombolo yefowuni yakho",
-    pin: "I-PIN yakho", pin_hint: "Amanani ama-6 owanikwe ngumphathi", nopin: "Awunayo i-PIN? Cela umphathi weBitcoin Ekasi.",
+    signin: "Ngena", who: "Ishack yakho", pick: "Khetha ishack yakho", use_phone: "Ngena ngenombolo yefowuni", use_list: "Khetha ishack yakho kuluhlu", phone: "Inombolo yefowuni yakho",
+    pin: "I-PIN yakho", pin_hint: "Amanani ama-4 owanikwe ngumphathi", nopin: "Awunayo i-PIN? Cela umphathi weBitcoin Ekasi.",
     hello: n => n ? `Molo, ${n}` : "Molo!", month: m => `Imali ka-${m}`, earned: "sats ozifumeneyo",
     of_max: (w, m, s) => `${w} kwiiveki ezi-${m} · ukuya kuthi ga kwi-${s} sats`, payday: d => `Ihlawulwa ngoLwesihlanu ${d}`,
     after_cut: d => `Iiveki ozigqibayo emva komhla we-${d} zibalelwa kwinyanga elandelayo.`,
@@ -136,13 +136,13 @@ const T = {
     s_soon: "Ayikalungi", s_locked: "Ivaliwe", read_first: "Funda isifundo kuqala.",
     ln: "Idilesi yakho ye-Lightning", ln_help: "Iisats zakho zithunyelwa apha. Ukuba ayichanekanga, xelela umphathi.", ln_none: "Akukabikho dilesi. Xelela umphathi.",
     payouts: "Iintlawulo", no_payouts: "Akukabikho ntlawulo okwangoku.", st_paid: "Ihlawulwe", st_wait: "Ilinde ukuhlawulwa", st_failed: "Iyalungiswa",
-    weeks_n: n => `iiveki ezi-${n}`, change_pin: "Tshintsha i-PIN", cur_pin: "I-PIN yangoku", new_pin: "I-PIN entsha (amanani ama-6)",
+    weeks_n: n => `iiveki ezi-${n}`, change_pin: "Tshintsha i-PIN", cur_pin: "I-PIN yangoku", new_pin: "I-PIN entsha (amanani ama-4)",
     save: "Gcina", saved: "Igciniwe", signout: "Phuma", lang: "English", shack: n => `Ishack ${n}`, loading: "Iyalayisha…",
   },
   en: {
     app: "Learn Bitcoin", sub: "Painted Shacks · Bitcoin Ekasi",
-    signin: "Sign in", who: "Your shack number", who_hint: "Or your phone number",
-    pin: "Your PIN", pin_hint: "The 6 numbers the admin gave you", nopin: "No PIN? Ask the Bitcoin Ekasi admin.",
+    signin: "Sign in", who: "Your shack", pick: "Choose your shack", use_phone: "Sign in with your phone number", use_list: "Choose your shack from the list", phone: "Your phone number",
+    pin: "Your PIN", pin_hint: "The 4 numbers the admin gave you", nopin: "No PIN? Ask the Bitcoin Ekasi admin.",
     hello: n => n ? `Hello, ${n}` : "Hello!", month: m => `${m} money`, earned: "sats earned",
     of_max: (w, m, s) => `${w} of ${m} weeks · up to ${s} sats`, payday: d => `Paid on Friday ${d}`,
     after_cut: d => `Weeks you finish after ${d} count for next month.`,
@@ -163,7 +163,7 @@ const T = {
     s_soon: "Not ready", s_locked: "Locked", read_first: "Read the lesson first.",
     ln: "Your Lightning address", ln_help: "Your sats are sent here. If it's wrong, tell the admin.", ln_none: "No address yet. Tell the admin.",
     payouts: "Payments", no_payouts: "No payments yet.", st_paid: "Paid", st_wait: "Waiting to be paid", st_failed: "Being fixed",
-    weeks_n: n => `${n} weeks`, change_pin: "Change PIN", cur_pin: "Current PIN", new_pin: "New PIN (6 numbers)",
+    weeks_n: n => `${n} weeks`, change_pin: "Change PIN", cur_pin: "Current PIN", new_pin: "New PIN (4 numbers)",
     save: "Save", saved: "Saved", signout: "Sign out", lang: "isiXhosa", shack: n => `Shack ${n}`, loading: "Loading…",
   },
 };
@@ -215,15 +215,32 @@ function loginView(msg) {
     <h1 class="center">${t("signin")}</h1>
     ${msg ? `<div class="err">${esc(msg)}</div>` : ""}
     <form id="login" class="card" autocomplete="on">
-      <label class="f">${t("who")}<input type="tel" name="who" inputmode="numeric" required autocomplete="username"><small>${t("who_hint")}</small></label>
-      <label class="f">${t("pin")}<input class="pin" type="password" name="pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="current-password"><small>${t("pin_hint")}</small></label>
+      <div id="whobox"></div>
+      <label class="f">${t("pin")}<input class="pin" type="password" name="pin" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" required autocomplete="current-password"><small>${t("pin_hint")}</small></label>
       <button class="btn" type="submit">${t("signin")}</button>
     </form>
     <p class="muted center">${t("nopin")}</p>`;
   bindTop();
+  // Owners pick their shack from a list (or type their phone number instead).
+  let saved = ""; try { saved = localStorage.getItem("ps_shack") || ""; } catch (e) {}
+  const phoneBox = () => { $("#whobox").innerHTML = `<label class="f">${t("phone")}<input type="tel" name="who" inputmode="tel" required autocomplete="username"></label>
+      <p class="center" style="margin:0 0 12px"><a href="#" id="uselist">${t("use_list")}</a></p>`;
+    $("#uselist").addEventListener("click", e => { e.preventDefault(); listBox(); }); };
+  const listBox = async () => {
+    let shacks = [];
+    try { shacks = (await call("GET", "/api/learn/shacks")).shacks; } catch (e) {}
+    if (!shacks.length) return phoneBox();
+    $("#whobox").innerHTML = `<label class="f">${t("who")}<select name="who" required autocomplete="username">
+        <option value="">${t("pick")}</option>${shacks.map(s => `<option value="${s.no}" ${String(s.no) === saved ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select></label>
+      <p class="center" style="margin:0 0 12px"><a href="#" id="usephone">${t("use_phone")}</a></p>`;
+    $("#usephone").addEventListener("click", e => { e.preventDefault(); phoneBox(); });
+  };
+  listBox();
   $("#login").addEventListener("submit", async e => {
     e.preventDefault(); const f = new FormData(e.target), b = e.target.querySelector("button"); b.disabled = true;
-    try { await call("POST", "/api/learn/login", { who: f.get("who"), pin: f.get("pin") }); me = null; location.hash = "#/"; route(); }
+    try { await call("POST", "/api/learn/login", { who: f.get("who"), pin: f.get("pin") });
+      if (/^\d{1,4}$/.test(f.get("who"))) try { localStorage.setItem("ps_shack", f.get("who")); } catch (e) {}
+      me = null; location.hash = "#/"; route(); }
     catch (err) { loginView(err.message); }
   });
 }
@@ -367,7 +384,7 @@ async function settingsPage() {
     <div class="card"><b>${esc(m.name || "")}</b><div class="muted">${m.shacks.map(n => t("shack", n)).join(", ")}</div></div>
     <form class="card" id="pinf"><h2>${t("change_pin")}</h2>
       <label class="f">${t("cur_pin")}<input class="pin" type="password" name="current" inputmode="numeric" maxlength="6" required autocomplete="current-password"></label>
-      <label class="f">${t("new_pin")}<input class="pin" type="password" name="next" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="new-password"></label>
+      <label class="f">${t("new_pin")}<input class="pin" type="password" name="next" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required autocomplete="new-password"></label>
       <button class="btn dark" type="submit">${t("save")}</button></form>
     <button class="btn ghost" id="out">${t("signout")}</button>`, "#/");
   $("#pinf").addEventListener("submit", async e => {

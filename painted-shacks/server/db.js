@@ -95,6 +95,7 @@ create table if not exists shacks (
   photo_url         text,
   x_post_url        text,
   area              text,
+  name              text,                 -- what owners call their shack; shown when they sign in to the app
   latitude          real,
   longitude         real,
   notes             text,
@@ -358,6 +359,9 @@ function open(file) {
       updated_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
     db.prepare("insert into paydays(period, pay_date, set_by_name) values ('2026-12', '2026-12-30', 'Luthando')").run();
   }
+  // 2026-11-25: owners pick their shack by name when they sign in to the learning app.
+  if (!db.prepare("select 1 from pragma_table_info('shacks') where name = 'name'").get())
+    db.exec("alter table shacks add column name text");
   // 2026-11-25: the learning programme starts on 1 December 2026.
   if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'start_date'").get())
     db.exec("alter table learn_settings add column start_date text default '2026-12-01'");

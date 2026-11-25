@@ -51,7 +51,7 @@ const T = {
             preferred_language: "text", active: "bool", joined_on: "date", notes: "text" } },
   shacks: {
     cols: { shack_no: "int!", owner_id: "id", sponsor_id: "id", status: "text", needs_maintenance: "bool", first_painted_on: "date",
-            photo_url: "url", x_post_url: "url", area: "text", latitude: "num", longitude: "num", notes: "text" } },
+            photo_url: "url", x_post_url: "url", area: "text", name: "text", latitude: "num", longitude: "num", notes: "text" } },
 };
 const BOOL_COLS = new Set(Object.values(T).flatMap(t => Object.entries(t.cols).filter(([, v]) => v === "bool").map(([k]) => k)));
 

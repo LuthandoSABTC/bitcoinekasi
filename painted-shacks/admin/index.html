@@ -134,6 +134,8 @@ table.t td.r,table.t th.r{text-align:right}
 .login img{width:64px;height:64px;border-radius:50%;background:#000;justify-self:center}
 .login h1{text-align:center}
 .demo-banner{background:var(--orange-soft);color:var(--orange);font:600 12px var(--mono);letter-spacing:.04em;text-align:center;padding:6px 12px}
+@media print{body.print-pins nav.side,body.print-pins .tabbar,body.print-pins #main>*:not(#pinlist),body.print-pins #pinlist .btn,body.print-pins .toast{display:none!important}
+  body.print-pins,body.print-pins .card{background:#fff!important;color:#000!important;border-color:#999!important}body.print-pins main{padding:0!important;margin:0!important}}
 </style>
 </head>
 <body>
@@ -396,6 +398,7 @@ pages.shack = id => {
         <label class="fld">Owner<select name="owner_id"><option value="">No owner linked</option>${owners.map(x => `<option value="${x.id}" ${s.owner_id === x.id ? "selected" : ""}>${esc(ownerLabel(x))}${x.lightning_address ? " · " + esc(x.lightning_address) : ""}</option>`).join("")}</select>
           <span class="hint">Owner not in the list? <a href="#/owner/new?shack=${esc(s.id || "")}">Add a new owner</a> first.</span></label>
         <label class="fld">First painted<input type="date" name="first_painted_on" value="${esc(s.first_painted_on)}"></label>
+        <label class="fld">Shack name<input type="text" name="name" maxlength="60" value="${esc(s.name)}" placeholder="e.g. Mama Thandi's Spaza"><span class="hint">Owners pick this name to sign in to the learning app. Leave empty to show "Shack ${esc(s.shack_no || "number")} · sponsor".</span></label>
         <label class="fld">Area or street<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. KwaNonqaba, Section B"></label>
         <label class="check fld wide"><input type="checkbox" name="needs_maintenance" ${s.needs_maintenance ? "checked" : ""}> Needs maintenance</label>
         <label class="fld wide">Photo link<input type="url" name="photo_url" value="${esc(s.photo_url)}" placeholder="https://drive.google.com/..."><span class="hint">Paste a Google Drive or other link to the wall photo.</span></label>
@@ -413,7 +416,7 @@ pages.shack = id => {
   bindInspectionHistory();
   bindForm("ps_shacks", s, f => ({
     shack_no: Number(f.shack_no), status: f.status, sponsor_id: f.sponsor_id, owner_id: f.owner_id, first_painted_on: f.first_painted_on,
-    area: f.area, needs_maintenance: !!f.needs_maintenance, photo_url: f.photo_url, x_post_url: f.x_post_url,
+    area: f.area, name: f.name, needs_maintenance: !!f.needs_maintenance, photo_url: f.photo_url, x_post_url: f.x_post_url,
     latitude: f.latitude === "" ? null : Number(f.latitude), longitude: f.longitude === "" ? null : Number(f.longitude), notes: f.notes
   }), r => "#/shack/" + r.id, "#/shacks", `Delete shack ${s.shack_no}? This cannot be undone.`);
 };

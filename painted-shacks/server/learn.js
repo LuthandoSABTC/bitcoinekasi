@@ -60,6 +60,8 @@ function init(ctx) {
   function findOwner(who) {
     const w = String(who || "").trim();
     if (/^\d{1,4}$/.test(w)) return db.prepare("select o.* from shacks s join owners o on o.id = s.owner_id where s.shack_no = ?").get(Number(w)) || null;
+    const byName = db.prepare("select o.* from shacks s join owners o on o.id = s.owner_id where lower(trim(s.name)) = lower(?)").all(w);
+    if (byName.length === 1) return byName[0];
     const ph = normPhone(w);
     if (ph.length < 9) return null;
     return db.prepare("select * from owners where phone is not null").all().find(o => normPhone(o.phone) === ph) || null;
@@ -71,7 +73,13 @@ function init(ctx) {
     ipTries.set(ip, list);
     return list;
   }
-  const newPin = () => String(crypto.randomInt(0, 1e6)).padStart(6, "0");
+  // 4-digit PINs are easy for owners. Guessing is slowed: 5 wrong PINs lock the sign-in for 15 minutes, and after
+  // 15 wrong PINs in a row it stays locked until an admin makes a new PIN.
+  const newPin = () => { let p; do p = String(crypto.randomInt(0, 1e4)).padStart(4, "0"); while (weakPin(p)); return p; };
+  const weakPin = p => /^(\d)\1+$/.test(p) || "0123456789".includes(p) || "9876543210".includes(p) || /^(19|20)\d\d$/.test(p);
+  const LOCK_FOR_GOOD = 15;
+  // How a shack shows in the sign-in list: its name, or "Shack 12 · Sponsor".
+  const shackLabel = s => s.name?.trim() || `Shack ${s.shack_no}${s.sponsor ? " · " + s.sponsor : ""}`;
 
   /* ---------------------------------------------------------------- lesson state for one owner */
   function ownerState(ownerId) {
@@ -189,21 +197,28 @@ function init(ctx) {
 
   /* ---------------------------------------------------------------- owner routes: /api/learn/* */
   async function ownerRoutes(req, res, p, method) {
+    if (p === "/api/learn/shacks" && method === "GET") {
+      const rows = db.prepare(`select s.shack_no, s.name, sp.name sponsor from shacks s join owners o on o.id = s.owner_id
+          join owner_logins l on l.owner_id = o.id left join sponsors sp on sp.id = s.sponsor_id
+          where o.active = 1 and l.disabled = 0 and s.status <> 'removed' order by s.shack_no`).all();
+      return send(res, 200, { shacks: rows.map(s => ({ no: s.shack_no, label: shackLabel(s) })) }, { "Cache-Control": "no-store" });
+    }
     if (p === "/api/learn/login" && method === "POST") {
       const ip = clientIp(req), tries = ipLimited(ip);
       if (tries.length >= 20) throw new Bad("Too many tries. Wait 15 minutes. / Zama emva kwemizuzu eli-15.", 429);
       const b = await readJson(req);
       const o = findOwner(b.who), login = o && db.prepare("select * from owner_logins where owner_id = ?").get(o.id);
       const pin = String(b.pin || "");
+      if (login && login.failed >= LOCK_FOR_GOOD) throw new Bad("Too many wrong PINs. Ask the admin for a new PIN. / Cela i-PIN entsha kumphathi.", 429);
       if (login && login.locked_until > Date.now()) throw new Bad("Too many wrong PINs. Wait 15 minutes. / Zama emva kwemizuzu eli-15.", 429);
       const ok = checkPassword(pin, login?.pin_hash) && o.active && !login.disabled;
       if (!ok) {
         tries.push(Date.now());
         if (login) {
-          const failed = login.failed + 1;
-          db.prepare("update owner_logins set failed = ?, locked_until = ? where owner_id = ?").run(failed >= 5 ? 0 : failed, failed >= 5 ? Date.now() + 15 * 60e3 : 0, o.id);
+          const failed = login.failed + 1;   // counts wrong PINs in a row; a right PIN or a new PIN resets it
+          db.prepare("update owner_logins set failed = ?, locked_until = ? where owner_id = ?").run(failed, failed % 5 === 0 ? Date.now() + 15 * 60e3 : 0, o.id);
         }
-        throw new Bad("Wrong shack number or PIN. / Inombolo okanye i-PIN ayichanekanga.", 401);
+        throw new Bad("Wrong shack or PIN. / Ishack okanye i-PIN ayichanekanga.", 401);
       }
       db.prepare("update owner_logins set failed = 0, locked_until = 0, last_login_at = ? where owner_id = ?").run(now(), o.id);
       const token = crypto.randomBytes(32).toString("base64url");
@@ -242,7 +257,7 @@ function init(ctx) {
       const b = await readJson(req);
       const login = db.prepare("select * from owner_logins where owner_id = ?").get(owner.id);
       if (!checkPassword(String(b.current || ""), login.pin_hash)) throw new Bad("Your PIN is wrong. / I-PIN yakho ayichanekanga.", 403);
-      if (!/^\d{6}$/.test(String(b.next || "")) || /^(\d)\1{5}$|^123456$|^654321$/.test(b.next)) throw new Bad("Choose 6 numbers that are not easy to guess. / Khetha amanani ama-6 angaqikelelekiyo.");
+      if (!/^\d{4}$/.test(String(b.next || "")) || weakPin(String(b.next))) throw new Bad("Choose 4 numbers that are not easy to guess. / Khetha amanani ama-4 angaqikelelekiyo.");
       db.prepare("update owner_logins set pin_hash = ? where owner_id = ?").run(hashPassword(String(b.next)), owner.id);
       db.prepare("delete from owner_sessions where owner_id = ? and token_hash <> ?").run(owner.id, sha256(readCookie(req, OWNER_COOKIE)));
       audit(null, "owner_logins", owner.id, "PIN_CHANGED_BY_OWNER", null, null);
@@ -347,7 +362,7 @@ function init(ctx) {
       .map(r => ({ ...periodInfo(r.pay_period), weeks: r.n, sats: Math.min(r.n, ps.max_weeks) * ps.sats_per_week }));
     return {
       owner_id: o.id, name: o.full_name, active: !!o.active, phone: o.phone,
-      login: login ? { ...login, disabled: !!login.disabled, locked: login.locked_until > Date.now() } : null,
+      login: login ? { last_login_at: login.last_login_at, created_at: login.created_at, disabled: !!login.disabled, locked: login.locked_until > Date.now() || login.failed >= LOCK_FOR_GOOD, locked_for_good: login.failed >= LOCK_FOR_GOOD } : null,
       last_activity: lastActivity(o.id), weeks_done: st.done_count, next_week: st.next_week, total_weeks: settings().total_weeks,
       this_period: myPeriod(o.id), periods,
       weeks: st.weeks.map(w => {
@@ -382,6 +397,19 @@ function init(ctx) {
       keep.add(q.id);
     });
     for (const r of db.prepare("select id from quiz_questions where lesson_id = ?").all(lessonId)) if (!keep.has(r.id)) db.prepare("delete from quiz_questions where id = ?").run(r.id);
+  }
+  function makePin(ownerId, user) {
+    const pin = newPin();
+    db.prepare(`insert into owner_logins(owner_id, pin_hash) values (?,?)
+                on conflict(owner_id) do update set pin_hash = excluded.pin_hash, failed = 0, locked_until = 0, disabled = 0`).run(ownerId, hashPassword(pin));
+    db.prepare("delete from owner_sessions where owner_id = ?").run(ownerId);
+    audit(user, "owner_logins", ownerId, "NEW_PIN", null, null);
+    return pin;
+  }
+  // The shack an owner picks when signing in (their lowest-numbered shack).
+  function signInLabel(ownerId) {
+    const s = db.prepare("select s.shack_no, s.name, sp.name sponsor from shacks s left join sponsors sp on sp.id = s.sponsor_id where s.owner_id = ? order by s.shack_no limit 1").get(ownerId);
+    return s ? shackLabel(s) : null;
   }
   function readBook() {
     let book; try { book = JSON.parse(fs.readFileSync(BOOK_FILE, "utf8")); } catch { throw new Bad("The book lessons file is missing on the server.", 404); }
@@ -463,18 +491,24 @@ function init(ctx) {
       if (act === "pin") {
         if (!db.prepare("select 1 from shacks where owner_id = ?").get(id) && normPhone(o.phone).length < 9)
           throw new Bad("Link this owner to a shack or add their phone number first, so they have something to sign in with.");
-        const pin = newPin();
-        db.prepare(`insert into owner_logins(owner_id, pin_hash) values (?,?)
-                    on conflict(owner_id) do update set pin_hash = excluded.pin_hash, failed = 0, locked_until = 0, disabled = 0`).run(id, hashPassword(pin));
-        db.prepare("delete from owner_sessions where owner_id = ?").run(id);
-        audit(user, "owner_logins", id, "NEW_PIN", null, null);
-        return send(res, 200, { pin, shacks: db.prepare("select shack_no from shacks where owner_id = ? order by shack_no").all(id).map(r => r.shack_no) });
+        const pin = makePin(id, user);
+        return send(res, 200, { pin, shacks: db.prepare("select shack_no from shacks where owner_id = ? order by shack_no").all(id).map(r => r.shack_no),
+                                shack_label: signInLabel(id) });
       }
       if (!db.prepare("select 1 from owner_logins where owner_id = ?").get(id)) throw new Bad("This owner has no app sign-in yet.");
       db.prepare("update owner_logins set disabled = ?, failed = 0, locked_until = 0 where owner_id = ?").run(act === "block" ? 1 : 0, id);
       if (act === "block") db.prepare("delete from owner_sessions where owner_id = ?").run(id);
       audit(user, "owner_logins", id, act.toUpperCase(), null, null);
       return send(res, 200, { ok: true });
+    }
+
+    // PINs for every active owner with a shack who has no app sign-in yet. Each PIN is shown once.
+    if (p === "/api/learn-admin/pins" && method === "POST") {
+      const list = db.prepare(`select o.id, o.full_name, o.phone from owners o where o.active = 1
+          and exists (select 1 from shacks s where s.owner_id = o.id) and not exists (select 1 from owner_logins l where l.owner_id = o.id)`).all();
+      const out = tx(() => list.map(o => ({ owner_id: o.id, name: o.full_name, phone: o.phone, shack: signInLabel(o.id),
+        shack_no: db.prepare("select min(shack_no) n from shacks where owner_id = ?").get(o.id).n, pin: makePin(o.id, user) })));
+      return send(res, 200, { made: out.sort((a, b) => a.shack_no - b.shack_no) });
     }
 
     if (p === "/api/learn-admin/settings" && method === "PATCH") {

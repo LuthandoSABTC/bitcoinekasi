@@ -27,6 +27,7 @@
     if (d.length < 10) return null;
     return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
   }
+  const pinText = (name, label, pin) => `Molo${name ? " " + name.split(" ")[0] : ""}! Vula le app ufunde nge-Bitcoin: ${appUrl()} Ngena: khetha ishack yakho${label ? ` (${label})` : ""} kuluhlu, ubhale i-PIN yakho: ${pin}. Ungayitshintsha i-PIN kwi-app. – Bitcoin Ekasi`;
   const remindText = (name, week) => `Molo${name ? " " + name.split(" ")[0] : ""}! Isifundo sakho se-Bitcoin${week ? ` (Iveki ${week})` : ""} sikulindile kwi-app: ${appUrl()} Gqiba isifundo nemibuzo, ufumane i-7,000 sats kule veki. – Bitcoin Ekasi`;
 
   function currentText(c, published) {
@@ -86,7 +87,8 @@
     };
     $("#main").innerHTML = `
       <div class="head"><div><h1>Learning</h1><p class="sub">Owners earn ${fmtSats(d.sats_per_week)} sats for each week they read the lesson and pass the quiz in the app, up to ${d.max_weeks} weeks a month.</p></div>
-        <div class="actions"><a class="btn ghost" href="/learn/" target="_blank" rel="noopener">Open owner app</a></div></div>
+        <div class="actions"><button class="btn ghost" id="bulkpin" type="button">Make PINs for owners without one</button><a class="btn ghost" href="/learn/" target="_blank" rel="noopener">Open owner app</a></div></div>
+      <div id="pinlist"></div>
       ${tabBar}
       ${d.published < d.total_weeks ? `<div class="note" style="margin-bottom:16px">${d.published} of ${d.total_weeks} weekly lessons are live. Owners can't go past the last live lesson. <a href="#/learning?t=lessons">Check and publish lessons</a></div>` : ""}
       <div class="stats">
@@ -101,6 +103,22 @@
       <div class="list scroll" id="rows"></div>
       <p class="hint" style="margin-top:12px">"Remind" opens WhatsApp with a ready message to owners who can do a lesson now. Weeks finished after ${fmtDate(P.counts_until)} count for next month's payout.</p>`;
     $("#q").addEventListener("input", e => { query = e.target.value; draw(); });
+    $("#bulkpin").addEventListener("click", async () => {
+      const n = owners.filter(o => !o.has_login && o.shacks.length).length;
+      if (!n) return toast("Every owner with a shack already has a PIN. Use \"Make new PIN\" on an owner's page to change one.");
+      if (!confirm(`Make app PINs for ${n} owner${n === 1 ? "" : "s"} who don't have one yet? Each PIN is shown only once, so print the list or send them now.`)) return;
+      let r; try { r = await call("POST", "/api/learn-admin/pins", {}); } catch (err) { return toast(friendlyError(err), true); }
+      $("#pinlist").innerHTML = `<div class="card" id="pincard"><div class="head" style="margin:0"><div><h2>New app PINs (${r.made.length})</h2>
+          <p class="sub">Shown only once. Print this list or send each owner their PIN now. Owners open <span class="mono">${esc(appUrl())}</span>, choose their shack and type the PIN.</p></div>
+          <div class="actions"><button class="btn small" id="printpins" type="button">Print</button></div></div>
+        <div class="scroll"><table class="t"><thead><tr><th>Shack (in the app)</th><th>Owner</th><th>PIN</th><th></th></tr></thead><tbody>
+        ${r.made.map(m => { const wa = waLink(m.phone, pinText(m.name, m.shack, m.pin)); return `<tr><td>${esc(m.shack || "")}</td><td>${esc(m.name || "Name not added yet")}</td>
+          <td class="mono" style="font-size:18px">${esc(m.pin)}</td><td class="r">${wa ? `<a class="btn ghost small" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : '<span class="muted">No phone</span>'}</td></tr>`; }).join("")}
+        </tbody></table></div></div>`;
+      $("#printpins").addEventListener("click", () => { document.body.classList.add("print-pins"); window.print(); setTimeout(() => document.body.classList.remove("print-pins"), 500); });
+      $("#pincard").scrollIntoView({ behavior: "smooth" });
+      toast(`Made ${r.made.length} PINs`);
+    });
     document.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => {
       filter = b.dataset.f; document.querySelectorAll("[data-f]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw();
     }));
@@ -324,19 +342,19 @@
     const draw = async (newPin) => {
       let d;
       try { d = await call("GET", `/api/learn-admin/owners/${id}`); } catch (err) { $("#lp").innerHTML = `<div class="empty">${esc(friendlyError(err))}</div>`; return; }
-      const sh = shacksOf(id).map(s => s.shack_no);
-      const signIn = sh.length ? `shack number <b>${sh[0]}</b>` : "their phone number";
-      const pinMsg = newPin ? `Molo${o.full_name ? " " + o.full_name.split(" ")[0] : ""}! Vula le app ufunde nge-Bitcoin: ${appUrl()} Ngena nge-${sh.length ? "nombolo yeshack " + sh[0] : "nombolo yefowuni yakho"} kunye ne-PIN: ${newPin}. Ungayitshintsha i-PIN kwi-app. – Bitcoin Ekasi` : "";
+      const label = newPin?.label || null;
+      const signIn = label ? `<b>${esc(label)}</b> from the list` : "their phone number";
+      const pinMsg = newPin ? pinText(o.full_name, label, newPin.pin) : "";
       const wa = newPin ? waLink(o.phone, pinMsg) : null;
       const L = d.login;
       const done = d.weeks.filter(w => w.state === "done");
       $("#lp").innerHTML = `
-        ${newPin ? `<div class="note" style="color:var(--fg)"><b>New PIN: <span class="mono" style="font-size:18px">${esc(newPin)}</span></b><br>They sign in at <span class="mono">${esc(appUrl())}</span> with ${signIn} and this PIN. It is shown only once.
+        ${newPin ? `<div class="note" style="color:var(--fg)"><b>New PIN: <span class="mono" style="font-size:18px">${esc(newPin.pin)}</span></b><br>They sign in at <span class="mono">${esc(appUrl())}</span> with ${signIn} and this PIN. It is shown only once.
           ${wa ? `<div class="actions" style="margin-top:8px"><a class="btn small" href="${esc(wa)}" target="_blank" rel="noopener">Send on WhatsApp</a></div>` : ""}</div>` : ""}
         <div class="stats" style="margin:0">
           <div class="stat"><span class="lbl">Weeks done</span><span class="val">${d.weeks_done}<span class="muted" style="font-size:15px"> / ${d.total_weeks}</span></span>${weekBar(d.weeks_done, d.total_weeks)}</div>
           <div class="stat hero"><span class="lbl">${esc(d.this_period.title)} payout</span><span class="val">${fmtSats(d.this_period.sats)}</span><span style="font-size:13px">sats · ${d.this_period.weeks} week${d.this_period.weeks === 1 ? "" : "s"} · pay day ${fmtDate(d.this_period.pay_date)}</span></div>
-          <div class="stat"><span class="lbl">Last active</span><span class="val" style="font-size:20px">${esc(ago(d.last_activity))}</span><span class="muted" style="font-size:13px">${L ? (L.disabled ? "Sign-in blocked" : L.locked ? "Locked for 15 min (wrong PINs)" : "Last sign-in " + (L.last_login_at ? ago(L.last_login_at) : "never")) : "No app sign-in yet"}</span></div>
+          <div class="stat"><span class="lbl">Last active</span><span class="val" style="font-size:20px">${esc(ago(d.last_activity))}</span><span class="muted" style="font-size:13px">${L ? (L.disabled ? "Sign-in blocked" : L.locked_for_good ? "Locked: too many wrong PINs, make a new PIN" : L.locked ? "Locked for 15 min (wrong PINs)" : "Last sign-in " + (L.last_login_at ? ago(L.last_login_at) : "never")) : "No app sign-in yet"}</span></div>
         </div>
         <div class="actions">
           <button class="btn ${L ? "ghost" : ""} small" id="mkpin">${L ? "Make new PIN" : "Make app sign-in (PIN)"}</button>
@@ -356,7 +374,7 @@
         ${done.length ? "" : '<p class="muted" style="margin:0">No weeks finished yet.</p>'}`;
       $("#mkpin").addEventListener("click", async () => {
         if (L && !confirm("Make a new PIN? The old PIN stops working and the owner is signed out.")) return;
-        try { const r = await call("POST", `/api/owners/${id}/app-pin`, {}); draw(r.pin); } catch (err) { toast(friendlyError(err), true); }
+        try { const r = await call("POST", `/api/owners/${id}/app-pin`, {}); draw({ pin: r.pin, label: r.shack_label }); } catch (err) { toast(friendlyError(err), true); }
       });
       $("#blk")?.addEventListener("click", async () => {
         if (!L.disabled && !confirm("Block this owner's app sign-in? They are signed out.")) return;

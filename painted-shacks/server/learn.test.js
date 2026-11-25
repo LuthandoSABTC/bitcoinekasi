@@ -55,9 +55,9 @@ test("owners need a PIN from an admin, and wrong PINs lock the sign-in", async (
   assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: "000000" })).status, 401);
   assert.equal((await api("admin", "POST", "/api/owners/own00003/app-pin", {})).status, 400, "no shack and no phone: nothing to sign in with");
   const r = await api("admin", "POST", `/api/owners/${owner1}/app-pin`, {});
-  assert.equal(r.status, 200); assert.match(r.data.pin, /^\d{6}$/); assert.deepEqual(r.data.shacks, [7]);
+  assert.equal(r.status, 200); assert.match(r.data.pin, /^\d{4}$/); assert.deepEqual(r.data.shacks, [7]);
   assert.ok(!JSON.stringify(q("select * from owner_logins").all()).includes(r.data.pin), "PIN is stored hashed");
-  const wrong = r.data.pin === "111111" ? "222222" : "111111";
+  const wrong = r.data.pin === "8888" ? "7777" : "8888";
   for (let i = 0; i < 5; i++) assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: wrong })).status, 401);
   assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: r.data.pin })).status, 429, "locked after 5 wrong PINs");
   const r2 = await api("admin", "POST", `/api/owners/${owner1}/app-pin`, {});     // admin gives a new PIN, which also unlocks
@@ -212,14 +212,14 @@ test("admin progress view shows each owner's weeks, current lesson and last acti
 test("blocking an owner signs them out; PIN change by the owner", async () => {
   const p = await api("admin", "POST", `/api/owners/${owner2}/app-pin`, {});
   await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: p.data.pin });
-  assert.equal((await api("owner2", "POST", "/api/learn/pin", { current: p.data.pin, next: "123456" })).status, 400, "too easy");
-  assert.equal((await api("owner2", "POST", "/api/learn/pin", { current: p.data.pin, next: "804317" })).status, 200);
+  assert.equal((await api("owner2", "POST", "/api/learn/pin", { current: p.data.pin, next: "1234" })).status, 400, "too easy");
+  assert.equal((await api("owner2", "POST", "/api/learn/pin", { current: p.data.pin, next: "8043" })).status, 200);
   assert.equal((await api("owner2", "GET", "/api/learn/me")).status, 200);
   await api("admin", "POST", `/api/owners/${owner2}/app-block`, {});
   assert.equal((await api("owner2", "GET", "/api/learn/me")).status, 401);
-  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: "804317" })).status, 401);
+  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: "8043" })).status, 401);
   await api("admin", "POST", `/api/owners/${owner2}/app-unblock`, {});
-  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: "804317" })).status, 200);
+  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: "8043" })).status, 200);
 });
 
 test("lessons that owners opened can't be deleted; import adds drafts only", async () => {
@@ -261,4 +261,26 @@ test("book lessons come in with their pictures, and only unopened drafts are rep
   assert.deepEqual([r.data.replaced, r.data.skipped], [0, 1], "live lessons are never replaced");
   assert.equal((await api("insp", "POST", "/api/lessons/import-book", {})).status, 403);
   q("delete from lessons where id = ?").run(l.id);
+});
+
+test("owners pick their shack by name; bulk PINs; 15 wrong PINs need a new PIN", async () => {
+  q("update shacks set name = 'Mama Thandi Spaza' where id = 'shk00001'").run();
+  const list = (await api("anon", "GET", "/api/learn/shacks")).data.shacks;
+  assert.deepEqual(list.find(s => s.no === 7), { no: 7, label: "Mama Thandi Spaza" });
+  assert.ok(!JSON.stringify(list).includes("Thandi\""), "no owner names in the public list");
+  q("insert into owners(id, full_name, phone) values ('own00009','Lwazi','074 777 8888')").run();
+  q("insert into shacks(id, shack_no, owner_id) values ('shk00009', 12, 'own00009')").run();
+  const b = await api("admin", "POST", "/api/learn-admin/pins", {});
+  assert.equal(b.status, 200);
+  assert.deepEqual(b.data.made.map(m => [m.owner_id, m.shack]), [["own00009", "Shack 12"]], "only owners with a shack and no PIN");
+  assert.match(b.data.made[0].pin, /^\d{4}$/);
+  assert.equal((await api("admin", "POST", "/api/learn-admin/pins", {})).data.made.length, 0, "running it again makes none");
+  assert.equal((await api("insp", "POST", "/api/learn-admin/pins", {})).status, 403);
+  assert.ok((await api("anon", "GET", "/api/learn/shacks")).data.shacks.some(s => s.no === 12));
+  q("update owner_logins set failed = 15 where owner_id = 'own00009'").run();
+  const r = await api("lwazi", "POST", "/api/learn/login", { who: "12", pin: b.data.made[0].pin });
+  assert.equal(r.status, 429); assert.match(r.data.error, /new PIN/);
+  const n = await api("admin", "POST", "/api/owners/own00009/app-pin", {});
+  assert.equal((await api("lwazi", "POST", "/api/learn/login", { who: "12", pin: n.data.pin })).status, 200);
+  assert.equal(n.data.shack_label, "Shack 12");
 });
