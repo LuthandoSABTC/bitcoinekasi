@@ -169,8 +169,8 @@
       </div>
       ${busy ? `<div class="note" style="margin-bottom:16px;color:var(--fg)">Sending… this page updates by itself.</div>` : ""}
       <div class="card"><h2>Owners</h2>
-        <p class="muted" style="margin:0">Until the owner app records lessons, set how many weeks each owner finished (lesson and quiz). The amount follows. Owners with 0 weeks are not paid.</p>
-        ${waitingWeekly.length ? `<div class="actions"><span class="muted" style="font-size:14px">Set all ${waitingWeekly.length} waiting owners to</span><select id="allweeks" style="width:auto;padding:6px 8px">${Array.from({length: s.max_weeks + 1}, (_, i) => `<option value="${i}" ${i === s.max_weeks ? "selected" : ""}>${i}</option>`).join("")}</select><span class="muted" style="font-size:14px">weeks</span><button class="btn ghost small" id="setall">Set</button></div>` : ""}
+        <p class="muted" style="margin:0">Weeks come from the owner learning app (lesson read and quiz passed). Press <b>Update weeks from app</b> to bring in weeks finished since this batch was drafted. You can still change a line by hand; then the app leaves it alone. Owners with 0 weeks are not paid.</p>
+        ${waitingWeekly.length ? `<div class="actions"><button class="btn ghost small" id="fromapp">Update weeks from app</button><a class="btn ghost small" href="#/learning">See learning progress</a></div>` : ""}
         <div class="scroll"><table class="t"><thead><tr><th>Owner</th><th>Lightning address</th><th class="r">Weeks</th><th class="r">Sats</th><th>Status</th><th></th></tr></thead><tbody>
         ${lines.map(l => {
           const addr = l.lightning_address || l.owner_address;
@@ -178,7 +178,8 @@
           const why = l.status !== "pending" ? "" : !l.owner_address ? "No Lightning address" : l.address_ok === 0 && l.checked_address === l.owner_address ? esc(l.address_message) : !l.amount_sats ? "0 weeks: not paid" : "";
           return `<tr><td><a href="#/owner/${esc(l.owner_id)}">${esc(l.owner_name || "Name not added yet")}</a>${l.shacks ? `<div class="muted" style="font-size:12px">Shack ${esc(l.shacks)}</div>` : ""}</td>
             <td><span class="mono">${esc(addr || "—")}</span> ${chk}${why ? `<div style="font-size:12px;color:var(--warn)">${why}</div>` : ""}</td>
-            <td class="r">${l.status === "pending" && l.reason === "weekly_learning" ? weekSel(l) : esc(l.weeks_earned ?? "")}</td>
+            <td class="r">${l.status === "pending" && l.reason === "weekly_learning" ? weekSel(l) : esc(l.weeks_earned ?? "")}
+              ${l.reason === "weekly_learning" ? `<div class="muted" style="font-size:12px;white-space:nowrap">${l.weeks_by_admin ? `set by hand · app: ${l.app_weeks}${l.status === "pending" ? ` <a href="#" data-useapp="${esc(l.id)}">use app</a>` : ""}` : "from app"}</div>` : ""}</td>
             <td class="r num">${fmtSats(l.amount_sats)}</td>
             <td>${pill(l.status)}${l.status === "failed" ? `<div style="font-size:12px;color:var(--bad);max-width:240px">${esc(l.failure_reason || "")}</div>` : ""}${l.blink_tx_id ? `<div class="mono" style="font-size:11px">${esc(l.blink_tx_id)}</div>` : ""}</td>
             <td class="r">${l.status === "failed" ? `<button class="btn ghost small" data-retry="${esc(l.id)}">Retry</button>` : ""}${["pending", "failed"].includes(l.status) ? ` <button class="btn danger small" data-cancel="${esc(l.id)}">Cancel</button>` : ""}</td></tr>`;
@@ -190,14 +191,16 @@
     document.querySelectorAll("[data-weeks]").forEach(sel => sel.addEventListener("change", async () => {
       try { await call("PATCH", "/api/payouts/" + sel.dataset.weeks, {weeks_earned: Number(sel.value)}); route(); } catch (err) { toast(friendlyError(err), true); }
     }));
-    $("#setall")?.addEventListener("click", async e => {
-      const w = Number($("#allweeks").value);
-      if (!confirm(`Set all ${waitingWeekly.length} waiting owners to ${w} week${w === 1 ? "" : "s"}? You can still change each one after.`)) return;
+    $("#fromapp")?.addEventListener("click", async e => {
       e.target.disabled = true;
-      try { for (const l of waitingWeekly) await call("PATCH", "/api/payouts/" + l.id, {weeks_earned: w}); toast("Weeks updated. Nothing has been sent."); }
+      try { const r = await call("POST", "/api/payout-batches", {period: b.period}); toast(r.updated || r.added ? `Updated ${r.updated} line${r.updated === 1 ? "" : "s"}, added ${r.added}. Nothing has been sent.` : "Already up to date."); }
       catch (err) { toast(friendlyError(err), true); }
       route();
     });
+    document.querySelectorAll("[data-useapp]").forEach(a => a.addEventListener("click", async e => {
+      e.preventDefault();
+      try { await call("PATCH", "/api/payouts/" + a.dataset.useapp, {weeks_from_app: true}); route(); } catch (err) { toast(friendlyError(err), true); }
+    }));
     bindRowActions(() => route());
     $("#approve")?.addEventListener("click", async e => {
       e.target.disabled = true;

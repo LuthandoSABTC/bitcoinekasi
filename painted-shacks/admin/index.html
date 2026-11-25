@@ -46,9 +46,11 @@ main{padding:24px clamp(16px,4vw,40px) 96px;max-width:980px;width:100%;min-width
   .shell{grid-template-columns:1fr}
   nav.side{display:none}
   main{padding:16px max(16px,env(safe-area-inset-left)) calc(96px + env(safe-area-inset-bottom))}
-  .tabbar{display:grid;grid-template-columns:repeat(6,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
-  .tabbar .navbtn{flex-direction:column;gap:2px;font-size:11px;padding:6px 0;justify-content:center;align-items:center}
+  .tabbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
+  .tabbar .navbtn{flex-direction:column;gap:2px;font-size:10px;padding:6px 0;justify-content:center;align-items:center;min-width:0}
+  .tabbar .navbtn span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
   .tabbar .navbtn .badge{display:none}
+  .wbar{display:none!important}
 }
 
 /* Page parts */
@@ -116,6 +118,15 @@ table.t th{text-align:left;font:600 11px var(--mono);letter-spacing:.06em;text-t
 table.t td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
 table.t td.r,table.t th.r{text-align:right}
 .scroll{overflow-x:auto}
+
+/* Lesson preview (same look as the owner app) */
+.lesson-pv h2{font-size:20px;margin:0 0 10px;line-height:1.25}
+.lesson-pv h3{font-size:17px;margin:14px 0 6px}
+.lesson-pv p{margin:0 0 12px}
+.lesson-pv ul{margin:0 0 12px;padding-left:20px}
+.lesson-pv .remember{background:#fdebd3;border-left:5px solid var(--orange);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-weight:600}
+.lesson-pv figure{margin:0 0 12px}
+.lesson-pv img{width:100%;height:auto;border-radius:10px;display:block}
 
 /* Sign in */
 .login{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
@@ -800,5 +811,7 @@ document.addEventListener("DOMContentLoaded", async function boot() {
 });
 </script>
 <script src="payments.js"></script>
+<script src="/learn/lesson-render.js"></script>
+<script src="learning.js"></script>
 </body>
 </html>

@@ -215,6 +215,116 @@ create table if not exists address_checks (
   checked_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
+-- ---------------------------------------------------------------- Owner learning app (/learn)
+-- One row of settings for lessons and quizzes.
+create table if not exists learn_settings (
+  id               integer primary key check (id = 1),
+  questions_shown  integer not null default 4 check (questions_shown between 1 and 20),
+  pass_correct     integer not null default 3 check (pass_correct between 1 and 20),
+  one_per_week     integer not null default 1,
+  total_weeks      integer not null default 20 check (total_weeks between 1 and 60),
+  updated_at       text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+insert or ignore into learn_settings(id) values (1);
+
+-- One lesson per week of the course. Owners only see published lessons; an admin publishes after checking.
+create table if not exists lessons (
+  id                 text primary key,
+  week_no            integer not null unique check (week_no between 1 and 60),
+  title              text not null,
+  body               text not null default '',
+  status             text not null default 'draft' check (status in ('draft','published')),
+  source             text,
+  published_at       text,
+  published_by_name  text,
+  updated_by_name    text,
+  created_at         text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at         text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- Pictures in lessons. Files are JPEGs on disk in LESSON_PIC_DIR.
+create table if not exists lesson_pictures (
+  id          text primary key,
+  lesson_id   text not null references lessons(id) on delete cascade,
+  file        text not null,
+  bytes       integer not null,
+  created_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- Quiz questions. choices is a JSON list of strings, answer is the index of the right one.
+create table if not exists quiz_questions (
+  id          text primary key,
+  lesson_id   text not null references lessons(id) on delete cascade,
+  sort        integer not null default 0,
+  question    text not null,
+  choices     text not null,
+  answer      integer not null check (answer >= 0),
+  created_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+create index if not exists quiz_questions_lesson_idx on quiz_questions(lesson_id, sort);
+
+-- Owner sign-in for the learning app: shack number (or phone) + a 6-digit PIN an admin gives them.
+create table if not exists owner_logins (
+  owner_id       text primary key references owners(id) on delete cascade,
+  pin_hash       text not null,
+  failed         integer not null default 0,
+  locked_until   integer not null default 0,
+  disabled       integer not null default 0,
+  last_login_at  text,
+  created_at     text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+create table if not exists owner_sessions (
+  token_hash  text primary key,
+  owner_id    text not null references owners(id) on delete cascade,
+  expires_at  integer not null,
+  created_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- Reading progress per owner and week.
+create table if not exists lesson_reads (
+  owner_id         text not null references owners(id) on delete cascade,
+  week_no          integer not null,
+  lesson_id        text references lessons(id) on delete set null,
+  first_opened_at  text not null,
+  last_opened_at   text not null,
+  read_done_at     text,
+  primary key (owner_id, week_no)
+);
+
+-- Every quiz an owner started. The server picks the questions, so the phone never sees the answers first.
+create table if not exists quiz_attempts (
+  id            text primary key,
+  owner_id      text not null references owners(id) on delete cascade,
+  week_no       integer not null,
+  lesson_id     text references lessons(id) on delete set null,
+  question_ids  text not null,
+  orders        text,                      -- how each question's answers were shuffled on the phone
+  started_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  submitted_at  text,
+  score         integer,
+  total         integer not null,
+  passed        integer,
+  answers       text
+);
+create index if not exists quiz_attempts_owner_idx on quiz_attempts(owner_id, week_no);
+
+-- A finished week (lesson read + quiz passed). This is what payouts count: 7,000 sats per row.
+-- pay_period = the monthly payout it belongs to (finishing on or after the draft day counts for next month).
+create table if not exists lesson_completions (
+  owner_id      text not null references owners(id) on delete cascade,
+  week_no       integer not null,
+  lesson_id     text references lessons(id) on delete set null,
+  completed_on  text not null,
+  completed_at  text not null,
+  pay_period    text not null,
+  passed        integer not null default 1,
+  score         integer,
+  total         integer,
+  primary key (owner_id, week_no)
+);
+create index if not exists lesson_completions_period_idx on lesson_completions(pay_period, owner_id);
+
 create table if not exists audit_log (
   id          integer primary key autoincrement,
   at          text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -235,6 +345,9 @@ function open(file) {
   // 2026-11-24: the "Roof and walls" check was removed from inspections.
   if (db.prepare("select 1 from pragma_table_info('inspections') where name = 'structure'").get())
     db.exec("alter table inspections drop column structure");
+  // 2026-11-25: weeks on a learning payout come from the owner app unless an admin changed them by hand.
+  if (!db.prepare("select 1 from pragma_table_info('payouts') where name = 'weeks_by_admin'").get())
+    db.exec("alter table payouts add column weeks_by_admin integer not null default 0");
   return db;
 }
 

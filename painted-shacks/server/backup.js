@@ -1,11 +1,13 @@
 // Nightly backup: copies the database to BACKUP_DIR and keeps the last 30 days.
-// Inspection photos are mirrored to BACKUP_DIR/photos (new files only, so it stays quick).
+// Inspection photos are mirrored to BACKUP_DIR/photos and lesson pictures to BACKUP_DIR/lesson-pictures
+// (new files only, so it stays quick).
 "use strict";
 const fs = require("node:fs"), path = require("node:path");
 const { DatabaseSync } = require("node:sqlite");
 const DB_PATH = process.env.DB_PATH || "/var/lib/painted-shacks/painted-shacks.db";
 const DIR = process.env.BACKUP_DIR || "/var/backups/painted-shacks";
 const PHOTO_DIR = process.env.PHOTO_DIR || path.join(path.dirname(DB_PATH), "photos");
+const PIC_DIR = process.env.LESSON_PIC_DIR || path.join(path.dirname(DB_PATH), "lesson-pictures");
 const KEEP_DAYS = Number(process.env.KEEP_DAYS || 30);
 fs.mkdirSync(DIR, { recursive: true });
 const file = path.join(DIR, `painted-shacks-${new Date().toISOString().slice(0, 10)}.db`);
@@ -34,3 +36,15 @@ if (fs.existsSync(PHOTO_DIR)) {
   }
 }
 console.log("Photos copied to backup:", copied);
+
+// Lesson pictures: same idea, one flat folder.
+let pics = 0;
+if (fs.existsSync(PIC_DIR)) {
+  const dst = path.join(DIR, "lesson-pictures");
+  fs.mkdirSync(dst, { recursive: true });
+  for (const f of fs.readdirSync(PIC_DIR)) {
+    if (!f.endsWith(".jpg") || fs.existsSync(path.join(dst, f))) continue;
+    fs.copyFileSync(path.join(PIC_DIR, f), path.join(dst, f)); pics++;
+  }
+}
+console.log("Lesson pictures copied to backup:", pics);

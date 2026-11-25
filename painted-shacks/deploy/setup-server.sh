@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs or updates the Painted Shacks admin + inspector apps on an Ubuntu server (built for "ekasi-server", Ubuntu 22.04, 1 GB RAM).
+# Installs or updates the Painted Shacks admin, inspector and owner learning apps on an Ubuntu server (built for "ekasi-server", Ubuntu 22.04, 1 GB RAM).
 #
 # Usage (as root):   bash setup-server.sh 89-125-10-8.sslip.io
 #                    (later, with your own domain: bash setup-server.sh admin.bitcoinekasi.com)
@@ -91,6 +91,11 @@ $DOMAIN {
     root * $APP/inspector
     file_server
   }
+  redir /learn /learn/
+  handle_path /learn/* {
+    root * $APP/learn
+    file_server
+  }
   handle {
     root * $APP/admin
     file_server
@@ -112,6 +117,7 @@ systemctl enable --now caddy >/dev/null; systemctl reload caddy || systemctl res
 echo
 echo "All done. Admin app:     https://$DOMAIN"
 echo "          Inspector app: https://$DOMAIN/inspect"
+echo "          Owner app:     https://$DOMAIN/learn"
 if [[ ! -s /etc/painted-shacks/blink.env ]]; then
   echo
   echo "Payments: no Blink wallet key yet. When you're ready to pay owners, run:"

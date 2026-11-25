@@ -31,19 +31,29 @@ function init(ctx) {
   const settings = () => db.prepare("select * from pay_settings where id = 1").get();
 
   /* ---------------------------------------------------------------- weeks earned
-     The owner app (lesson + quiz) will record finished weeks. Until it does, an admin types the weeks in. */
+     The owner app records each finished week (lesson read + quiz passed) in lesson_completions, with the
+     monthly payout it belongs to (pay_period). An admin can still change the weeks on a line by hand. */
   function weeksEarned(ownerId, period) {
-    const t = db.prepare("select name from sqlite_master where type = 'table' and name = 'lesson_completions'").get();
-    if (!t) return null;
-    try {
-      return db.prepare("select count(distinct week_no) n from lesson_completions where owner_id = ? and substr(completed_on, 1, 7) = ? and passed = 1")
-        .get(ownerId, period).n;
-    } catch { return null; }
+    return db.prepare("select count(*) n from lesson_completions where owner_id = ? and pay_period = ? and passed = 1").get(ownerId, period).n;
+  }
+
+  // Bring the weeks on an owner's waiting learning payout up to date with the app (unless an admin set them by hand).
+  function syncWeeks(ownerId, period) {
+    const s = settings();
+    const row = db.prepare(`select * from payouts where owner_id = ? and period = ? and reason = 'weekly_learning'
+                            and status = 'pending' and weeks_by_admin = 0`).get(ownerId, period);
+    if (!row) return false;
+    const weeks = Math.min(weeksEarned(ownerId, period), s.max_weeks);
+    if (weeks === row.weeks_earned && row.amount_sats === weeks * s.sats_per_week) return false;
+    db.prepare("update payouts set weeks_earned = ?, amount_sats = ?, updated_at = ? where id = ?").run(weeks, weeks * s.sats_per_week, now(), row.id);
+    audit(null, "payouts", row.id, "WEEKS_FROM_APP", { weeks_earned: row.weeks_earned }, { weeks_earned: weeks });
+    return true;
   }
 
   /* ---------------------------------------------------------------- reading */
   const LIST_SQL = `select p.*, o.full_name as owner_name, o.active as owner_active, o.lightning_address as owner_address,
       (select group_concat(shack_no, ', ') from (select shack_no from shacks where owner_id = p.owner_id order by shack_no)) as shacks,
+      (select count(*) from lesson_completions lc where lc.owner_id = p.owner_id and lc.pay_period = p.period and lc.passed = 1) as app_weeks,
       b.title as batch_title, ac.ok as address_ok, ac.message as address_message, ac.address as checked_address
     from payouts p join owners o on o.id = p.owner_id left join payout_batches b on b.id = p.batch_id
     left join address_checks ac on ac.owner_id = p.owner_id`;
@@ -74,19 +84,21 @@ function init(ctx) {
         b = db.prepare("select * from payout_batches where id = ?").get(id);
         audit(user, "payout_batches", id, "INSERT", null, b);
       }
-      let added = 0;
+      let added = 0, updated = 0;
       const owners = db.prepare("select id from owners where active = 1").all();
       for (const o of owners) {
-        if (db.prepare("select 1 from payouts where owner_id = ? and period = ? and reason = 'weekly_learning' and status <> 'cancelled'").get(o.id, period)) continue;
-        const w = weeksEarned(o.id, period);
-        const weeks = w == null ? 0 : Math.min(w, s.max_weeks);
+        if (db.prepare("select 1 from payouts where owner_id = ? and period = ? and reason = 'weekly_learning' and status <> 'cancelled'").get(o.id, period)) {
+          if (syncWeeks(o.id, period)) updated++;
+          continue;
+        }
+        const weeks = Math.min(weeksEarned(o.id, period), s.max_weeks);
         db.prepare(`insert into payouts(id, batch_id, owner_id, period, reason, weeks_earned, amount_sats, created_by)
                     values (?,?,?,?, 'weekly_learning', ?, ?, ?)`)
           .run(crypto.randomUUID(), b.id, o.id, period, weeks, weeks * s.sats_per_week, user?.id || null);
         added++;
       }
       if (added) audit(user, "payouts", b.id, "DRAFT", null, { period, added });
-      return { batch: batchInfo(b), added };
+      return { batch: batchInfo(b), added, updated };
     });
   }
 
@@ -382,10 +394,12 @@ function init(ctx) {
         if (!before) throw new Bad("Not found", 404);
         if (before.status !== "pending") throw new Bad("Only payments waiting for approval can be changed.");
         const upd = {};
-        if (b.weeks_earned !== undefined && before.reason === "weekly_learning") {
-          const w = Number(b.weeks_earned);
+        if ((b.weeks_earned !== undefined || b.weeks_from_app) && before.reason === "weekly_learning") {
+          const w = b.weeks_from_app ? 0 : Number(b.weeks_earned);
           if (!Number.isInteger(w) || w < 0 || w > s.max_weeks) throw new Bad(`Weeks must be 0 to ${s.max_weeks}.`);
           upd.weeks_earned = w; upd.amount_sats = w * s.sats_per_week;
+          if (b.weeks_from_app) { upd.weeks_earned = Math.min(weeksEarned(before.owner_id, before.period), s.max_weeks); upd.amount_sats = upd.weeks_earned * s.sats_per_week; upd.weeks_by_admin = 0; }
+          else upd.weeks_by_admin = 1;
         }
         if (b.amount_sats !== undefined && before.reason !== "weekly_learning") {
           const a = Number(b.amount_sats);
@@ -450,7 +464,7 @@ function init(ctx) {
     setInterval(() => reconcile().catch(e => console.error("payout check", e)), 10 * 60e3).unref();
   }
 
-  return { routes, startTimers, draftBatch, approve, runSender, reconcile, autoDraft, summary, isSending: () => sending };
+  return { routes, startTimers, draftBatch, syncWeeks, weeksEarned, settings, approve, runSender, reconcile, autoDraft, summary, isSending: () => sending };
 }
 
-module.exports = { init, lastFriday };
+module.exports = { init, lastFriday, addDays, monthName };
