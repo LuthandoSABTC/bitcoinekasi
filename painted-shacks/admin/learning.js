@@ -178,13 +178,14 @@
           <label class="fld">Right answers needed to pass<input type="number" name="pass_correct" min="1" max="20" value="${s.pass_correct}"></label>
           <label class="fld">Weeks in the course<input type="number" name="total_weeks" min="1" max="60" value="${s.total_weeks}"></label>
           <label class="fld">Course starts on<input type="date" name="start_date" value="${esc(s.start_date || "")}"><span class="hint">Week 1 opens on this day. Leave empty to open now.</span></label>
+          <label class="fld">Practice weeks<input type="number" name="demo_weeks" min="0" max="5" value="${s.demo_weeks ?? 2}"><span class="hint">Anyone can try these first weeks from the owner app's sign-in page ("Try a practice lesson"). Nothing is saved and no sats are earned. 0 turns practice off.</span></label>
           <label class="check fld wide"><input type="checkbox" name="one_per_week" ${s.one_per_week ? "checked" : ""}> One new lesson a week (the next lesson opens on the Monday after finishing one)</label>
         </div>
         <div class="actions"><button class="btn" type="submit">Save</button></div></form>
       <div class="card"><h2>Owner app</h2><p class="muted" style="margin:0">Owners open <a href="/learn/" target="_blank" rel="noopener">${esc(appUrl())}</a> on their phone and sign in with their shack number (or phone number) and a PIN. Make a PIN on the owner's page.</p></div>`;
     $("#ls").addEventListener("submit", async e => {
       e.preventDefault(); const f = new FormData(e.target);
-      try { await call("PATCH", "/api/learn-admin/settings", {questions_shown: Number(f.get("questions_shown")), pass_correct: Number(f.get("pass_correct")), total_weeks: Number(f.get("total_weeks")), one_per_week: !!f.get("one_per_week"), start_date: f.get("start_date") || null}); toast("Saved"); }
+      try { await call("PATCH", "/api/learn-admin/settings", {questions_shown: Number(f.get("questions_shown")), pass_correct: Number(f.get("pass_correct")), total_weeks: Number(f.get("total_weeks")), one_per_week: !!f.get("one_per_week"), demo_weeks: Number(f.get("demo_weeks")), start_date: f.get("start_date") || null}); toast("Saved"); }
       catch (err) { toast(friendlyError(err), true); }
     });
   }

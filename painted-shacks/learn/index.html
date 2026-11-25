@@ -115,7 +115,7 @@ const T = {
   xh: {
     app: "Funda i-Bitcoin", sub: "Painted Shacks · Bitcoin Ekasi",
     signin: "Ngena", who: "Ishack yakho", pick: "Khetha ishack yakho", use_phone: "Ngena ngenombolo yefowuni", use_list: "Khetha ishack yakho kuluhlu", phone: "Inombolo yefowuni yakho",
-    pin: "I-PIN yakho", pin_hint: "Amanani ama-4 owanikwe ngumphathi", nopin: "Awunayo i-PIN? Cela umphathi weBitcoin Ekasi.",
+    pin: "I-PIN yakho", pin_hint: "Amanani ama-4 owanikwe ngumphathi", nopin: "Awunayo i-PIN? Cela umphathi weBitcoin Ekasi.", demo: "Zama isifundo somzekelo", demo_title: "Umzekelo", demo_pick: "Khetha isifundo uzame indlela i-app esebenza ngayo.", demo_note: "Lo ngumzekelo wokuziqhelanisa. Akukho nto igcinwayo, akukho sats zifumanekayo.", demo_passed: "Uphumelele kumzekelo! Xa izifundo ziqala, ufumana i-7,000 sats ngeveki nganye oyigqibayo.", demo_back: "Buyela ekungeneni", demo_none: "Akukho zifundo zomzekelo okwangoku.",
     hello: n => n ? `Molo, ${n}` : "Molo!", month: m => `Imali ka-${m}`, earned: "sats ozifumeneyo",
     of_max: (w, m, s) => `${w} kwiiveki ezi-${m} · ukuya kuthi ga kwi-${s} sats`, payday: d => `Ihlawulwa ngoLwesihlanu ${d}`,
     after_cut: d => `Iiveki ozigqibayo emva komhla we-${d} zibalelwa kwinyanga elandelayo.`,
@@ -142,7 +142,7 @@ const T = {
   en: {
     app: "Learn Bitcoin", sub: "Painted Shacks · Bitcoin Ekasi",
     signin: "Sign in", who: "Your shack", pick: "Choose your shack", use_phone: "Sign in with your phone number", use_list: "Choose your shack from the list", phone: "Your phone number",
-    pin: "Your PIN", pin_hint: "The 4 numbers the admin gave you", nopin: "No PIN? Ask the Bitcoin Ekasi admin.",
+    pin: "Your PIN", pin_hint: "The 4 numbers the admin gave you", nopin: "No PIN? Ask the Bitcoin Ekasi admin.", demo: "Try a practice lesson", demo_title: "Practice", demo_pick: "Choose a lesson to see how the app works.", demo_note: "This is practice. Nothing is saved and no sats are earned.", demo_passed: "You passed the practice! When lessons start, you earn 7,000 sats for each week you finish.", demo_back: "Back to sign in", demo_none: "No practice lessons yet.",
     hello: n => n ? `Hello, ${n}` : "Hello!", month: m => `${m} money`, earned: "sats earned",
     of_max: (w, m, s) => `${w} of ${m} weeks · up to ${s} sats`, payday: d => `Paid on Friday ${d}`,
     after_cut: d => `Weeks you finish after ${d} count for next month.`,
@@ -219,7 +219,8 @@ function loginView(msg) {
       <label class="f">${t("pin")}<input class="pin" type="password" name="pin" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" required autocomplete="current-password"><small>${t("pin_hint")}</small></label>
       <button class="btn" type="submit">${t("signin")}</button>
     </form>
-    <p class="muted center">${t("nopin")}</p>`;
+    <p class="muted center">${t("nopin")}</p>
+    <a class="btn ghost" href="#/demo">${t("demo")}</a>`;
   bindTop();
   // Owners pick their shack from a list (or type their phone number instead).
   let saved = ""; try { saved = localStorage.getItem("ps_shack") || ""; } catch (e) {}
@@ -290,24 +291,37 @@ async function weeks() {
 }
 
 /* ---------- lesson reader: one page at a time, then the quiz */
+// Practice mode lives under #/demo: same lesson and quiz screens, no sign-in, nothing saved.
+const isDemo = () => location.hash.startsWith("#/demo");
+const H = () => isDemo() ? "#/demo" : "#";
+const lessonUrl = week => isDemo() ? `/api/learn/demo/lessons/${week}` : `/api/learn/lessons/${week}`;
+const demoNote = () => isDemo() ? `<div class="note">🧪 ${t("demo_note")}</div>` : "";
+async function demoHome() {
+  let d; try { d = await call("GET", "/api/learn/demo"); } catch (e) { d = { weeks: [] }; }
+  render(`<h1>${t("demo_title")}</h1>${demoNote()}<p>${t("demo_pick")}</p>
+    ${d.weeks.length ? `<div class="list">${d.weeks.map(w => `<a class="item ready" href="#/demo/lesson/${w.week_no}"><span class="n">${w.week_no}</span><div class="m"><b>${esc(w.title)}</b><small>${t("week", w.week_no)}</small></div><span class="pill p-or">${t("start")}</span></a>`).join("")}</div>` : `<p class="muted">${t("demo_none")}</p>`}
+    <a class="btn ghost" href="#/">${t("demo_back")}</a>`, "#/");
+}
 async function lesson(week, pageNo) {
   let l;
-  try { l = await call("GET", `/api/learn/lessons/${week}`); } catch (e) { return fail(e); }
+  try { l = await call("GET", lessonUrl(week)); } catch (e) { return fail(e); }
   const pages = window.lessonPages(l.body);
   const n = Math.min(Math.max(Number(pageNo) || 1, 1), pages.length || 1);
   const last = n >= pages.length;
   let footer;
-  if (!last) footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="#/lesson/${week}/${n - 1}">‹ ${t("prev")}</a>` : ""}<a class="btn" href="#/lesson/${week}/${n + 1}">${t("next")} ›</a></div>`;
-  else if (l.state === "done") footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="#/lesson/${week}/${n - 1}">‹ ${t("prev")}</a>` : ""}<a class="btn" href="#/">${t("go_home")}</a></div>`;
-  else footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="#/lesson/${week}/${n - 1}">‹</a>` : ""}<button class="btn" id="readdone" style="flex:3">${t("done_reading")} ✓</button></div>`;
-  render(`
+  const h = H();
+  if (!last) footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="${h}/lesson/${week}/${n - 1}">‹ ${t("prev")}</a>` : ""}<a class="btn" href="${h}/lesson/${week}/${n + 1}">${t("next")} ›</a></div>`;
+  else if (l.state === "done") footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="${h}/lesson/${week}/${n - 1}">‹ ${t("prev")}</a>` : ""}<a class="btn" href="#/">${t("go_home")}</a></div>`;
+  else footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="${h}/lesson/${week}/${n - 1}">‹</a>` : ""}<button class="btn" id="readdone" style="flex:3">${t("done_reading")} ✓</button></div>`;
+  render(`${demoNote()}
     <div class="pageno">${t("week", week)} · ${t("page", n, pages.length)}</div>
     <div class="prog"><i style="width:${Math.round(n / pages.length * 100)}%"></i></div>
     <h1 style="font-size:20px">${esc(l.title)}</h1>
     <article class="page">${pages[n - 1] || ""}</article>
-    ${footer}`, "#/");
+    ${footer}`, isDemo() ? "#/demo" : "#/");
   $("#readdone")?.addEventListener("click", async e => {
     e.target.disabled = true;
+    if (isDemo()) { location.hash = `#/demo/quiz/${week}`; return; }
     try { await call("POST", `/api/learn/lessons/${week}/read`, {}); location.hash = `#/quiz/${week}`; }
     catch (err) { toast(err.message, true); e.target.disabled = false; }
   });
@@ -316,22 +330,22 @@ async function lesson(week, pageNo) {
 /* ---------- quiz: the server picks the questions and marks them */
 let quizState = null;
 async function quizIntro(week) {
-  let l; try { l = await call("GET", `/api/learn/lessons/${week}`); } catch (e) { return fail(e); }
+  let l; try { l = await call("GET", lessonUrl(week)); } catch (e) { return fail(e); }
   if (l.state === "done") { location.hash = "#/"; return; }
   if (!l.read_done) { render(`<div class="note">${t("read_first")}</div><a class="btn" href="#/lesson/${week}">${t("start")}</a>`, "#/"); return; }
-  render(`<div class="pageno">${t("week", week)}</div><h1>${esc(l.title)}</h1>
+  render(`${demoNote()}<div class="pageno">${t("week", week)}</div><h1>${esc(l.title)}</h1>
     <div class="card"><p style="margin:0 0 16px;font-weight:600">${t("quiz_intro", l.questions, l.pass_correct)}</p>
     <button class="btn" id="go">${t("quiz_start")}</button></div>
-    <a class="btn ghost" href="#/lesson/${week}">${t("read_again")}</a>`, "#/");
+    <a class="btn ghost" href="${H()}/lesson/${week}">${t("read_again")}</a>`, isDemo() ? "#/demo" : "#/");
   $("#go").addEventListener("click", async e => {
     e.target.disabled = true;
-    try { const q = await call("POST", `/api/learn/lessons/${week}/quiz`, {}); quizState = { ...q, answers: q.questions.map(() => null), i: 0 }; question(); }
+    try { const q = await call("POST", `${lessonUrl(week)}/quiz`, {}); quizState = { ...q, answers: q.questions.map(() => null), i: 0 }; question(); }
     catch (err) { toast(err.message, true); e.target.disabled = false; }
   });
 }
 function question() {
   const s = quizState, q = s.questions[s.i], lastQ = s.i === s.questions.length - 1;
-  render(`<div class="pageno">${t("question", s.i + 1, s.questions.length)}</div>
+  render(`${demoNote()}<div class="pageno">${t("question", s.i + 1, s.questions.length)}</div>
     <div class="prog"><i style="width:${Math.round((s.i + 1) / s.questions.length * 100)}%"></i></div>
     <div class="card"><p class="qtext">${esc(q.question)}</p>
       <div role="radiogroup" aria-label="${esc(t("choose_one"))}">${q.choices.map((c, j) => `<button type="button" class="choice" role="radio" aria-checked="${s.answers[s.i] === j}" data-j="${j}"><span class="dot"></span><span>${esc(c)}</span></button>`).join("")}</div></div>
@@ -344,7 +358,7 @@ function question() {
   $("#qnext").addEventListener("click", async e => {
     if (!lastQ) { s.i++; return question(); }
     e.target.disabled = true;
-    try { result(await call("POST", `/api/learn/quiz/${s.attempt_id}`, { answers: s.answers })); }
+    try { result(await call("POST", `${s.demo ? "/api/learn/demo" : "/api/learn"}/quiz/${s.attempt_id}`, { answers: s.answers })); }
     catch (err) { toast(err.message, true); e.target.disabled = false; }
   });
 }
@@ -352,11 +366,12 @@ function result(r) {
   const s = quizState; quizState = null; me = null;
   const list = `<div class="card">${s.questions.map((q, i) => { const x = r.results[i]; return `<div class="res"><span class="ic ${x.correct ? "ok" : "no"}">${x.correct ? "✓" : "✗"}</span>
       <div><b>${esc(q.question)}</b><div class="muted">${x.correct ? t("right") : t("wrong")}${"answer" in x && !x.correct ? ` · ${t("right_ans")} ${esc(q.choices[x.answer])}` : ""}</div></div></div>`; }).join("")}</div>`;
+  const home = r.demo ? `<a class="btn" href="#/demo">${t("demo_title")}</a><a class="btn ghost" href="#/">${t("demo_back")}</a>` : `<a class="btn" href="#/">${t("go_home")}</a>`;
   if (r.passed) render(`<div class="card center"><div class="celebrate">🎉</div><h1>${t("passed")}</h1>
-      <p style="font-weight:600">${r.newly_done && r.pay_period && r.added_sats ? t("passed_sub", monthOf(r.pay_period.period), sats(r.added_sats)) : r.newly_done ? t("week_done") : t("passed_again")}</p>
-      <p class="muted" style="margin:0">${r.score} / ${r.total}</p></div>${list}<a class="btn" href="#/">${t("go_home")}</a>`);
+      <p style="font-weight:600">${r.demo ? t("demo_passed") : r.newly_done && r.pay_period && r.added_sats ? t("passed_sub", monthOf(r.pay_period.period), sats(r.added_sats)) : r.newly_done ? t("week_done") : t("passed_again")}</p>
+      <p class="muted" style="margin:0">${r.score} / ${r.total}</p></div>${list}${home}`);
   else render(`<div class="card center"><h1>${t("failed")}</h1><p style="margin:0">${t("failed_sub", r.score, r.total, r.need)}</p></div>${list}
-      <div class="row"><a class="btn ghost" href="#/lesson/${s.week_no}">${t("read_again")}</a><button class="btn" id="again">${t("try_again")}</button></div>`);
+      <div class="row"><a class="btn ghost" href="${r.demo ? "#/demo" : "#"}/lesson/${s.week_no}">${t("read_again")}</a><button class="btn" id="again">${t("try_again")}</button></div>`);
   $("#again")?.addEventListener("click", () => quizIntro(s.week_no));
 }
 
@@ -403,7 +418,12 @@ async function forgetSaved() {
 /* ============================================================ router */
 function route() {
   document.documentElement.lang = lang;
-  const [page, a, b] = (location.hash.slice(2) || "").split("/");
+  const [page, a, b, c] = (location.hash.slice(2) || "").split("/");
+  if (page === "demo") {
+    if (a === "lesson") return lesson(Number(b), c);
+    if (a === "quiz") return quizState && quizState.demo && quizState.week_no === Number(b) ? question() : quizIntro(Number(b));
+    return demoHome();
+  }
   if (page === "lesson") return lesson(Number(a), b);
   if (page === "quiz") return quizState && quizState.week_no === Number(a) ? question() : quizIntro(Number(a));
   if (page === "weeks") return weeks();

@@ -362,6 +362,9 @@ function open(file) {
   // 2026-11-25: owners pick their shack by name when they sign in to the learning app.
   if (!db.prepare("select 1 from pragma_table_info('shacks') where name = 'name'").get())
     db.exec("alter table shacks add column name text");
+  // 2026-11-25: practice mode on the owner app's sign-in page (first weeks, no sign-in, no sats). 0 = off.
+  if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'demo_weeks'").get())
+    db.exec("alter table learn_settings add column demo_weeks integer not null default 2");
   // 2026-11-25: the learning programme starts on 1 December 2026.
   if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'start_date'").get())
     db.exec("alter table learn_settings add column start_date text default '2026-12-01'");

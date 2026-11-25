@@ -150,6 +150,61 @@ function init(ctx) {
              questions: pick.map((q, i) => { const c = JSON.parse(q.choices); return { id: q.id, question: q.question, choices: orders[i].map(j => c[j]) }; }) };
   }
 
+  /* ---------------------------------------------------------------- practice mode (no sign-in, nothing saved) */
+  const demoAttempts = new Map(), demoIp = new Map();
+  function demoLesson(week) {
+    const s = settings();
+    if (!s.demo_weeks) throw new Bad("Practice is switched off. / Ukuziqhelanisa kuvaliwe.", 404);
+    if (!Number.isInteger(week) || week < 1 || week > s.demo_weeks) throw new Bad("Not found", 404);
+    const l = db.prepare("select * from lessons where week_no = ?").get(week);
+    if (!l || l.body.trim().length < 40) throw new Bad("This lesson is not ready yet. / Esi sifundo asikalungi.", 404);
+    return l;
+  }
+  async function demoRoutes(req, res, p, method) {
+    const s = settings();
+    if (p === "/api/learn/demo" && method === "GET") {
+      const weeks = s.demo_weeks ? db.prepare("select week_no, title from lessons where week_no <= ? and length(trim(body)) >= 40 order by week_no").all(s.demo_weeks) : [];
+      return send(res, 200, { weeks });
+    }
+    let m = p.match(/^\/api\/learn\/demo\/lessons\/(\d{1,2})$/);
+    if (m && method === "GET") {
+      const l = demoLesson(Number(m[1])), qn = db.prepare("select count(*) n from quiz_questions where lesson_id = ?").get(l.id).n;
+      return send(res, 200, { week_no: l.week_no, title: l.title, body: l.body, pictures: picIds(l.id), state: "ready", read_done: true, demo: true,
+        questions: Math.min(s.questions_shown, qn), pass_correct: Math.min(s.pass_correct, qn) });
+    }
+    m = p.match(/^\/api\/learn\/demo\/lessons\/(\d{1,2})\/quiz$/);
+    if (m && method === "POST") {
+      const l = demoLesson(Number(m[1])), ip = clientIp(req), t = Date.now();
+      const tries = (demoIp.get(ip) || []).filter(x => t - x < 3600e3); tries.push(t); demoIp.set(ip, tries);
+      if (tries.length > 60) throw new Bad("Too many tries. Wait a while. / Zama emva kwexesha.", 429);
+      const all = shuffled(db.prepare("select * from quiz_questions where lesson_id = ?").all(l.id));
+      if (!all.length) throw new Bad("This quiz has no questions yet.", 409);
+      const pick = all.slice(0, Math.min(s.questions_shown, all.length));
+      const orders = pick.map(q => shuffled(JSON.parse(q.choices).map((_, i) => i)));
+      for (const [k, v] of demoAttempts) if (t - v.at > ATTEMPT_MINUTES * 60e3 || demoAttempts.size > 2000) demoAttempts.delete(k);
+      const id = crypto.randomUUID();
+      demoAttempts.set(id, { at: t, ids: pick.map(q => q.id), orders, week: l.week_no });
+      return send(res, 200, { attempt_id: id, week_no: l.week_no, demo: true, pass_correct: Math.min(s.pass_correct, pick.length),
+        questions: pick.map((q, i) => { const c = JSON.parse(q.choices); return { id: q.id, question: q.question, choices: orders[i].map(j => c[j]) }; }) });
+    }
+    m = p.match(/^\/api\/learn\/demo\/quiz\/([\w-]{8,64})$/);
+    if (m && method === "POST") {
+      const a = demoAttempts.get(m[1]);
+      if (!a) throw new Bad("Quiz not found. Start again. / Qala kwakhona.", 404);
+      demoAttempts.delete(m[1]);
+      const b = await readJson(req);
+      const qs = a.ids.map(id => db.prepare("select * from quiz_questions where id = ?").get(id));
+      if (qs.some(q => !q)) throw new Bad("The quiz was changed. Start again.", 409);
+      if (!Array.isArray(b.answers) || b.answers.length !== qs.length) throw new Bad("Answer every question.");
+      const picked = qs.map((q, i) => { const n = Number(b.answers[i]); return Number.isInteger(n) && n >= 0 && n < a.orders[i].length ? a.orders[i][n] : -1; });
+      const results = qs.map((q, i) => ({ id: q.id, correct: picked[i] === q.answer }));
+      const score = results.filter(r => r.correct).length, need = Math.min(s.pass_correct, qs.length), passed = score >= need;
+      return send(res, 200, { score, total: qs.length, need, passed, demo: true, newly_done: false, added_sats: 0,
+        results: results.map((r, i) => ({ ...r, ...(passed ? { answer: a.orders[i].indexOf(qs[i].answer) } : {}) })) });
+    }
+    throw new Bad("Not found", 404);
+  }
+
   function submitQuiz(owner, attemptId, answers) {
     return tx(() => {
       const a = db.prepare("select * from quiz_attempts where id = ? and owner_id = ?").get(attemptId, owner.id);
@@ -197,6 +252,8 @@ function init(ctx) {
 
   /* ---------------------------------------------------------------- owner routes: /api/learn/* */
   async function ownerRoutes(req, res, p, method) {
+    // Practice mode: anyone can open the first weeks' lessons and try the quiz. Nothing is saved and no sats are earned.
+    if (p.startsWith("/api/learn/demo")) return demoRoutes(req, res, p, method);
     if (p === "/api/learn/shacks" && method === "GET") {
       const rows = db.prepare(`select s.shack_no, s.name, sp.name sponsor from shacks s join owners o on o.id = s.owner_id
           join owner_logins l on l.owner_id = o.id left join sponsors sp on sp.id = s.sponsor_id
@@ -234,7 +291,8 @@ function init(ctx) {
       const row = db.prepare("select lp.file, l.status from lesson_pictures lp join lessons l on l.id = lp.lesson_id where lp.id = ?").get(pic[1]);
       if (!row) throw new Bad("Not found", 404);
       const staff = ctx.currentUser(req);
-      if (!(staff?.role === "admin") && !(ownerFromCookie(req) && row.status === "published")) throw new Bad("Please sign in.", 401);
+      const inDemo = db.prepare("select 1 from lesson_pictures lp join lessons l on l.id = lp.lesson_id where lp.id = ? and l.week_no <= ?").get(pic[1], settings().demo_weeks);
+      if (!(staff?.role === "admin") && !inDemo && !(ownerFromCookie(req) && row.status === "published")) throw new Bad("Please sign in.", 401);
       let buf; try { buf = fs.readFileSync(picPath(row.file)); } catch { throw new Bad("Picture file missing", 404); }
       return send(res, 200, buf, { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=2592000, immutable" });
     }
@@ -513,7 +571,7 @@ function init(ctx) {
 
     if (p === "/api/learn-admin/settings" && method === "PATCH") {
       const b = await readJson(req), before = settings(), upd = {};
-      for (const k of ["questions_shown", "pass_correct", "total_weeks", "one_per_week"]) {
+      for (const k of ["questions_shown", "pass_correct", "total_weeks", "one_per_week", "demo_weeks"]) {
         if (b[k] === undefined) continue;
         const v = k === "one_per_week" ? (b[k] ? 1 : 0) : Number(b[k]);
         if (!Number.isInteger(v) || v < 0) throw new Bad(`${k} must be a whole number`);
@@ -525,6 +583,7 @@ function init(ctx) {
         upd.start_date = d;
       }
       const next = { ...before, ...upd };
+      if (next.demo_weeks > 5) throw new Bad("Practice can show at most 5 weeks.");
       if (next.pass_correct > next.questions_shown) throw new Bad("The pass mark can't be more than the number of questions shown.");
       if (Object.keys(upd).length)
         db.prepare(`update learn_settings set ${Object.keys(upd).map(k => k + " = ?").join(", ")}, updated_at = ? where id = 1`).run(...Object.values(upd), now());
