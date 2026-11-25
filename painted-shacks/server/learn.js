@@ -32,6 +32,9 @@ function init(ctx) {
   const { db, audit, tx, Bad, readJson, send, hashPassword, checkPassword, sha256, readCookie, clientIp, cookieSecure, dataDir, pay } = ctx;
   const OWNER_COOKIE = cookieSecure ? "__Host-ps_owner" : "ps_owner";
   const PIC_DIR = process.env.LESSON_PIC_DIR || path.join(dataDir, "lesson-pictures");
+  // The course drafts that ship with the app: content/lessons-xh-draft.json and its pictures in content/pictures/<id>.jpg.
+  const BOOK_DIR = process.env.LESSON_BOOK_DIR || path.join(__dirname, "..", "content");
+  const BOOK_FILE = path.join(BOOK_DIR, "lessons-xh-draft.json");
   const settings = () => db.prepare("select * from learn_settings where id = 1").get();
 
   /* ---------------------------------------------------------------- pay period of a finished week */
@@ -380,6 +383,56 @@ function init(ctx) {
     });
     for (const r of db.prepare("select id from quiz_questions where lesson_id = ?").all(lessonId)) if (!keep.has(r.id)) db.prepare("delete from quiz_questions where id = ?").run(r.id);
   }
+  function readBook() {
+    let book; try { book = JSON.parse(fs.readFileSync(BOOK_FILE, "utf8")); } catch { throw new Bad("The book lessons file is missing on the server.", 404); }
+    if (!Array.isArray(book.lessons)) throw new Bad("The book lessons file is not valid.", 500);
+    return book;
+  }
+  // A picture that ships with the lessons file (content/pictures/<id>.jpg), or null.
+  function bookPicture(id) {
+    if (!/^[\w-]{8,64}$/.test(id)) return null;
+    try { const buf = fs.readFileSync(path.join(BOOK_DIR, "pictures", id + ".jpg")); return buf[0] === 0xff && buf[1] === 0xd8 ? buf : null; } catch { return null; }
+  }
+  // Adds lessons as drafts. A week that already has a lesson is skipped, unless replaceDrafts is set and that lesson is
+  // still a draft no owner has opened: then its text, questions and pictures are replaced. Live lessons are never touched.
+  function importLessons(list, replaceDrafts, user) {
+    if (!Array.isArray(list)) throw new Bad("This is not a lessons file.");
+    const n = { added: 0, replaced: 0, skipped: 0, pictures: 0, missing_pictures: 0 };
+    tx(() => {
+      for (const l of list) {
+        const week = Number(l.week_no);
+        if (!Number.isInteger(week) || week < 1 || week > 60 || !String(l.title || "").trim()) throw new Bad("A lesson in the file has no week or title.");
+        const qs = cleanQuestions(l.questions || []);
+        const title = String(l.title).trim().slice(0, 200), body = String(l.body || "").slice(0, 100000), source = l.source ? String(l.source).slice(0, 300) : null;
+        const cur = db.prepare("select id, status from lessons where week_no = ?").get(week);
+        let id;
+        if (cur) {
+          if (!replaceDrafts || cur.status === "published" || lessonFull(cur.id).usage.opened) { n.skipped++; continue; }
+          id = cur.id;
+          db.prepare("update lessons set title = ?, body = ?, source = ?, updated_by_name = ?, updated_at = ? where id = ?").run(title, body, source, user.full_name, now(), id);
+          db.prepare("delete from lesson_pictures where lesson_id = ?").run(id);
+          n.replaced++;
+        } else {
+          id = crypto.randomUUID();
+          db.prepare("insert into lessons(id, week_no, title, body, source, updated_by_name) values (?,?,?,?,?,?)").run(id, week, title, body, source, user.full_name);
+          n.added++;
+        }
+        saveQuestions(id, qs.map(q => ({ ...q, id: null })));
+        for (const pid of Array.isArray(l.pictures) ? l.pictures : []) {
+          const buf = bookPicture(String(pid));
+          if (!buf || db.prepare("select 1 from lesson_pictures where id = ?").get(pid)) { n.missing_pictures++; continue; }
+          const file = `${pid}.jpg`, full = picPath(file);
+          fs.mkdirSync(PIC_DIR, { recursive: true });
+          fs.writeFileSync(full + ".part", buf); fs.renameSync(full + ".part", full);
+          db.prepare("insert into lesson_pictures(id, lesson_id, file, bytes) values (?,?,?,?)").run(pid, id, file, buf.length);
+          n.pictures++;
+        }
+      }
+      audit(user, "lessons", null, "IMPORT", null, n);
+    });
+    if (n.replaced) sweepPictures();
+    return n;
+  }
   function lessonFull(id) {
     const l = db.prepare("select * from lessons where id = ?").get(id);
     if (!l) throw new Bad("Not found", 404);
@@ -464,22 +517,20 @@ function init(ctx) {
     }
     if (p === "/api/lessons/import" && method === "POST") {
       const b = await readJson(req);
-      if (!Array.isArray(b.lessons)) throw new Bad("This is not a lessons file.");
-      const n = { added: 0, skipped: 0 };
-      tx(() => {
-        for (const l of b.lessons) {
-          const week = Number(l.week_no);
-          if (!Number.isInteger(week) || week < 1 || week > 60 || !String(l.title || "").trim()) throw new Bad("A lesson in the file has no week or title.");
-          if (db.prepare("select 1 from lessons where week_no = ?").get(week)) { n.skipped++; continue; }
-          const qs = cleanQuestions(l.questions || []), id = crypto.randomUUID();
-          db.prepare("insert into lessons(id, week_no, title, body, source, updated_by_name) values (?,?,?,?,?,?)")
-            .run(id, week, String(l.title).trim().slice(0, 200), String(l.body || "").slice(0, 100000), l.source ? String(l.source).slice(0, 300) : null, user.full_name);
-          saveQuestions(id, qs.map(q => ({ ...q, id: null })));
-          n.added++;
-        }
-        audit(user, "lessons", null, "IMPORT", null, n);
-      });
-      return send(res, 200, n);
+      return send(res, 200, importLessons(b.lessons, !!b.replace_drafts, user));
+    }
+    // The lessons that ship with the app (drafted from the isiXhosa Bitcoin Diploma book), with their pictures.
+    if (p === "/api/lessons/book" && method === "GET") {
+      const book = readBook();
+      return send(res, 200, { about: book.about || "", weeks: book.lessons.map(l => {
+        const cur = db.prepare("select id, status from lessons where week_no = ?").get(Number(l.week_no));
+        return { week_no: l.week_no, title: l.title, pictures: (l.pictures || []).length, questions: (l.questions || []).length,
+                 now: !cur ? "empty" : cur.status === "published" ? "published" : lessonFull(cur.id).usage.opened ? "opened" : "draft" };
+      }) });
+    }
+    if (p === "/api/lessons/import-book" && method === "POST") {
+      const b = await readJson(req);
+      return send(res, 200, importLessons(readBook().lessons, !!b.replace_drafts, user));
     }
     m = p.match(/^\/api\/lessons\/([\w-]{8,64})$/);
     if (m && method === "GET") return send(res, 200, lessonFull(m[1]));

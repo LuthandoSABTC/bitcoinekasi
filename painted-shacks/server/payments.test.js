@@ -110,7 +110,8 @@ test("invoice decoding", () => {
   const d = decodeInvoice(makeInvoice(28000, h));
   assert.equal(d.amount_msat, 28_000_000);
   assert.equal(d.payment_hash, h.toString("hex"));
-  assert.throws(() => decodeInvoice(makeInvoice(28000, h).slice(0, -1) + "q"), /checksum/);
+  const inv = makeInvoice(28000, h);
+  assert.throws(() => decodeInvoice(inv.slice(0, -1) + (inv.endsWith("q") ? "p" : "q")), /checksum/);
 });
 
 test("inspectors can't reach payments", async () => {

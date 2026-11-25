@@ -123,10 +123,26 @@
           <small>${l.questions} question${l.questions === 1 ? "" : "s"} · ${l.pictures} picture${l.pictures === 1 ? "" : "s"}${l.done ? ` · finished by ${l.done}` : ""}${l.status === "published" && l.published_by_name ? ` · published by ${esc(l.published_by_name)}` : ""}</small></div>
           <div class="end">${l.status === "published" ? '<span class="pill p-good">Live</span>' : `<span class="pill p-warn">Draft</span>${ready ? "" : '<span class="pill">Not complete</span>'}`}</div></a>`;
       }).join("")}</div>
+      <form class="card f" id="book" style="margin-top:16px"><h2>Book lessons</h2>
+        <p class="muted" style="margin:0" id="bookinfo">The app comes with all 20 weeks drafted from the isiXhosa Bitcoin Diploma book, with its pictures.</p>
+        <label class="check fld wide"><input type="checkbox" name="replace"> Also replace draft lessons that no owner has opened. Your changes to those drafts will be lost. Live lessons are never changed.</label>
+        <div class="actions"><button class="btn" type="submit">Bring in book lessons</button></div></form>
       <form class="card f" id="imp" style="margin-top:16px"><h2>Import lessons file</h2>
         <p class="muted" style="margin:0">Adds lessons from a lessons file (JSON). Weeks that already have a lesson are skipped. Imported lessons are drafts until you publish them.</p>
         <label class="fld">Lessons file<input type="file" name="file" accept=".json,application/json" required></label>
         <div class="actions"><button class="btn ghost" type="submit">Import</button></div></form>`;
+    call("GET", "/api/lessons/book").then(b => {
+      const c = k => b.weeks.filter(w => w.now === k).length, pics = b.weeks.reduce((a, w) => a + w.pictures, 0);
+      $("#bookinfo").textContent = `${b.weeks.length} weeks and ${pics} pictures from the book. Here now: ${c("empty")} weeks empty, ${c("draft")} drafts, ${c("published")} live.`;
+    }).catch(() => {});
+    $("#book").addEventListener("submit", async e => {
+      e.preventDefault(); const btn = e.target.querySelector("button"), replace = e.target.replace.checked;
+      if (replace && !confirm("Replace draft lessons with the book version? Your changes to those drafts will be lost.")) return;
+      btn.disabled = true;
+      try { const n = await call("POST", "/api/lessons/import-book", { replace_drafts: replace });
+        toast(`Added ${n.added}, replaced ${n.replaced}, skipped ${n.skipped} lessons, with ${n.pictures} pictures. All are drafts.`); route(); }
+      catch (err) { toast(friendlyError(err), true); btn.disabled = false; }
+    });
     $("#imp").addEventListener("submit", async e => {
       e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true;
       try { const data = JSON.parse(await e.target.file.files[0].text()); const n = await call("POST", "/api/lessons/import", data); toast(`Added ${n.added} lesson${n.added === 1 ? "" : "s"} as drafts, skipped ${n.skipped}.`); route(); }

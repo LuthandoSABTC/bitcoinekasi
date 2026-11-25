@@ -23,7 +23,11 @@ let owner1, owner2, lesson1, lesson2;
 
 test.before(async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ps-learn-"));
-  Object.assign(process.env, { DB_PATH: path.join(dir, "t.db"), COOKIE_SECURE: "0" });
+  const book = path.join(dir, "book"); fs.mkdirSync(path.join(book, "pictures"), { recursive: true });
+  fs.writeFileSync(path.join(book, "pictures", "bd25-w30-1.jpg"), Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(600)]));
+  fs.writeFileSync(path.join(book, "lessons-xh-draft.json"), JSON.stringify({ about: "test", lessons: [
+    { week_no: 30, title: "Incwadi", body: "# Incwadi\n\n[[picture:bd25-w30-1]]\n\nUmfanekiso osuka encwadini.", pictures: ["bd25-w30-1", "bd25-nothere"], questions: [{ question: "Q?", choices: ["a", "b"], answer: 0 }] }] }));
+  Object.assign(process.env, { DB_PATH: path.join(dir, "t.db"), COOKIE_SECURE: "0", LESSON_BOOK_DIR: book });
   app = require("./server");
   server = http.createServer(async (req, res) => {
     try { await app.handle(req, res); }
@@ -222,7 +226,7 @@ test("lessons that owners opened can't be deleted; import adds drafts only", asy
   assert.equal((await api("admin", "DELETE", `/api/lessons/${lesson1}`)).status, 400);
   const r = await api("admin", "POST", "/api/lessons/import", { lessons: [
     { week_no: 1, title: "already there" }, { week_no: 3, title: "Imbali yemali", body: BODY, questions: QS(5), source: "Bitcoin Diploma, isahluko 3" }] });
-  assert.deepEqual(r.data, { added: 1, skipped: 1 });
+  assert.deepEqual([r.data.added, r.data.skipped], [1, 1]);
   const l = (await api("admin", "GET", "/api/lessons")).data.lessons.find(x => x.week_no === 3);
   assert.equal(l.status, "draft"); assert.equal(l.questions, 5);
 });
@@ -237,4 +241,24 @@ test("nothing opens before the course start date", async () => {
   assert.equal(st().state, "ready");
   assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: null })).status, 200);
   assert.equal(q("select start_date from learn_settings").get().start_date, null);
+});
+
+test("book lessons come in with their pictures, and only unopened drafts are replaced", async () => {
+  const b = await api("admin", "GET", "/api/lessons/book");
+  assert.deepEqual(b.data.weeks.map(w => [w.week_no, w.pictures, w.now]), [[30, 2, "empty"]]);
+  let r = await api("admin", "POST", "/api/lessons/import-book", {});
+  assert.deepEqual([r.data.added, r.data.pictures, r.data.missing_pictures], [1, 1, 1]);
+  const l = q("select * from lessons where week_no = 30").get();
+  assert.deepEqual(q("select id from lesson_pictures where lesson_id = ?").all(l.id).map(x => x.id), ["bd25-w30-1"]);
+  r = await api("admin", "POST", "/api/lessons/import-book", {});
+  assert.deepEqual([r.data.added, r.data.skipped], [0, 1], "without replace, existing weeks are skipped");
+  q("update lessons set body = 'edited' where id = ?").run(l.id);
+  r = await api("admin", "POST", "/api/lessons/import-book", { replace_drafts: true });
+  assert.deepEqual([r.data.replaced, r.data.pictures], [1, 1]);
+  assert.match(q("select body from lessons where id = ?").get(l.id).body, /picture:bd25-w30-1/);
+  q("update lessons set status = 'published' where id = ?").run(l.id);
+  r = await api("admin", "POST", "/api/lessons/import-book", { replace_drafts: true });
+  assert.deepEqual([r.data.replaced, r.data.skipped], [0, 1], "live lessons are never replaced");
+  assert.equal((await api("insp", "POST", "/api/lessons/import-book", {})).status, 403);
+  q("delete from lessons where id = ?").run(l.id);
 });
