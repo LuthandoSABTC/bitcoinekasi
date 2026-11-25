@@ -349,6 +349,15 @@ function open(file) {
   // 2026-11-25: weeks on a learning payout come from the owner app unless an admin changed them by hand.
   if (!db.prepare("select 1 from pragma_table_info('payouts') where name = 'weeks_by_admin'").get())
     db.exec("alter table payouts add column weeks_by_admin integer not null default 0");
+  // 2026-11-25: pay day for one month can be moved off the last Friday. December 2026 is paid on Wed 30 Dec (not Christmas).
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'paydays'").get()) {
+    db.exec(`create table paydays (
+      period      text primary key check (period glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]'),
+      pay_date    text not null,
+      set_by_name text,
+      updated_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.prepare("insert into paydays(period, pay_date, set_by_name) values ('2026-12', '2026-12-30', 'Luthando')").run();
+  }
   // 2026-11-25: the learning programme starts on 1 December 2026.
   if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'start_date'").get())
     db.exec("alter table learn_settings add column start_date text default '2026-12-01'");

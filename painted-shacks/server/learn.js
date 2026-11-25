@@ -37,12 +37,10 @@ function init(ctx) {
   /* ---------------------------------------------------------------- pay period of a finished week */
   function payPeriodFor(day) {
     const period = day.slice(0, 7);
-    const draftDay = addDays(lastFriday(period), -pay.settings().draft_days_before);
-    return day >= draftDay ? nextMonth(period) : period;
+    return day >= pay.draftDay(period) ? nextMonth(period) : period;
   }
   function periodInfo(period) {
-    const draftDay = addDays(lastFriday(period), -pay.settings().draft_days_before);
-    return { period, title: monthName(period), pay_date: lastFriday(period), counts_until: addDays(draftDay, -1) };
+    return { period, title: monthName(period), pay_date: pay.payDay(period), counts_until: addDays(pay.draftDay(period), -1) };
   }
 
   /* ---------------------------------------------------------------- owner sign-in */

@@ -298,3 +298,17 @@ test("CSV cells can't run as spreadsheet formulas", async () => {
   const text = await (await fetch(appUrl + "/api/reports/payouts.csv", { headers: { Cookie: cookie } })).text();
   assert.ok(!/(^|,)=HYPERLINK/m.test(text));
 });
+
+test("pay day can be moved for one month (December 2026 is paid on 30 December)", async () => {
+  const ov = async () => (await api("GET", "/api/payments/overview")).data;
+  const pay = app.pay;
+  assert.equal(pay.payDay("2026-12"), "2026-12-30");
+  assert.equal(pay.draftDay("2026-12"), "2026-12-28");
+  assert.equal(pay.payDay("2027-01"), "2027-01-29", "other months stay on the last Friday");
+  assert.equal((await api("PUT", "/api/paydays/2027-01", { pay_date: "2027-02-01" })).status, 400, "must be in that month");
+  assert.equal((await api("PUT", "/api/paydays/2027-01", { pay_date: "2027-01-27" })).status, 200);
+  assert.equal(pay.payDay("2027-01"), "2027-01-27");
+  assert.ok((await ov()).paydays.some(d => d.period === "2027-01"));
+  assert.equal((await api("DELETE", "/api/paydays/2027-01")).status, 200);
+  assert.equal(pay.payDay("2027-01"), "2027-01-29");
+});

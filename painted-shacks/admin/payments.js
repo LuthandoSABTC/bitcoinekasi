@@ -70,7 +70,7 @@
     const tm = o.this_month, cur = o.batches.find(b => b.period === tm.period), c = o.counts;
     const tabs = [["batches", "Monthly batches"], ["pending", `Waiting${c.pending ? ` (${c.pending})` : ""}`], ["paid", "Paid"], ["failed", `Failed${c.failed ? ` (${c.failed})` : ""}`], ["all", "All"]];
     $("#main").innerHTML = `
-      <div class="head"><div><h1>Payments</h1><p class="sub">Owners earn ${fmtSats(o.settings.sats_per_week)} sats per finished week, up to ${fmtSats(o.settings.sats_per_week * o.settings.max_weeks)} a month. Paid on the last Friday, after an admin approves.</p></div>
+      <div class="head"><div><h1>Payments</h1><p class="sub">Owners earn ${fmtSats(o.settings.sats_per_week)} sats per finished week, up to ${fmtSats(o.settings.sats_per_week * o.settings.max_weeks)} a month. Paid on the last Friday (unless moved), after an admin approves.</p></div>
         <div class="actions"><a class="btn ghost" href="#/paysettings">Settings</a><a class="btn" href="#/payout/new">Single payment</a></div></div>
       <div class="stats">
         ${walletCard(o.wallet)}
@@ -252,9 +252,26 @@
       </div>
       <label class="fld" style="max-width:320px">Your password<input type="password" name="password" required autocomplete="current-password"><span class="hint">Needed to change payment settings.</span></label>
       <div class="actions"><button class="btn" type="submit">Save settings</button></div></form>
+      <div class="card" id="paydays"><h2>Move pay day for one month</h2>
+        <p class="muted" style="margin-top:0">Pay day is the last Friday of the month. Move it for a month when that Friday is a holiday. The list of payments is made ${esc(s.draft_days_before)} days before the new pay day, and weeks finished before then count for that month.</p>
+        ${(o.paydays || []).length ? `<div class="list">${o.paydays.map(d => `<div class="item"><div class="main"><b>${esc(new Date(d.period + "-01T00:00:00").toLocaleDateString("en-ZA", {month: "long", year: "numeric"}))}: ${fmtDate(d.pay_date)}</b><small>Set by ${esc(d.set_by_name || "admin")}</small></div><button class="btn ghost" type="button" data-undo="${esc(d.period)}">Back to last Friday</button></div>`).join("")}</div>` : `<p class="muted">No months moved.</p>`}
+        <form class="f" id="pdform"><div class="fields">
+          <label class="fld">Month<input type="month" name="period" required></label>
+          <label class="fld">New pay day<input type="date" name="pay_date" required></label>
+        </div><div class="actions"><button class="btn" type="submit">Move pay day</button></div></form></div>
       <div class="card"><h2>Blink wallet</h2>
         ${walletCard(o.wallet)}
         <p class="muted" style="margin:0">The wallet key is kept only on the server, in a file only the server can read. To connect or change it, sign in to the server and run <span class="mono">bash /opt/painted-shacks/deploy/set-blink-key.sh</span>. Owners can use any Lightning wallet; Blink is only where Bitcoin Ekasi pays from.</p></div>`);
+    $("#pdform").addEventListener("submit", async e => {
+      e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+      try { await call("PUT", "/api/paydays/" + f.period, {pay_date: f.pay_date}); toast("Pay day moved"); pages.paysettings(); }
+      catch (err) { toast(friendlyError(err), true); }
+    });
+    $("#paydays").addEventListener("click", async e => {
+      const b = e.target.closest("[data-undo]"); if (!b) return;
+      try { await call("DELETE", "/api/paydays/" + b.dataset.undo); toast("Pay day is the last Friday again"); pages.paysettings(); }
+      catch (err) { toast(friendlyError(err), true); }
+    });
     $("#form").addEventListener("submit", async e => {
       e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)), btn = e.target.querySelector("button"); btn.disabled = true;
       const body = {password: f.password}; for (const k of Object.keys(s)) if (k in f && k !== "password") body[k] = Number(f[k]);
