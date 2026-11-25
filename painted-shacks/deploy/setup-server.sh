@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs or updates the Painted Shacks admin, inspector and owner learning apps on an Ubuntu server (built for "ekasi-server", Ubuntu 22.04, 1 GB RAM).
+# Installs or updates the Painted Shacks admin, inspector and owner learning apps and the public dashboard on an Ubuntu server (built for "ekasi-server", Ubuntu 22.04, 1 GB RAM).
 #
 # Usage (as root):   bash setup-server.sh 89-125-10-8.sslip.io
 #                    (later, with your own domain: bash setup-server.sh admin.bitcoinekasi.com)
@@ -96,6 +96,12 @@ $DOMAIN {
     root * $APP/learn
     file_server
   }
+  # Public dashboard: anyone can open it. It only reads /api/public/dashboard (totals, no private details).
+  redir /dashboard /dashboard/
+  handle_path /dashboard/* {
+    root * $APP/dashboard
+    file_server
+  }
   handle {
     root * $APP/admin
     file_server
@@ -103,11 +109,19 @@ $DOMAIN {
   header {
     Strict-Transport-Security "max-age=31536000"
     X-Content-Type-Options nosniff
-    X-Frame-Options DENY
     Referrer-Policy no-referrer
     Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"
     -Server
+  }
+  # The apps can never be shown inside another website. The public dashboard can, on bitcoinekasi.com only.
+  @apps not path /dashboard /dashboard/*
+  header @apps {
+    X-Frame-Options DENY
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"
+  }
+  @dash path /dashboard /dashboard/*
+  header @dash {
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self' https://bitcoinekasi.com https://*.bitcoinekasi.com https://*.wordpress.com; form-action 'self'; base-uri 'none'"
   }
 }
 EOF
@@ -118,6 +132,7 @@ echo
 echo "All done. Admin app:     https://$DOMAIN"
 echo "          Inspector app: https://$DOMAIN/inspect"
 echo "          Owner app:     https://$DOMAIN/learn"
+echo "          Public dashboard: https://$DOMAIN/dashboard"
 if [[ ! -s /etc/painted-shacks/blink.env ]]; then
   echo
   echo "Payments: no Blink wallet key yet. When you're ready to pay owners, run:"

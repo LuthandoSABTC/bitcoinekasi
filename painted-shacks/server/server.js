@@ -6,6 +6,7 @@ const crypto = require("node:crypto");
 const { open } = require("./db");
 const payments = require("./payments");
 const learning = require("./learn");
+const publicDash = require("./public");
 
 const PORT = Number(process.env.PORT || 3417);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -150,6 +151,9 @@ async function handle(req, res) {
   const url = new URL(req.url, "http://x");
   const p = url.pathname.replace(/\/+$/, "");
   const method = req.method;
+
+  // Public dashboard data (/dashboard): read-only, no sign-in, only non-private numbers. See public.js.
+  if (p.startsWith("/api/public/") && publicData.routes(req, res, p, method)) return;
 
   // Cross-site request protection: every change must carry our header (browsers can't add it cross-site without CORS).
   if (method !== "GET" && req.headers["x-ps-admin"] !== "1") throw new Bad("Missing app header", 403);
@@ -516,6 +520,7 @@ function importSeed(d, user) {
 const pay = payments.init({ db, audit, tx, Bad, readJson, send, checkPassword });
 const learn = learning.init({ db, audit, tx, Bad, readJson, send, hashPassword, checkPassword, sha256, readCookie, clientIp, currentUser,
   cookieSecure: COOKIE_SECURE, dataDir: require("node:path").dirname(DB_PATH), pay });
+const publicData = publicDash.init({ db, pay, learn, send });
 
 if (require.main === module) {
   pay.startTimers();
@@ -529,4 +534,4 @@ if (require.main === module) {
   }).listen(PORT, HOST, () => console.log(`Painted Shacks API on http://${HOST}:${PORT}, database ${DB_PATH}`));
 }
 
-module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn };
+module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn, publicData };

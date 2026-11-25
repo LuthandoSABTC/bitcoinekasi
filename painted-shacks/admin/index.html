@@ -338,6 +338,8 @@ pages.home = () => {
     <div class="card"><h2>Inspections</h2>
       <p style="margin:0"><b>${inspectedMonth}</b> shack${inspectedMonth === 1 ? "" : "s"} inspected this month. ${(cache.inspections || []).length} inspections in total.
       <a href="/inspect/">Open the inspector app</a> · <a href="#/settings">Add an inspector</a></p></div>
+    <div class="card"><h2>Public dashboard</h2>
+      <p style="margin:0">Live totals for everyone at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. It shows shack numbers, never owner names or phone numbers. A Lightning address only shows when the owner agreed (tick on the owner's page).</p></div>
     ${upcoming ? `<div class="card"><h2>Next sponsor renewal</h2><p style="margin:0"><b>${esc(sponsorName(upcoming.sponsor_id))}</b> on ${fmtDate(upcoming.renews_on)} <span class="muted">(${fmtSats(upcoming.amount_sats)} sats last time)</span></p></div>` : ""}
   `);
 };
@@ -399,7 +401,7 @@ pages.shack = id => {
           <span class="hint">Owner not in the list? <a href="#/owner/new?shack=${esc(s.id || "")}">Add a new owner</a> first.</span></label>
         <label class="fld">First painted<input type="date" name="first_painted_on" value="${esc(s.first_painted_on)}"></label>
         <label class="fld">Shack name<input type="text" name="name" maxlength="60" value="${esc(s.name)}" placeholder="e.g. Mama Thandi's Spaza"><span class="hint">Owners pick this name to sign in to the learning app. Leave empty to show "Shack ${esc(s.shack_no || "number")} · sponsor".</span></label>
-        <label class="fld">Area or street<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. KwaNonqaba, Section B"></label>
+        <label class="fld">Section of KwaNonqaba<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. Section B"><small class="muted">Shacks with the same section are grouped on the public dashboard.</small></label>
         <label class="check fld wide"><input type="checkbox" name="needs_maintenance" ${s.needs_maintenance ? "checked" : ""}> Needs maintenance</label>
         <label class="fld wide">Photo link<input type="url" name="photo_url" value="${esc(s.photo_url)}" placeholder="https://drive.google.com/..."><span class="hint">Paste a Google Drive or other link to the wall photo.</span></label>
         <label class="fld wide">X post<input type="url" name="x_post_url" value="${esc(s.x_post_url)}" placeholder="https://x.com/BitcoinEkasi/status/..."></label>

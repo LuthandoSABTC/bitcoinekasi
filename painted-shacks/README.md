@@ -4,6 +4,7 @@ Mobile-friendly apps for the Bitcoin Ekasi Painted Shacks project:
 
 - **Admin app** (`/`): shacks, owners, sponsor logos, sponsor contacts, sponsor funding, inspection results, the accounts of inspectors, and **Lightning payouts** to shack owners.
 - **Inspector app** (`/inspect`): phone-first. Shacks to inspect (overdue first), a checklist with photos, works with no signal and uploads later. Inspectors never see payments, phone numbers or Lightning addresses.
+- **Public dashboard** (`/dashboard`): anyone can open it. Live totals from the three apps (shacks, lessons, inspections, sats paid, sponsor funding, opt-in tip addresses). Read-only; see "Public dashboard" below.
 - **Owner learning app** (`/learn`): phone-first, isiXhosa first (English switch). Owners sign in with their shack number and a PIN, read the weekly lesson, pass the quiz, and see the sats they earned this month and their payments.
 
 It runs entirely on our own server. No Supabase, no outside database, no npm packages.
@@ -15,6 +16,7 @@ phone / laptop ──HTTPS──> Caddy (web server, certificate)
                              ├── /        -> admin/ (the admin app)
                              ├── /inspect -> inspector/ (the inspector app, works offline)
                              ├── /learn   -> learn/ (the owner learning app)
+                             ├── /dashboard -> dashboard/ (public, reads /api/public/dashboard)
                              └── /api/*   -> Node.js server (127.0.0.1:3417)
                                                  ├── SQLite file /var/lib/painted-shacks/painted-shacks.db
                                                  └── inspection photos /var/lib/painted-shacks/photos/YYYY-MM/*.jpg
@@ -43,6 +45,26 @@ nightly 01:30 -> database copy to /var/backups/painted-shacks (kept 30 days), ne
 | `deploy/setup-server.sh` | One command that installs or updates everything on Ubuntu. |
 
 Real data (owner Lightning addresses, sponsor contacts) is **not** kept in this public repo. Load it once through Settings > Import data file.
+
+## Public dashboard
+
+`dashboard/index.html` + `dashboard.js` (the retro "Painted Shacks Dashboard" design, fonts in `dashboard/fonts`, all self-hosted so no visitor data goes to Google). The page calls `GET /api/public/dashboard` every minute. That endpoint (`server/public.js`):
+
+- needs no sign-in and is read-only; it is worked out at most once a minute and kept in memory, so many visitors cost the server almost nothing;
+- returns only totals, dates and shack numbers. Never owner names, phone numbers, PINs, notes, inspection photos or payment details;
+- shows an owner's Lightning address only when "Owner agreed to show their Lightning address" is ticked on the owner's page, and a sponsor payment only when "show publicly" is on;
+- groups shacks into sections by the shack's "Section of KwaNonqaba" field. Until those are filled in the map shows one group.
+
+Tests: `node --test --disable-warning=ExperimentalWarning public.test.js`
+
+**On bitcoinekasi.com/painted-shacks (WordPress.com).** Two ways, nothing to change on the server:
+
+1. Link: a button or link to `https://89-125-10-8.sslip.io/dashboard/` (works on every WordPress plan).
+2. Embed: a Custom HTML block with
+   `<iframe src="https://89-125-10-8.sslip.io/dashboard/?embed=1" style="width:100%;height:2600px;border:0" title="Painted Shacks live dashboard" loading="lazy"></iframe>`
+   (`?embed=1` hides the dashboard's own top bar). WordPress.com only keeps iframes on plans that allow custom HTML/plugins. The server allows the page to be framed by bitcoinekasi.com and *.wordpress.com only; the admin, inspector and owner apps can never be framed.
+
+When Bitcoin Ekasi gets its own domain for the server (for example `shacks.bitcoinekasi.com`), run the setup again with that name and use it in the link.
 
 ## Install or update on the server
 
