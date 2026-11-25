@@ -2,7 +2,7 @@
 // App files and lessons they already opened are kept on the phone. Quizzes always need a connection,
 // because the server marks them.
 "use strict";
-const VERSION = "learn-v3";
+const VERSION = "learn-v4";
 const SHELL = ["./", "index.html", "lesson-render.js", "logo.png", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 const KEEP = /^\/api\/learn\/(me|lessons\/\d+|pictures\/[\w-]+)$/;
 

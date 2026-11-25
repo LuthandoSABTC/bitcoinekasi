@@ -42,7 +42,7 @@ test.before(async () => {
   q("insert into owners(id, full_name) values ('own00003','No shack no phone')").run();
   q("insert into shacks(id, shack_no, owner_id) values ('shk00001', 7, 'own00001')").run();
   owner1 = "own00001"; owner2 = "own00002";
-  q("update learn_settings set start_date = null").run();   // tests run on any date; the start date has its own test
+  q("update learn_settings set start_date = null, demo_weeks = 0").run();   // practice mode has its own test   // tests run on any date; the start date has its own test
   assert.equal((await api("admin", "POST", "/api/login", { email: "a@x.co", password: "admin-password-1" })).status, 200);
   assert.equal((await api("insp", "POST", "/api/login", { email: "i@x.co", password: "insp-password-1" })).status, 200);
 });
@@ -283,4 +283,28 @@ test("owners pick their shack by name; bulk PINs; 15 wrong PINs need a new PIN",
   const n = await api("admin", "POST", "/api/owners/own00009/app-pin", {});
   assert.equal((await api("lwazi", "POST", "/api/learn/login", { who: "12", pin: n.data.pin })).status, 200);
   assert.equal(n.data.shack_label, "Shack 12");
+});
+
+test("practice mode: first weeks without sign-in, nothing saved, no sats", async () => {
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 2 })).status, 200);
+  const before = { c: q("select count(*) n from lesson_completions").get().n, a: q("select count(*) n from quiz_attempts").get().n, r: q("select count(*) n from lesson_reads").get().n };
+  const list = await api("visitor", "GET", "/api/learn/demo");
+  assert.equal(list.status, 200);
+  assert.ok(list.data.weeks.every(w => w.week_no <= 2) && list.data.weeks.some(w => w.week_no === 1));
+  const l = await api("visitor", "GET", "/api/learn/demo/lessons/1");
+  assert.equal(l.status, 200); assert.equal(l.data.demo, true);
+  assert.equal((await api("visitor", "GET", "/api/learn/demo/lessons/3")).status, 404, "only the practice weeks");
+  const quiz = await api("visitor", "POST", "/api/learn/demo/lessons/1/quiz", {});
+  assert.equal(quiz.status, 200);
+  assert.ok(!JSON.stringify(quiz.data).includes('"answer"'), "right answers are not sent");
+  const lesson1 = q("select id from lessons where week_no = 1").get().id;
+  const key = Object.fromEntries(q("select id, choices, answer from quiz_questions where lesson_id = ?").all(lesson1).map(x => [x.id, JSON.parse(x.choices)[x.answer]]));
+  const answers = quiz.data.questions.map(x => x.choices.indexOf(key[x.id]));
+  const r = await api("visitor", "POST", `/api/learn/demo/quiz/${quiz.data.attempt_id}`, { answers });
+  assert.equal(r.status, 200); assert.equal(r.data.passed, true); assert.equal(r.data.added_sats, 0);
+  assert.equal((await api("visitor", "POST", `/api/learn/demo/quiz/${quiz.data.attempt_id}`, { answers })).status, 404, "an answer sheet is used once");
+  assert.deepEqual({ c: q("select count(*) n from lesson_completions").get().n, a: q("select count(*) n from quiz_attempts").get().n, r: q("select count(*) n from lesson_reads").get().n }, before, "nothing saved");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 0 })).status, 200);
+  assert.equal((await api("visitor", "GET", "/api/learn/demo/lessons/1")).status, 404, "practice can be switched off");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 6 })).status, 400);
 });
