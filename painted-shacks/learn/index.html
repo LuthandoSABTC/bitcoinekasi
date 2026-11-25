@@ -120,6 +120,7 @@ const T = {
     of_max: (w, m, s) => `${w} kwiiveki ezi-${m} · ukuya kuthi ga kwi-${s} sats`, payday: d => `Ihlawulwa ngoLwesihlanu ${d}`,
     after_cut: d => `Iiveki ozigqibayo emva komhla we-${d} zibalelwa kwinyanga elandelayo.`,
     your_lesson: "Isifundo sakho", week: n => `Iveki ${n}`, start: "Qala ukufunda", cont: "Qhubeka ufunde", quiz: "Phendula imibuzo",
+    starts: d => `Izifundo ziqala ngomhla we-${d}. Sobonana ngoko!`,
     wait: d => `Ugqibile isifundo sale veki. Enkosi! Isifundo esilandelayo sivula ngoMvulo, ${d}.`,
     soon: "Isifundo esilandelayo asikalungi. Siza kufika kungekudala.", alldone: "Ugqibe zonke izifundo. Halala! 🎉",
     progress: "Inkqubela yakho", weeks_of: (n, t) => `${n} kwi-${t} iiveki zigqityiwe`,
@@ -146,6 +147,7 @@ const T = {
     of_max: (w, m, s) => `${w} of ${m} weeks · up to ${s} sats`, payday: d => `Paid on Friday ${d}`,
     after_cut: d => `Weeks you finish after ${d} count for next month.`,
     your_lesson: "Your lesson", week: n => `Week ${n}`, start: "Start reading", cont: "Continue reading", quiz: "Answer the questions",
+    starts: d => `Lessons start on ${d}. See you then!`,
     wait: d => `You finished this week's lesson. Thank you! The next lesson opens on Monday, ${d}.`,
     soon: "The next lesson is not ready yet. It's coming soon.", alldone: "You finished all the lessons. Well done! 🎉",
     progress: "Your progress", weeks_of: (n, t) => `${n} of ${t} weeks done`,
@@ -243,7 +245,7 @@ async function home() {
   if (!cur) lessonCard = `<p style="margin:0;font-weight:600">${t("alldone")}</p>`;
   else if (cur.state === "ready") lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><h3>${esc(cur.title)}</h3>
       <a class="btn" href="#/lesson/${cur.week_no}">${cur.read_done ? t("quiz") : t("start")}</a>`;
-  else if (cur.state === "wait") lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><p style="margin:0">${t("wait", day(cur.opens_on))}</p>`;
+  else if (cur.state === "wait") lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><p style="margin:0">${t(cur.week_no === 1 ? "starts" : "wait", day(cur.opens_on))}</p>`;
   else lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><p style="margin:0">${t("soon")}</p>`;
   render(`
     <h1>${esc(t("hello", m.name ? m.name.split(" ")[0] : ""))}</h1>

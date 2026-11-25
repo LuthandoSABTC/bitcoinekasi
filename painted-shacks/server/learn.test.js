@@ -38,6 +38,7 @@ test.before(async () => {
   q("insert into owners(id, full_name) values ('own00003','No shack no phone')").run();
   q("insert into shacks(id, shack_no, owner_id) values ('shk00001', 7, 'own00001')").run();
   owner1 = "own00001"; owner2 = "own00002";
+  q("update learn_settings set start_date = null").run();   // tests run on any date; the start date has its own test
   assert.equal((await api("admin", "POST", "/api/login", { email: "a@x.co", password: "admin-password-1" })).status, 200);
   assert.equal((await api("insp", "POST", "/api/login", { email: "i@x.co", password: "insp-password-1" })).status, 200);
 });
@@ -224,4 +225,16 @@ test("lessons that owners opened can't be deleted; import adds drafts only", asy
   assert.deepEqual(r.data, { added: 1, skipped: 1 });
   const l = (await api("admin", "GET", "/api/lessons")).data.lessons.find(x => x.week_no === 3);
   assert.equal(l.status, "draft"); assert.equal(l.questions, 5);
+});
+
+test("nothing opens before the course start date", async () => {
+  const st = () => app.learn.ownerState("own00003").weeks[0];
+  assert.equal(st().state, "ready");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: "1 Dec" })).status, 400);
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: "2999-12-01" })).status, 200);
+  assert.deepEqual([st().state, st().opens_on], ["wait", "2999-12-01"]);
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: "2020-01-01" })).status, 200);
+  assert.equal(st().state, "ready");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: null })).status, 200);
+  assert.equal(q("select start_date from learn_settings").get().start_date, null);
 });

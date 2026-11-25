@@ -223,6 +223,7 @@ create table if not exists learn_settings (
   pass_correct     integer not null default 3 check (pass_correct between 1 and 20),
   one_per_week     integer not null default 1,
   total_weeks      integer not null default 20 check (total_weeks between 1 and 60),
+  start_date       text default '2026-12-01',  -- week 1 opens on this day (SA time); empty = open now
   updated_at       text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 insert or ignore into learn_settings(id) values (1);
@@ -348,6 +349,9 @@ function open(file) {
   // 2026-11-25: weeks on a learning payout come from the owner app unless an admin changed them by hand.
   if (!db.prepare("select 1 from pragma_table_info('payouts') where name = 'weeks_by_admin'").get())
     db.exec("alter table payouts add column weeks_by_admin integer not null default 0");
+  // 2026-11-25: the learning programme starts on 1 December 2026.
+  if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'start_date'").get())
+    db.exec("alter table learn_settings add column start_date text default '2026-12-01'");
   return db;
 }
 

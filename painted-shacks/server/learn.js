@@ -91,7 +91,8 @@ function init(ctx) {
         if (!l || l.status !== "published") state = "soon";
         else {
           const prev = done.get(w - 1);
-          if (s.one_per_week && prev && weekStart(prev.completed_on) >= weekStart(today)) { state = "wait"; opens_on = addDays(weekStart(today), 7); }
+          if (s.start_date && today < s.start_date) { state = "wait"; opens_on = s.start_date; }
+          else if (s.one_per_week && prev && weekStart(prev.completed_on) >= weekStart(today)) { state = "wait"; opens_on = addDays(weekStart(today), 7); }
           else state = "ready";
         }
       }
@@ -104,7 +105,7 @@ function init(ctx) {
   function lessonFor(ownerId, week, need) {
     const st = ownerState(ownerId), w = st.weeks.find(x => x.week_no === week);
     if (!w) throw new Bad("Lesson not found", 404);
-    if (need === "open" && !["ready", "done"].includes(w.state)) throw new Bad(w.state === "wait" ? "This lesson opens next week." : "This lesson is not open yet.", 403);
+    if (need === "open" && !["ready", "done"].includes(w.state)) throw new Bad(w.state === "wait" ? `This lesson opens on ${w.opens_on}.` : "This lesson is not open yet.", 403);
     if (need === "quiz" && w.state !== "ready") throw new Bad(w.state === "done" ? "You already finished this week." : "This lesson is not open yet.", 403);
     const l = db.prepare("select * from lessons where week_no = ?").get(week);
     if (!l || (l.status !== "published" && w.state !== "done")) throw new Bad("This lesson is not open yet.", 403);
@@ -432,6 +433,11 @@ function init(ctx) {
         const v = k === "one_per_week" ? (b[k] ? 1 : 0) : Number(b[k]);
         if (!Number.isInteger(v) || v < 0) throw new Bad(`${k} must be a whole number`);
         upd[k] = v;
+      }
+      if (b.start_date !== undefined) {
+        const d = b.start_date ? String(b.start_date) : null;
+        if (d && !(/^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d + "T00:00:00Z")))) throw new Bad("Start date must be a date like 2026-12-01.");
+        upd.start_date = d;
       }
       const next = { ...before, ...upd };
       if (next.pass_correct > next.questions_shown) throw new Bad("The pass mark can't be more than the number of questions shown.");
