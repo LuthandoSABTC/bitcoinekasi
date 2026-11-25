@@ -346,7 +346,7 @@ function init(ctx) {
     if (m && method === "POST") { const b = await readJson(req); return send(res, 200, submitQuiz(owner, m[1], b.answers)); }
     if (p === "/api/learn/payouts" && method === "GET") {
       return send(res, 200, db.prepare(`select period, reason, weeks_earned, amount_sats, status, paid_at from payouts
-        where owner_id = ? and status <> 'cancelled' order by coalesce(paid_at, created_at) desc limit 60`).all(owner.id));
+        where owner_id = ? and status <> 'cancelled' and amount_sats > 0 order by coalesce(paid_at, created_at) desc limit 60`).all(owner.id));
     }
     throw new Bad("Not found", 404);
   }
