@@ -121,7 +121,7 @@ $DOMAIN {
   }
   @dash path /dashboard /dashboard/*
   header @dash {
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self' https://bitcoinekasi.com https://*.bitcoinekasi.com https://*.wordpress.com; form-action 'self'; base-uri 'none'"
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://server.arcgisonline.com; connect-src 'self'; frame-ancestors 'self' https://bitcoinekasi.com https://*.bitcoinekasi.com https://*.wordpress.com; form-action 'self'; base-uri 'none'"
   }
 }
 EOF

@@ -365,6 +365,18 @@ function open(file) {
   // 2026-11-25: the learning programme starts on 1 December 2026.
   if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'start_date'").get())
     db.exec("alter table learn_settings add column start_date text default '2026-12-01'");
+  // 2026-11-25: the public dashboard's place name and its map of sections (JCC Camp: Zinyoka and Asazani).
+  // sections = JSON list of {name, lat, lng, radius_m}. Shacks are put in a section by their "area".
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'dash_map'").get()) {
+    db.exec(`create table dash_map (
+      id          integer primary key check (id = 1),
+      place_name  text not null default 'JCC Camp, Mossel Bay',
+      sections    text not null default '[]',
+      updated_by  text,
+      updated_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.prepare("insert into dash_map(id, sections, updated_by) values (1, ?, 'Luthando')")
+      .run(JSON.stringify([{ name: "Zinyoka", lat: null, lng: null, radius_m: 120 }, { name: "Asazani", lat: null, lng: null, radius_m: 90 }]));
+  }
   return db;
 }
 

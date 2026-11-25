@@ -18,7 +18,7 @@ const weekStart = d => addDays(d, -((new Date(d + "T00:00:00Z").getUTCDay() + 6)
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : null);
 const webLink = u => (typeof u === "string" && /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : null);
 
-function init({ db, pay, learn, send }) {
+function init({ db, pay, learn, send, Bad }) {
   let cache = null, cacheAt = 0;
 
   function build() {
@@ -120,16 +120,20 @@ function init({ db, pay, learn, send }) {
       feed.push({ at: s.first_painted_on + "T10:00:00.000Z", day_only: true, kind: "painted", shack: shackRef(s) });
     feed.sort((a, b) => b.at.localeCompare(a.at));
 
-    /* -------------------------------------------------------------- sections (areas of KwaNonqaba) */
+    /* -------------------------------------------------------------- sections of JCC Camp (shacks.area) + the map */
+    const map = mapSettings();
+    const keyOf = a => (a || "").trim().toLowerCase() || null;
     const groups = new Map();
+    for (const m of map.sections) groups.set(keyOf(m.name), { name: m.name, shacks: 0, painted: 0, lessons: 0, lat: m.lat, lng: m.lng, radius_m: m.radius_m });
     for (const s of shacks) {
-      const name = (s.area || "").trim() || null;
-      if (!groups.has(name)) groups.set(name, { name, shacks: 0, painted: 0, lessons: 0 });
-      const g = groups.get(name); g.shacks++;
+      const k = keyOf(s.area);
+      if (!groups.has(k)) groups.set(k, { name: k ? s.area.trim() : null, shacks: 0, painted: 0, lessons: 0, lat: null, lng: null, radius_m: null });
+      const g = groups.get(k); g.shacks++;
       if (s.status === "painted" || s.status === "needs_repaint") g.painted++;
     }
-    for (const c of comps) { const s = ownerShack.get(c.owner_id); if (s) groups.get((s.area || "").trim() || null).lessons++; }
-    const sections = [...groups.values()].sort((a, b) => b.shacks - a.shacks || b.lessons - a.lessons);
+    for (const c of comps) { const s = ownerShack.get(c.owner_id); if (s) groups.get(keyOf(s.area)).lessons++; }
+    const sections = [...groups.values()].filter(g => g.shacks > 0 || g.lat != null)
+      .sort((a, b) => (a.name ? 0 : 1) - (b.name ? 0 : 1) || b.shacks - a.shacks || b.lessons - a.lessons);
 
     /* -------------------------------------------------------------- funding, tips, sponsors */
     const funding = db.prepare(`select p.received_on, p.purpose, p.amount_sats, p.amount_zar, p.renews_on, sp.name as sponsor, sp.website
@@ -144,7 +148,7 @@ function init({ db, pay, learn, send }) {
     }
 
     return {
-      generated_at: nowIso, today, refresh_seconds: Math.round(CACHE_MS / 1000),
+      generated_at: nowIso, today, refresh_seconds: Math.round(CACHE_MS / 1000), place: map.place_name,
       month: { period: month, title: monthName(month) },
       round: { period, title: monthName(period), pay_date: payDate, lessons: round.length, owners: perOwner.size, sats: roundSats },
       programme: { start_date: ls.start_date || null, started, total_weeks: ls.total_weeks, published_lessons: published,
@@ -175,6 +179,39 @@ function init({ db, pay, learn, send }) {
     };
   }
 
+  /* -------------------------------------------------------------- map settings (changed in the admin app) */
+  function mapSettings() {
+    const r = db.prepare("select place_name, sections, updated_by, updated_at from dash_map where id = 1").get()
+      || { place_name: "JCC Camp, Mossel Bay", sections: "[]" };
+    let list = [];
+    try { list = JSON.parse(r.sections); } catch { list = []; }
+    return { place_name: r.place_name, sections: Array.isArray(list) ? list : [], updated_by: r.updated_by || null, updated_at: r.updated_at || null };
+  }
+  function saveMap(body, user) {
+    const place = String(body?.place_name ?? "").trim();
+    if (!place || place.length > 80) throw new Bad("Type the place name (at most 80 letters).");
+    const list = Array.isArray(body?.sections) ? body.sections : [];
+    if (list.length > 8) throw new Bad("At most 8 sections.");
+    const seen = new Set();
+    const sections = list.map(x => {
+      const name = String(x?.name ?? "").trim();
+      if (!name || name.length > 40) throw new Bad("Each section needs a name (at most 40 letters).");
+      if (seen.has(name.toLowerCase())) throw new Bad(`"${name}" is in the list twice.`);
+      seen.add(name.toLowerCase());
+      const num = v => (v === null || v === undefined || v === "" ? null : Number(v));
+      const lat = num(x.lat), lng = num(x.lng), radius = num(x.radius_m) ?? 100;
+      if ((lat === null) !== (lng === null)) throw new Bad(`${name}: give both numbers of the place, or neither.`);
+      if (lat !== null && !(lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)) throw new Bad(`${name}: that place is not on the map.`);
+      if (!(radius >= 20 && radius <= 3000)) throw new Bad(`${name}: the circle size must be between 20 and 3000 metres.`);
+      const r6 = v => (v === null ? null : Math.round(v * 1e6) / 1e6);
+      return { name, lat: r6(lat), lng: r6(lng), radius_m: Math.round(radius) };
+    });
+    db.prepare("update dash_map set place_name = ?, sections = ?, updated_by = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') where id = 1")
+      .run(place, JSON.stringify(sections), user?.full_name || null);
+    cache = null;
+    return mapSettings();
+  }
+
   function get() {
     if (!cache || Date.now() - cacheAt > CACHE_MS) { cache = JSON.stringify(build()); cacheAt = Date.now(); }
     return cache;
@@ -188,7 +225,7 @@ function init({ db, pay, learn, send }) {
     return send(res, 200, get(), { ...cors, "Cache-Control": `public, max-age=${Math.min(30, Math.round(CACHE_MS / 1000))}` });
   }
 
-  return { routes, build, clear: () => { cache = null; } };
+  return { routes, build, mapSettings, saveMap, clear: () => { cache = null; } };
 }
 
 module.exports = { init };

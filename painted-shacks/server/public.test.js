@@ -91,3 +91,29 @@ test("read only", async () => {
   assert.equal(r.status, 405);
   assert.equal((await fetch(appUrl + "/api/public/other")).status, 401, "other public paths are not open");
 });
+
+test("map settings: admins set sections and places; shacks are grouped by section, ignoring capitals", async () => {
+  q("insert into staff(id, email, full_name, role, pw_hash) values ('adm1','a@x.co','Luthando','admin',?)").run(app.hashPassword("admin-password-1"));
+  const login = await fetch(appUrl + "/api/login", { method: "POST", headers: { "Content-Type": "application/json", "X-PS-Admin": "1" }, body: JSON.stringify({ email: "a@x.co", password: "admin-password-1" }) });
+  const cookie = login.headers.get("set-cookie").split(";")[0];
+  const call = (method, p, body) => fetch(appUrl + p, { method, headers: { "Content-Type": "application/json", "X-PS-Admin": "1", Cookie: cookie }, body: body && JSON.stringify(body) });
+  const def = await (await call("GET", "/api/dashboard-map")).json();
+  assert.equal(def.place_name, "JCC Camp, Mossel Bay");
+  assert.deepEqual(def.sections.map(s => s.name), ["Zinyoka", "Asazani"]);
+  assert.equal((await call("PUT", "/api/dashboard-map", { place_name: "JCC Camp", sections: [{ name: "Zinyoka", lat: -34.17 }] })).status, 400, "both numbers or none");
+  assert.equal((await call("PUT", "/api/dashboard-map", { place_name: "JCC Camp", sections: [{ name: "A" }, { name: "a" }] })).status, 400, "no doubles");
+  const saved = await call("PUT", "/api/dashboard-map", { place_name: "JCC Camp, Mossel Bay",
+    sections: [{ name: "Zinyoka", lat: -34.1712345678, lng: 22.1034, radius_m: 120 }, { name: "Asazani", lat: null, lng: null, radius_m: 90 }] });
+  assert.equal(saved.status, 200);
+  assert.equal((await saved.json()).sections[0].lat, -34.171235);
+  const r = await call("POST", "/api/shacks/areas", { areas: { s1: "zinyoka", s2: " Zinyoka ", s3: "Asazani", s5: "" } });
+  assert.deepEqual(await r.json(), { changed: 3 }, "s5 had no section already");
+  assert.equal((await fetch(appUrl + "/api/shacks/areas", { method: "POST", headers: { "Content-Type": "application/json", "X-PS-Admin": "1" }, body: "{}" })).status, 401);
+  app.publicData.clear();
+  const d = await (await fetch(appUrl + "/api/public/dashboard")).json();
+  assert.equal(d.place, "JCC Camp, Mossel Bay");
+  const z = d.sections.find(s => s.name === "Zinyoka");
+  assert.equal(z.shacks, 2); assert.equal(z.lat, -34.171235); assert.equal(z.radius_m, 120);
+  assert.equal(d.sections.find(s => s.name === "Asazani").shacks, 1);
+  assert.equal(d.sections.at(-1).name, null, "shacks without a section come last");
+});

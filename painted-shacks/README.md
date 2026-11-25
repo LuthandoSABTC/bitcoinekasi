@@ -53,7 +53,7 @@ Real data (owner Lightning addresses, sponsor contacts) is **not** kept in this 
 - needs no sign-in and is read-only; it is worked out at most once a minute and kept in memory, so many visitors cost the server almost nothing;
 - returns only totals, dates and shack numbers. Never owner names, phone numbers, PINs, notes, inspection photos or payment details;
 - shows an owner's Lightning address only when "Owner agreed to show their Lightning address" is ticked on the owner's page, and a sponsor payment only when "show publicly" is on;
-- groups shacks into sections by the shack's "Section of KwaNonqaba" field. Until those are filled in the map shows one group.
+- groups shacks into sections of JCC Camp (Zinyoka, Asazani) by each shack's "Section" field. Admins set them in Shacks > **Sections and map**, many at once ("1-29" → Zinyoka). There they also set the place name and where each section is (paste the numbers or a link from Google Maps). With places set, the dashboard shows a satellite map (Leaflet in `dashboard/leaflet`, Esri World Imagery tiles, loaded only then) with one circle per section and links to Google Maps. Single homes are never shown. Without places it shows the sketch.
 
 Tests: `node --test --disable-warning=ExperimentalWarning public.test.js`
 

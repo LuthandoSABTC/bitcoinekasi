@@ -339,7 +339,7 @@ pages.home = () => {
       <p style="margin:0"><b>${inspectedMonth}</b> shack${inspectedMonth === 1 ? "" : "s"} inspected this month. ${(cache.inspections || []).length} inspections in total.
       <a href="/inspect/">Open the inspector app</a> · <a href="#/settings">Add an inspector</a></p></div>
     <div class="card"><h2>Public dashboard</h2>
-      <p style="margin:0">Live totals for everyone at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. It shows shack numbers, never owner names or phone numbers. A Lightning address only shows when the owner agreed (tick on the owner's page).</p></div>
+      <p style="margin:0">Live totals for everyone at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. It shows shack numbers, never owner names or phone numbers. A Lightning address only shows when the owner agreed (tick on the owner's page). <a href="#/sections">Sections and map</a></p></div>
     ${upcoming ? `<div class="card"><h2>Next sponsor renewal</h2><p style="margin:0"><b>${esc(sponsorName(upcoming.sponsor_id))}</b> on ${fmtDate(upcoming.renews_on)} <span class="muted">(${fmtSats(upcoming.amount_sats)} sats last time)</span></p></div>` : ""}
   `);
 };
@@ -370,7 +370,7 @@ pages.shacks = params => {
     $("#count").textContent = `${rows.length} of ${cache.ps_shacks.length}`;
   };
   shell("shacks", `
-    <div class="head"><div><h1>Shacks</h1><p class="sub" id="count"></p></div><a class="btn" href="#/shack/new">Add shack</a></div>
+    <div class="head"><div><h1>Shacks</h1><p class="sub" id="count"></p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost" href="#/sections">Sections and map</a><a class="btn" href="#/shack/new">Add shack</a></div></div>
     <div class="toolbar"><input type="search" id="q" placeholder="Search number, logo, owner, address" value="${esc(shackQuery)}" aria-label="Search shacks"></div>
     <div class="chips" style="margin-bottom:12px" role="group" aria-label="Filter">${filters.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${shackFilter === k}">${l}</button>`).join("")}</div>
     <div class="list" id="rows"></div>`);
@@ -401,7 +401,8 @@ pages.shack = id => {
           <span class="hint">Owner not in the list? <a href="#/owner/new?shack=${esc(s.id || "")}">Add a new owner</a> first.</span></label>
         <label class="fld">First painted<input type="date" name="first_painted_on" value="${esc(s.first_painted_on)}"></label>
         <label class="fld">Shack name<input type="text" name="name" maxlength="60" value="${esc(s.name)}" placeholder="e.g. Mama Thandi's Spaza"><span class="hint">Owners pick this name to sign in to the learning app. Leave empty to show "Shack ${esc(s.shack_no || "number")} · sponsor".</span></label>
-        <label class="fld">Section of KwaNonqaba<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. Section B"><small class="muted">Shacks with the same section are grouped on the public dashboard.</small></label>
+        <label class="fld">Section of JCC Camp<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. Zinyoka" list="section-names"><span class="hint">Groups the shack on the public dashboard map. <a href="#/sections">Set many shacks at once</a>.</span></label>
+        <datalist id="section-names">${sectionNames().map(n => `<option value="${esc(n)}">`).join("")}</datalist>
         <label class="check fld wide"><input type="checkbox" name="needs_maintenance" ${s.needs_maintenance ? "checked" : ""}> Needs maintenance</label>
         <label class="fld wide">Photo link<input type="url" name="photo_url" value="${esc(s.photo_url)}" placeholder="https://drive.google.com/..."><span class="hint">Paste a Google Drive or other link to the wall photo.</span></label>
         <label class="fld wide">X post<input type="url" name="x_post_url" value="${esc(s.x_post_url)}" placeholder="https://x.com/BitcoinEkasi/status/..."></label>
@@ -772,6 +773,117 @@ function friendlyError(err) {
   if (/Failed to fetch|NetworkError/i.test(m)) return "No connection. Check your internet and try again.";
   return m;
 }
+
+/* ============================================================ sections of JCC Camp + the public dashboard map */
+let mapCfg = null;
+function sectionNames() {
+  const names = new Map();
+  for (const m of mapCfg?.sections || []) names.set(m.name.toLowerCase(), m.name);
+  for (const s of cache.ps_shacks || []) { const a = (s.area || "").trim(); if (a && !names.has(a.toLowerCase())) names.set(a.toLowerCase(), a); }
+  return [...names.values()];
+}
+// "-34.1712, 22.1034" or a Google Maps link with @-34.1712,22.1034 or ?q=-34.17,22.10
+function parsePlace(v) {
+  const t = String(v || "").trim();
+  if (!t) return { lat: null, lng: null };
+  const m = t.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) || t.match(/[?&](?:q|query|center|ll)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) || t.match(/^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$/);
+  if (!m) throw new Error(`"${t}" doesn't look like a place. Paste the two numbers from Google Maps, like -34.1712, 22.1034`);
+  return { lat: Number(m[1]), lng: Number(m[2]) };
+}
+// "1-29, 33, 40" -> [1..29, 33, 40]
+function parseNumbers(v) {
+  const out = new Set();
+  for (const part of String(v || "").split(/[,\s]+/).filter(Boolean)) {
+    const r = part.match(/^(\d+)(?:-(\d+))?$/);
+    if (!r) throw new Error(`"${part}" is not a shack number or range like 1-29.`);
+    const a = Number(r[1]), b = Number(r[2] || r[1]);
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) out.add(i);
+  }
+  return out;
+}
+pages.sections = async () => {
+  if (!mapCfg && !DEMO) { try { mapCfg = await call("GET", "/api/dashboard-map"); } catch (err) { toast(friendlyError(err), true); } }
+  mapCfg = mapCfg || { place_name: "JCC Camp, Mossel Bay", sections: [{ name: "Zinyoka", lat: null, lng: null, radius_m: 120 }, { name: "Asazani", lat: null, lng: null, radius_m: 90 }] };
+  const shacks = cache.ps_shacks.slice().filter(s => s.status !== "removed").sort((a, b) => a.shack_no - b.shack_no);
+  const pending = new Map(shacks.map(s => [s.id, (s.area || "").trim()]));
+  const secRow = m => `<div class="fields secrow" style="align-items:end">
+      <label class="fld">Section name<input type="text" name="sname" maxlength="40" value="${esc(m?.name || "")}" placeholder="e.g. Zinyoka"></label>
+      <label class="fld">Where it is<input type="text" name="splace" value="${m?.lat != null ? esc(m.lat + ", " + m.lng) : ""}" placeholder="e.g. -34.1712, 22.1034"></label>
+      <label class="fld">Circle size (metres)<input type="number" name="sradius" min="20" max="3000" value="${esc(m?.radius_m || 100)}"></label>
+      <div class="actions" style="margin:0"><button class="btn ghost small" type="button" data-del>Remove</button></div></div>`;
+  shell("shacks", `
+    <a class="back" href="#/shacks">${I.back}Shacks</a>
+    <div class="head"><div><h1>Sections and map</h1><p class="sub">What the public dashboard shows at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a></p></div></div>
+    <form class="card f" id="mapf">
+      <h2>Map on the public dashboard</h2>
+      <p class="muted" style="margin:0">Each section shows as a circle on a satellite map, with a link to Google Maps. Single homes are never shown.
+        To find a place: open Google Maps, press and hold on the middle of the section, and copy the two numbers that appear (like -34.1712, 22.1034). You can also paste a Google Maps link.</p>
+      <label class="fld">Place name<input type="text" name="place_name" maxlength="80" required value="${esc(mapCfg.place_name)}"></label>
+      <div id="secrows" style="display:grid;gap:12px">${mapCfg.sections.map(secRow).join("")}</div>
+      <div class="actions"><button class="btn ghost" type="button" id="addsec">Add section</button><button class="btn" type="submit">Save map</button></div>
+      ${mapCfg.updated_by ? `<p class="hint" style="margin:0">Last changed by ${esc(mapCfg.updated_by)}${mapCfg.updated_at ? " on " + fmtDate(mapCfg.updated_at.slice(0, 10)) : ""}.</p>` : ""}
+    </form>
+    <form class="card f" id="areaf">
+      <h2>Shacks in each section</h2>
+      <p class="sub" id="seccount" style="margin:0"></p>
+      <div class="fields" style="align-items:end">
+        <label class="fld">Shack numbers<input type="text" id="bulknos" placeholder="e.g. 1-29, 35"></label>
+        <label class="fld">Section<select id="bulksec"></select></label>
+        <div class="actions" style="margin:0"><button class="btn ghost" type="button" id="bulkgo">Put them in this section</button></div>
+      </div>
+      <div class="list" id="arearows"></div>
+      <div class="actions"><button class="btn" type="submit">Save sections</button></div>
+    </form>`);
+  const options = cur => `<option value="">Not set</option>` + sectionNames().map(n => `<option value="${esc(n)}" ${cur.toLowerCase() === n.toLowerCase() ? "selected" : ""}>${esc(n)}</option>`).join("");
+  const drawRows = () => {
+    $("#bulksec").innerHTML = options("");
+    $("#arearows").innerHTML = shacks.map(s => `<div class="item" style="align-items:center"><span class="no">${s.shack_no}</span>
+      <div class="main"><b>${esc(sponsorName(s.sponsor_id))}</b><small>${esc(s.name || "")}</small></div>
+      <div class="end"><select data-id="${esc(s.id)}" aria-label="Section of shack ${s.shack_no}">${options(pending.get(s.id))}</select></div></div>`).join("");
+    count();
+  };
+  const count = () => {
+    const by = new Map(); let none = 0;
+    for (const v of pending.values()) { if (!v) { none++; continue; } const k = sectionNames().find(n => n.toLowerCase() === v.toLowerCase()) || v; by.set(k, (by.get(k) || 0) + 1); }
+    $("#seccount").textContent = [...by].map(([k, n]) => `${k}: ${n}`).concat(none ? [`not set: ${none}`] : []).join(" · ") || "No shacks yet.";
+  };
+  $("#arearows").addEventListener("change", e => { const sel = e.target.closest("select[data-id]"); if (sel) { pending.set(sel.dataset.id, sel.value); count(); } });
+  $("#bulkgo").addEventListener("click", () => {
+    try {
+      const nos = parseNumbers($("#bulknos").value), sec = $("#bulksec").value;
+      if (!nos.size) throw new Error("Type shack numbers first, like 1-29.");
+      const hit = shacks.filter(s => nos.has(s.shack_no));
+      hit.forEach(s => pending.set(s.id, sec));
+      drawRows();
+      const missing = [...nos].filter(n => !shacks.some(s => s.shack_no === n));
+      toast(`${hit.length} shack${hit.length === 1 ? "" : "s"} put in ${sec || "Not set"}. Press Save sections to keep it.` + (missing.length ? ` No shack ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? "…" : ""}.` : ""));
+    } catch (err) { toast(err.message, true); }
+  });
+  $("#areaf").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.submitter || e.target.querySelector("button[type=submit]"); btn.disabled = true;
+    try {
+      if (DEMO) throw new Error("Not available in the preview.");
+      const areas = {};
+      for (const s of shacks) if ((s.area || "").trim() !== pending.get(s.id)) areas[s.id] = pending.get(s.id);
+      if (!Object.keys(areas).length) { toast("Nothing changed."); return; }
+      const r = await call("POST", "/api/shacks/areas", { areas });
+      await db.loadAll(); toast(`Saved. ${r.changed} shack${r.changed === 1 ? "" : "s"} changed.`); route();
+    } catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+  $("#addsec").addEventListener("click", () => $("#secrows").insertAdjacentHTML("beforeend", secRow(null)));
+  $("#secrows").addEventListener("click", e => { if (e.target.closest("[data-del]")) e.target.closest(".secrow").remove(); });
+  $("#mapf").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.submitter || e.target.querySelector("button[type=submit]"); btn.disabled = true;
+    try {
+      if (DEMO) throw new Error("Not available in the preview.");
+      const sections = [...document.querySelectorAll(".secrow")].map(r => ({ name: r.querySelector("[name=sname]").value.trim(), ...parsePlace(r.querySelector("[name=splace]").value), radius_m: Number(r.querySelector("[name=sradius]").value) || 100 }))
+        .filter(x => x.name || x.lat != null);
+      mapCfg = await call("PUT", "/api/dashboard-map", { place_name: e.target.place_name.value, sections });
+      toast("Map saved. The public dashboard shows it within a minute."); drawRows();
+    } catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+  drawRows();
+};
 
 /* ============================================================ router */
 function route() {

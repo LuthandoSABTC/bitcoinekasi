@@ -75,60 +75,111 @@
   }
 
   /* ------------------------------------------------------------------ map + sections */
+  // With places set in the admin app (Settings > Public dashboard map) this is a real satellite map (Leaflet, Esri imagery,
+  // loaded only then). Without them it falls back to the sketch. Only section circles are shown, never single shacks.
   const AREAS = [{ x: 140, y: 86 }, { x: 375, y: 92 }, { x: 140, y: 224 }, { x: 362, y: 220 }];
-  const LETTERS = ["A", "B", "C", "D"];
-  let mapTimer = null, paused = false, mapKey = "";
+  const LETTERS = "ABCDEFGH";
+  const gmaps = (lat, lng) => "https://www.google.com/maps/@?api=1&map_action=map&center=" + lat + "," + lng + "&zoom=18&basemap=satellite";
+  let mapTimer = null, paused = false, mapKey = "", lmap = null, lLayers = [], leafletReady = null;
+  function loadLeaflet() {
+    if (leafletReady) return leafletReady;
+    leafletReady = new Promise((ok, fail) => {
+      const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "leaflet/leaflet.css"; document.head.appendChild(css);
+      const js = document.createElement("script"); js.src = "leaflet/leaflet.js"; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
+    });
+    return leafletReady;
+  }
   function sections(d) {
-    const secs = d.sections.filter(s => s.shacks > 0);
-    const key = JSON.stringify(secs);
+    const place = d.place || "JCC Camp, Mossel Bay", short = place.split(",")[0];
+    const secs = d.sections;
+    const key = JSON.stringify([place, secs]);
     if (key === mapKey) return;            // nothing changed: keep the map as it is
     mapKey = key;
-    const dots = $("dots"), pins = $("pins"), rank = $("rank");
+    $("place-desc").textContent = "Where the painted shacks are in " + place + ". Pick a section to see it on the map.";
+    document.querySelectorAll(".place-name").forEach(el => (el.textContent = short));
+    const named = secs.filter(s => s.name), other = secs.find(s => !s.name);
+    const geo = named.filter(s => s.lat != null && s.lng != null);
+    const total = secs.reduce((a, s) => a + s.shacks, 0), lessons = secs.reduce((a, s) => a + s.lessons, 0);
+    const rank = $("rank"), dots = $("dots"), pins = $("pins");
     dots.textContent = ""; pins.textContent = "";
-    const named = secs.filter(s => s.name);
-    const single = named.length === 0;     // no areas typed in yet: one group for all of KwaNonqaba
-    const onMap = single ? [] : secs.slice(0, 4);
-    let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-    const dot = (x, y, id) => { const r = document.createElementNS(NS, "rect"); r.setAttribute("x", x.toFixed(1)); r.setAttribute("y", y.toFixed(1)); r.setAttribute("width", 6); r.setAttribute("height", 6); r.setAttribute("fill", "var(--orange)"); r.setAttribute("stroke", "var(--ink)"); r.setAttribute("stroke-width", ".8"); r.dataset.s = id; dots.appendChild(r); };
-    if (single) {
-      const total = secs.reduce((a, s) => a + s.shacks, 0);
+    if (mapTimer) clearInterval(mapTimer), mapTimer = null;
+    const row = (id, letter, name, s) => '<button data-s="' + id + '"><span class="n">' + letter + "</span><span><b>" + esc(name) + '</b></span><span class="m">' +
+      plural(s.shacks, "shack") + " · " + plural(s.lessons, "lesson") + "</span></button>";
+    // Links to Google Maps for anyone who wants to look around.
+    $("gmaps").innerHTML = geo.length ? "Open in Google Maps: " + geo.map(s => '<a class="spl" href="' + esc(gmaps(s.lat, s.lng)) + '" target="_blank" rel="noopener">' + esc(s.name) + " ↗</a>").join(" · ") : "";
+    $("gmaps").hidden = !geo.length;
+
+    if (!named.length) {                   // no sections yet: one group for the whole place, on the sketch
+      showSketch(true);
+      let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
       for (let i = 0; i < total; i++) { const a = AREAS[i % 4]; dot(a.x - 70 + rnd() * 140, a.y - 40 + rnd() * 80, "all"); }
       const g = document.createElementNS(NS, "g");
-      g.innerHTML = '<circle cx="256" cy="158" r="26" fill="var(--orange)" fill-opacity=".35" stroke="var(--ink)" class="ring"/><rect x="252" y="154" width="8" height="8" fill="var(--ink)"/><text x="286" y="163" style="paint-order:stroke" stroke="var(--bg)" stroke-width="4">' + total + ' shacks</text>';
+      g.innerHTML = '<circle cx="256" cy="158" r="26" fill="var(--orange)" fill-opacity=".35" stroke="var(--ink)" class="ring"/><rect x="252" y="154" width="8" height="8" fill="var(--ink)"/><text x="286" y="163" style="paint-order:stroke" stroke="var(--bg)" stroke-width="4">' + total + " shacks</text>";
       pins.appendChild(g);
-      rank.innerHTML = '<button class="on" data-s="all"><span class="n">1</span><span><b>KwaNonqaba</b></span><span class="m">' + plural(total, "shack") + " · " + plural(secs.reduce((a, x) => a + x.lessons, 0), "lesson") + "</span></button>";
-      $("rank-note").hidden = false;
-      $("rank-note").textContent = "Sections show here once each shack has its part of KwaNonqaba filled in.";
-      $("mapbtn").hidden = true;
-      if (mapTimer) clearInterval(mapTimer), mapTimer = null;
-      $("mapsvg").setAttribute("aria-label", "Sketch map of KwaNonqaba with " + total + " painted shacks");
+      rank.innerHTML = row("all", "1", short, { shacks: total, lessons });
+      rank.querySelector("button").classList.add("on");
+      $("rank-note").hidden = true; $("mapbtn").hidden = true;
+      $("mapsvg").setAttribute("aria-label", "Sketch map of " + short + " with " + total + " painted shacks");
       return;
     }
-    onMap.forEach((s, i) => {
-      const a = AREAS[i];
-      for (let k = 0; k < s.shacks; k++) dot(a.x - 70 + rnd() * 140, a.y - 40 + rnd() * 80, String(i));
-      const g = document.createElementNS(NS, "g"); g.dataset.s = String(i);
-      g.innerHTML = '<circle cx="' + a.x + '" cy="' + a.y + '" r="18" fill="var(--bg)" fill-opacity=".85" stroke="var(--ink)" class="ring"/><rect x="' + (a.x - 4) + '" y="' + (a.y - 4) + '" width="8" height="8" fill="var(--ink)"/><text x="' + (a.x + 24) + '" y="' + (a.y + 5) + '" style="paint-order:stroke" stroke="var(--bg)" stroke-width="4">' + LETTERS[i] + " " + s.shacks + "</text>";
-      pins.appendChild(g);
-    });
-    rank.innerHTML = secs.map((s, i) => '<button data-s="' + (i < 4 ? i : "x" + i) + '"><span class="n">' + (i < 4 ? LETTERS[i] : i + 1) + "</span><span><b>" +
-      esc(s.name || "Area not set yet") + "</b></span><span class=\"m\">" + plural(s.shacks, "shack") + " · " + plural(s.lessons, "lesson") + "</span></button>").join("");
-    const extra = secs.length - onMap.length;
-    $("rank-note").hidden = !extra;
-    if (extra) $("rank-note").textContent = "The sketch shows the four biggest sections.";
-    $("mapsvg").setAttribute("aria-label", "Sketch map of KwaNonqaba with sections of painted shacks: " + onMap.map((s, i) => LETTERS[i] + " " + (s.name || "no area") + " " + s.shacks).join(", "));
+    rank.innerHTML = named.map((s, i) => row(String(i), LETTERS[i] || i + 1, s.name, s)).join("") + (other ? row("other", "·", "Other shacks", other) : "");
+    let focus;
+    if (geo.length) {
+      showSketch(false);
+      focus = id => { highlight(id); lLayers.forEach(l => l.setStyle({ fillOpacity: l.options.sid === id ? 0.45 : 0.18, weight: l.options.sid === id ? 3 : 2 })); };
+      loadLeaflet().then(() => {
+        const L = window.L;
+        if (!lmap) {
+          lmap = L.map("lmap", { scrollWheelZoom: false, zoomSnap: 0.5 });
+          lmap.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+          const esri = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+          L.tileLayer(esri + "World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics" }).addTo(lmap);
+          L.tileLayer(esri + "Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, opacity: 0.7 }).addTo(lmap);
+          lmap.setView([geo[0].lat, geo[0].lng], 17);   // circles need a view before they can be measured
+        }
+        lLayers.forEach(l => l.remove()); lLayers = [];
+        named.forEach((s, i) => {
+          if (s.lat == null) return;
+          const c = L.circle([s.lat, s.lng], { radius: s.radius_m || 100, color: "#f7931a", weight: 2, fillColor: "#f7931a", fillOpacity: 0.18, sid: String(i) }).addTo(lmap);
+          c.bindTooltip((LETTERS[i] || "") + " " + s.name + " · " + plural(s.shacks, "shack"), { permanent: true, direction: "top", className: "ps-tip", offset: [0, -4] });
+          c.on("click", () => { pause(); focus(String(i)); });
+          lLayers.push(c);
+        });
+        lmap.fitBounds(L.featureGroup(lLayers).getBounds(), { padding: [30, 30], maxZoom: 18 });
+        focus(String(named.findIndex(s => s.lat != null)));
+      }).catch(err => { console.error("map", err); $("lmap").textContent = "The map could not load. Use the Google Maps links below."; });
+      $("mapsvg").setAttribute("aria-label", "Satellite map of " + short);
+    } else {                               // sections but no places yet: sketch with up to four sections
+      showSketch(true);
+      let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+      named.slice(0, 4).forEach((s, i) => {
+        const a = AREAS[i];
+        for (let k = 0; k < s.shacks; k++) dot(a.x - 70 + rnd() * 140, a.y - 40 + rnd() * 80, String(i));
+        const g = document.createElementNS(NS, "g"); g.dataset.s = String(i);
+        g.innerHTML = '<circle cx="' + a.x + '" cy="' + a.y + '" r="18" fill="var(--bg)" fill-opacity=".85" stroke="var(--ink)" class="ring"/><rect x="' + (a.x - 4) + '" y="' + (a.y - 4) + '" width="8" height="8" fill="var(--ink)"/><text x="' + (a.x + 24) + '" y="' + (a.y + 5) + '" style="paint-order:stroke" stroke="var(--bg)" stroke-width="4">' + LETTERS[i] + " " + s.shacks + "</text>";
+        pins.appendChild(g);
+      });
+      focus = id => {
+        highlight(id);
+        pins.querySelectorAll("g").forEach(g => { const on = g.dataset.s === id, r = g.querySelector(".ring"); r.setAttribute("r", on ? 26 : 18); r.setAttribute("fill", on ? "var(--orange)" : "var(--bg)"); r.setAttribute("fill-opacity", on ? ".35" : ".85"); });
+        dots.querySelectorAll("rect").forEach(r => r.setAttribute("opacity", r.dataset.s === id ? 1 : 0.45));
+      };
+      focus("0");
+      $("mapsvg").setAttribute("aria-label", "Sketch map of " + short + ": " + named.slice(0, 4).map((s, i) => LETTERS[i] + " " + s.name + " " + s.shacks + " shacks").join(", "));
+    }
+    $("rank-note").hidden = !(named.length > 4 && !geo.length);
+    $("rank-note").textContent = "The sketch shows the four biggest sections.";
+    rank.onclick = e => { const b = e.target.closest("button"); if (!b) return; pause(); focus(b.dataset.s); };
+    const cycle = geo.length ? named.map((s, i) => (s.lat != null ? String(i) : null)).filter(Boolean) : named.slice(0, 4).map((s, i) => String(i));
     let cur = 0;
-    const focus = id => {
-      rank.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.s === id));
-      pins.querySelectorAll("g").forEach(g => { const on = g.dataset.s === id, r = g.querySelector(".ring"); r.setAttribute("r", on ? 26 : 18); r.setAttribute("fill", on ? "var(--orange)" : "var(--bg)"); r.setAttribute("fill-opacity", on ? ".35" : ".85"); });
-      dots.querySelectorAll("rect").forEach(r => r.setAttribute("opacity", r.dataset.s === id ? 1 : 0.45));
-    };
-    rank.onclick = e => { const b = e.target.closest("button"); if (!b) return; paused = true; $("mapbtn").textContent = "[ PLAY ]"; focus(b.dataset.s); };
-    focus("0");
-    $("mapbtn").hidden = onMap.length < 2 || reduce;
-    if (mapTimer) clearInterval(mapTimer), mapTimer = null;
-    if (!reduce && onMap.length > 1) mapTimer = setInterval(() => { if (paused) return; cur = (cur + 1) % onMap.length; focus(String(cur)); }, 3000);
+    $("mapbtn").hidden = cycle.length < 2 || reduce;
+    if (!reduce && cycle.length > 1) mapTimer = setInterval(() => { if (paused) return; cur = (cur + 1) % cycle.length; focus(cycle[cur]); }, 3500);
+
+    function dot(x, y, id) { const r = document.createElementNS(NS, "rect"); r.setAttribute("x", x.toFixed(1)); r.setAttribute("y", y.toFixed(1)); r.setAttribute("width", 6); r.setAttribute("height", 6); r.setAttribute("fill", "var(--orange)"); r.setAttribute("stroke", "var(--ink)"); r.setAttribute("stroke-width", ".8"); r.dataset.s = id; dots.appendChild(r); }
+    function highlight(id) { rank.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.s === id)); }
   }
+  function showSketch(on) { $("mapsvg").style.display = on ? "" : "none"; $("lmap").hidden = on; $("map-sub").textContent = on ? "Map is a sketch, not to scale." : "Satellite map. Circles show each section, not single homes."; }
+  function pause() { paused = true; $("mapbtn").textContent = "[ PLAY ]"; }
   $("mapbtn").addEventListener("click", () => { paused = !paused; $("mapbtn").textContent = paused ? "[ PLAY ]" : "[ PAUSE ]"; });
 
   /* ------------------------------------------------------------------ feed */

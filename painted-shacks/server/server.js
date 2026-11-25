@@ -244,6 +244,35 @@ async function handle(req, res) {
     return send(res, 200, buf, { "Content-Type": "application/octet-stream", "Content-Disposition": `attachment; filename="painted-shacks-${day}.db"` });
   }
 
+  // Public dashboard map: place name and where each section is (admin only to change; shown publicly).
+  if (p === "/api/dashboard-map" && method === "GET") return send(res, 200, publicData.mapSettings());
+  if (p === "/api/dashboard-map" && method === "PUT") {
+    const out = publicData.saveMap(await readJson(req), user);
+    audit(user, "dash_map", "1", "UPDATE", null, out);
+    return send(res, 200, out);
+  }
+  // Put many shacks in a section at once: { areas: { <shack id>: "Zinyoka" | "" } }
+  if (p === "/api/shacks/areas" && method === "POST") {
+    const { areas } = await readJson(req);
+    if (!areas || typeof areas !== "object" || Array.isArray(areas)) throw new Bad("Nothing to save.");
+    const changed = tx(() => {
+      let n = 0;
+      for (const [id, v] of Object.entries(areas)) {
+        if (typeof v !== "string" || v.length > 80) throw new Bad("A section name is too long.");
+        const before = db.prepare("select id, area from shacks where id = ?").get(id);
+        if (!before) throw new Bad("A shack was not found. Reload and try again.", 404);
+        const area = v.trim() || null;
+        if ((before.area || null) === area) continue;
+        db.prepare("update shacks set area = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') where id = ?").run(area, id);
+        audit(user, "shacks", id, "UPDATE", { area: before.area }, { area });
+        n++;
+      }
+      return n;
+    });
+    publicData.clear();
+    return send(res, 200, { changed });
+  }
+
   if (p === "/api/import" && method === "POST") return send(res, 200, importSeed(await readJson(req), user));
 
   const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks)(?:\/([\w-]{1,64}))?$/);
@@ -520,7 +549,7 @@ function importSeed(d, user) {
 const pay = payments.init({ db, audit, tx, Bad, readJson, send, checkPassword });
 const learn = learning.init({ db, audit, tx, Bad, readJson, send, hashPassword, checkPassword, sha256, readCookie, clientIp, currentUser,
   cookieSecure: COOKIE_SECURE, dataDir: require("node:path").dirname(DB_PATH), pay });
-const publicData = publicDash.init({ db, pay, learn, send });
+const publicData = publicDash.init({ db, pay, learn, send, Bad });
 
 if (require.main === module) {
   pay.startTimers();
