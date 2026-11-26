@@ -117,3 +117,22 @@ test("map settings: admins set sections and places; shacks are grouped by sectio
   assert.equal(d.sections.find(s => s.name === "Asazani").shacks, 1);
   assert.equal(d.sections.at(-1).name, null, "shacks without a section come last");
 });
+
+test("accountability: walls by sponsor status, partners, money in and out, no private text", async () => {
+  q("update sponsors set payment_status = 'paying', kind = 'for_profit', support_in_kind = 'Akhona private note' where id = 'spn1'").run();
+  q("update sponsors set payment_status = 'lapsed' where id = 'spn2'").run();
+  q("update shacks set x_post_url = 'https://x.com/BitcoinEkasi/status/1' where id = 's1'").run();
+  app.publicData.clear();
+  const text = await (await fetch(appUrl + "/api/public/dashboard")).text();
+  assert.ok(!text.includes("Akhona"), "in-kind notes stay private");
+  const a = JSON.parse(text).accountability;
+  const w = Object.fromEntries(a.walls.map(x => [x.key, x.count]));
+  assert.deepEqual(w, { paid: 2, in_kind: 0, ekasi: 0, renewal: 1, thanks: 0, open: 1 });
+  assert.equal(a.partners.length, 1);
+  assert.deepEqual(a.partners[0].shacks, [7, 9]);
+  assert.deepEqual(a.partners[0].posts, ["https://x.com/BitcoinEkasi/status/1"]);
+  assert.equal(a.money.received_sats, 3095490, "only public payments this year");
+  const year = new Date().toISOString().slice(0, 4);
+  assert.equal(a.money.paid_to_families_sats, year === "2026" ? 49000 : 0);
+  assert.ok(a.money.ledger.every(r => !/Thandi|Sipho/.test(r.what)), "payouts are one line per month");
+});

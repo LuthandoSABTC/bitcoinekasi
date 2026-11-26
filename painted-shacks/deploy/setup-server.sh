@@ -98,6 +98,7 @@ $DOMAIN {
   }
   # Public dashboard: anyone can open it. It only reads /api/public/dashboard (totals, no private details).
   redir /dashboard /dashboard/
+  redir /dashboard/accountability /dashboard/accountability/
   handle_path /dashboard/* {
     root * $APP/dashboard
     file_server
@@ -133,6 +134,7 @@ echo "All done. Admin app:     https://$DOMAIN"
 echo "          Inspector app: https://$DOMAIN/inspect"
 echo "          Owner app:     https://$DOMAIN/learn"
 echo "          Public dashboard: https://$DOMAIN/dashboard"
+echo "          For partners:     https://$DOMAIN/dashboard/accountability/"
 if [[ ! -s /etc/painted-shacks/blink.env ]]; then
   echo
   echo "Payments: no Blink wallet key yet. When you're ready to pay owners, run:"

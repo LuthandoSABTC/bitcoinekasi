@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Painted Shacks Accountability</title>
+<meta name="description" content="Where the Painted Shacks walls are, who supports them, and where the money goes. Live from Bitcoin Ekasi's Painted Shacks apps in JCC Camp, Mossel Bay.">
+<link rel="icon" href="../ekasi-sign.png">
+<script>try{if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add('embed')}catch(e){}</script>
+<style>
+@font-face{font-family:"Source Serif 4";font-weight:400;font-display:swap;src:url(../fonts/source-serif-4-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-weight:400;font-display:swap;src:url(../fonts/inter-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-weight:600;font-display:swap;src:url(../fonts/inter-latin-600-normal.woff2) format("woff2")}
+/* Layout: a calm one-column report for partners. Cards of numbers, bars, and a ledger. Same data as /dashboard. */
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1d1c1a;--ink2:#5b5853;--line:#e2dfd8;--bar:#3f6fd8;--barbg:#e8e6e0;--in:#1f8a4c;--accent:#c96a00;--accent-soft:rgba(201,106,0,.1);
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1e1c;--panel:#2a2927;--ink:#efede8;--ink2:#a9a59d;--line:#3d3b37;--bar:#7ea2ff;--barbg:#3a3936;--in:#6fd39a;--accent:#f2a23a;--accent-soft:rgba(242,162,58,.12);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1f1e1c;--panel:#2a2927;--ink:#efede8;--ink2:#a9a59d;--line:#3d3b37;--bar:#7ea2ff;--barbg:#3a3936;--in:#6fd39a;--accent:#f2a23a;--accent-soft:rgba(242,162,58,.12);color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink);margin:0}
+body{font:15px/1.55 var(--sans)}
+a{color:inherit;text-underline-offset:3px}
+a:hover{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.wrap{max-width:880px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-left,0px)) 56px max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.top a{letter-spacing:normal;text-transform:none;font-size:13px}
+.top button{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:4px 10px;font:inherit;cursor:pointer;letter-spacing:normal;text-transform:none}
+h1{font:400 clamp(32px,6vw,44px)/1.15 var(--serif);margin:14px 0 12px}
+h2{font:400 26px/1.25 var(--serif);margin:0 0 6px}
+h3{font-size:15px;font-weight:600;margin:0 0 4px}
+.lead{font-size:18px;max-width:40ch;margin:0 0 22px}
+.desc{color:var(--ink2);margin:0 0 16px;max-width:62ch}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 28px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.stat .k{font-size:12px;color:var(--ink2)}
+.stat .v{font:400 40px/1.1 var(--serif);margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.stat .v small{font:400 15px var(--sans);color:var(--ink2)}
+.stat .s{font-size:12px;color:var(--ink2)}
+.toc{margin:0 0 8px}
+.toc a{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);text-decoration:none}
+.toc a span{color:var(--ink2)}
+section{padding:40px 0 0}
+.grp{font-weight:600;margin:4px 0 2px}
+.grp+.row{border-top:0}
+.row{padding:12px 0;border-top:1px solid var(--line)}
+.row .h{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.row .n{font:400 22px var(--serif);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--barbg);margin:8px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--bar);border-radius:3px}
+.bar.muted i{background:var(--ink2);opacity:.6}
+.row p{margin:0;font-size:13px;color:var(--ink2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two ul{margin:8px 0 0;padding-left:20px}
+.two li{margin:6px 0}
+.cols{display:flex;align-items:flex-end;gap:8px;height:170px;margin-top:12px}
+.cols div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.cols b{font-weight:400;font-size:12px;color:var(--ink);margin-bottom:4px}
+.cols i{display:block;width:100%;max-width:44px;background:var(--bar);border-radius:3px 3px 0 0;min-height:2px}
+.cols span{font-size:11px;color:var(--ink2);margin-top:6px}
+.cols .future i{background:var(--barbg)}
+.ledger-sum{display:grid;gap:8px}
+.ledger-sum div{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.ledger-sum .big{border-top:1px solid var(--ink);padding-top:10px;margin-top:4px}
+.ledger-sum .big b{font:400 28px var(--serif)}
+.ledger-sum span:last-child{font:400 20px var(--serif)}
+.tablewrap{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:520px}
+th{font-weight:600;font-size:12px;color:var(--ink2);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.r{text-align:right}
+td.in{color:var(--in)}
+.partners{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.partners .card p{margin:2px 0;font-size:13px;color:var(--ink2)}
+.partners .links{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.note{font-size:13px;color:var(--ink2);border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 8px 8px 0;margin:14px 0 0;max-width:62ch}
+.empty{color:var(--ink2);font-size:14px;padding:12px 0}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--ink2);display:grid;gap:4px}
+html.embed .top{display:none}
+@media (max-width:640px){.two{grid-template-columns:1fr}.stat .v{font-size:34px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app" aria-busy="true">
+  <div class="top"><span id="kicker">Bitcoin Ekasi · JCC Camp, Mossel Bay</span>
+    <span style="display:flex;gap:10px;align-items:center"><a href="../">Live dashboard →</a><button id="theme" type="button" aria-label="Switch light or dark">◐</button></span></div>
+  <h1>Painted Shacks Accountability</h1>
+  <p class="lead" id="lead">Loading the latest numbers…</p>
+
+  <div class="stats">
+    <div class="card stat"><div class="k">Walls painted</div><div class="v" id="s-walls">–</div><div class="s">Logo walls on family homes</div></div>
+    <div class="card stat"><div class="k" id="s-partners-k">Partners this year</div><div class="v" id="s-partners">–</div><div class="s">Paid or in kind</div></div>
+    <div class="card stat"><div class="k" id="s-paid-k">Paid to families this year</div><div class="v" id="s-paid">–</div><div class="s" id="s-paid-s">All families together</div></div>
+  </div>
+
+  <h3>Inside</h3>
+  <nav class="toc" aria-label="Contents">
+    <a href="#walls">How many walls are there? <span>›</span></a>
+    <a href="#agree">What do families agree to? <span>›</span></a>
+    <a href="#learning">Are families learning? <span>›</span></a>
+    <a href="#money">Where does the money go? <span>›</span></a>
+    <a href="#partners">Who are this year's partners? <span>›</span></a>
+  </nav>
+
+  <section id="walls">
+    <h2>How many walls are there?</h2>
+    <p class="desc">Every logo wall is on a family's home. The family keeps the wall, learns about Bitcoin in the Painted Shacks app and is paid in sats.</p>
+    <div class="card" id="wallcard"></div>
+  </section>
+
+  <section id="agree">
+    <h2>What do families agree to?</h2>
+    <p class="desc">Every family with a logo wall agrees to the programme's terms.</p>
+    <div class="two">
+      <div class="card"><h3>The family agrees to</h3><ul>
+        <li>Have the logo wall painted on their home.</li>
+        <li>Keep the area around the home clean.</li>
+        <li>Finish the week's Bitcoin lesson and quiz in the Painted Shacks app, in isiXhosa, in their own time.</li></ul></div>
+      <div class="card"><h3>The family receives</h3><ul>
+        <li id="t-pay">A payment in sats for each finished week.</li>
+        <li>A freshly painted wall each year.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="learning">
+    <h2>Are families learning?</h2>
+    <p class="desc" id="l-desc">Lessons are done on the phone, so families who can't come to a class still learn.</p>
+    <div class="stats" style="margin-bottom:12px">
+      <div class="card stat"><div class="k" id="l-k1">Lessons finished this year</div><div class="v" id="l-lessons">0</div><div class="s">Each one is a lesson read and a quiz passed</div></div>
+      <div class="card stat"><div class="k" id="l-k2">Households learning this month</div><div class="v" id="l-house">0</div><div class="s" id="l-house-s"></div></div>
+    </div>
+    <div class="card"><h3>Households that finished a lesson, each month</h3><div class="cols" id="l-cols" role="img"></div></div>
+  </section>
+
+  <section id="money">
+    <h2>Where does the money go?</h2>
+    <p class="desc">All amounts are in sats, the small units bitcoin is counted in. One bitcoin is 100 million sats.</p>
+    <div class="card"><h3 id="m-title">This year so far, in sats</h3>
+      <div class="ledger-sum" id="m-sum"></div></div>
+    <div class="card" style="margin-top:12px"><h3>Every payment, in and out</h3>
+      <p class="desc" style="margin:0;font-size:13px">Payouts to families are shown as one line per month, never per family.</p>
+      <div class="tablewrap"><table><thead><tr><th>Date</th><th>What for</th><th class="r">In</th><th class="r">Out</th></tr></thead><tbody id="m-rows"></tbody></table></div>
+      <p class="empty" id="m-empty" hidden>No payments recorded this year yet.</p>
+    </div>
+    <p class="note">Other costs, like paint and upkeep, are not listed here yet.</p>
+  </section>
+
+  <section id="partners">
+    <h2>Who are this year's partners?</h2>
+    <p class="desc">Each partnership comes with a logo wall on a family's home and posts about it on X.</p>
+    <div class="partners" id="p-list"></div>
+  </section>
+
+  <footer>
+    <span>Live from the Painted Shacks apps on Bitcoin Ekasi's own server, updated every minute. The same numbers are on the <a href="../">live dashboard</a>.</span>
+    <span>Families are never named. Only totals and shack numbers are shown.</span>
+    <span id="updated"></span>
+  </footer>
+</div>
+<script src="accountability.js"></script>
+</body>
+</html>

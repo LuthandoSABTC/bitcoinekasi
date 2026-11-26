@@ -33,7 +33,7 @@ function init({ db, pay, learn, send, Bad }) {
 
     /* -------------------------------------------------------------- shacks, owners, sponsors */
     const shacks = db.prepare(`select s.id, s.shack_no, s.status, s.area, s.owner_id, s.first_painted_on,
-        sp.name as sponsor, sp.website, sp.kind as sponsor_kind,
+        sp.id as sponsor_id, sp.name as sponsor, sp.website, sp.kind as sponsor_kind, sp.payment_status as sponsor_status, s.x_post_url,
         o.active as owner_active, o.show_address_publicly as show_addr, o.lightning_address as addr
       from shacks s left join sponsors sp on sp.id = s.sponsor_id left join owners o on o.id = s.owner_id
       where s.status <> 'removed' order by s.shack_no`).all();
@@ -147,6 +147,63 @@ function init({ db, pay, learn, send, Bad }) {
       e.walls++; sponsorWalls.set(s.sponsor, e);
     }
 
+    /* -------------------------------------------------------------- accountability page (/dashboard/accountability/) */
+    const year = today.slice(0, 4);
+    // What each wall is, from the sponsor's status in the admin app.
+    const WALL_KINDS = [
+      { key: "paid", group: "support", label: "Paid partner", desc: "The partner pays in sats for its logo on the wall." },
+      { key: "in_kind", group: "support", label: "In-kind partner", desc: "The partner gives services or products instead of sats." },
+      { key: "ekasi", group: "support", label: "Bitcoin Ekasi wall", desc: "Bitcoin Ekasi's own logo." },
+      { key: "renewal", group: "not", label: "Up for renewal", desc: "A partner in an earlier year, not renewed yet." },
+      { key: "thanks", group: "not", label: "Thank-you wall", desc: "Painted by the team to thank a project. No charge." },
+      { key: "open", group: "not", label: "Open for a new partner", desc: "Will be repainted for the next partner." },
+    ];
+    const wallKind = s => {
+      if (s.status === "free_wall" || s.status === "to_replace" || !s.sponsor_id) return "open";
+      if (s.sponsor_kind === "bitcoin_ekasi") return "ekasi";
+      return { paying: "paid", ongoing_in_kind: "in_kind", lapsed: "renewal" }[s.sponsor_status] || "thanks";
+    };
+    const wallCount = new Map();
+    for (const s of shacks) wallCount.set(wallKind(s), (wallCount.get(wallKind(s)) || 0) + 1);
+    const partnerMap = new Map();
+    for (const s of shacks) {
+      const k = wallKind(s);
+      if (k !== "paid" && k !== "in_kind") continue;
+      const e = partnerMap.get(s.sponsor_id) || { name: s.sponsor, website: webLink(s.website), type: k, walls: 0, shacks: [], posts: [] };
+      e.walls++; e.shacks.push(s.shack_no);
+      const post = webLink(s.x_post_url);
+      if (post && /^https:\/\/(x|twitter)\.com\//i.test(post) && !e.posts.includes(post)) e.posts.push(post);
+      partnerMap.set(s.sponsor_id, e);
+    }
+    const lastPay = db.prepare(`select sponsor_id, max(received_on) last_paid_on, max(renews_on) renews_on from sponsor_payments
+                                where show_publicly = 1 group by sponsor_id`).all();
+    for (const r of lastPay) { const e = partnerMap.get(r.sponsor_id); if (e) Object.assign(e, { last_paid_on: r.last_paid_on, renews_on: r.renews_on }); }
+    const partners = [...partnerMap.values()].sort((a, b) => (a.type === b.type ? 0 : a.type === "paid" ? -1 : 1) || b.walls - a.walls || a.name.localeCompare(b.name));
+    // Money in and out this year: public sponsor payments in, and each month's payout to families (one line per month, never per family).
+    const inYear = funding.filter(r => r.received_on.startsWith(year));
+    const outMonths = db.prepare(`select substr(paid_at,1,7) month, sum(amount_sats) sats, sum(coalesce(fee_sats,0)) fees, count(distinct owner_id) households, max(paid_at) at
+                                  from payouts where status = 'paid' and paid_at >= ? group by 1 order by 1`).all(year + "-01-01");
+    const ledger = [
+      ...inYear.map(r => ({ date: r.received_on, what: "Partner sponsorship", from: r.sponsor, in_sats: r.amount_sats, out_sats: 0 })),
+      ...outMonths.map(m => ({ date: saDay(m.at), what: `${monthName(m.month).split(" ")[0]} payout to ${m.households} ${m.households === 1 ? "family" : "families"}`, in_sats: 0, out_sats: m.sats })),
+    ].sort((a, b) => b.date.localeCompare(a.date));
+    const yearLessons = comps.filter(c => c.completed_on.startsWith(year));
+    const learnMonths = [];
+    for (let m = 1; m <= Number(today.slice(5, 7)); m++) {
+      const per = `${year}-${String(m).padStart(2, "0")}`;
+      const rows = comps.filter(c => c.completed_on.startsWith(per));
+      learnMonths.push({ period: per, households: new Set(rows.map(c => c.owner_id)).size, lessons: rows.length });
+    }
+    const accountability = {
+      year,
+      walls: WALL_KINDS.map(k => ({ ...k, count: wallCount.get(k.key) || 0 })),
+      partners,
+      money: { received_sats: inYear.reduce((a, r) => a + r.amount_sats, 0), received_zar: inYear.reduce((a, r) => a + (r.amount_zar || 0), 0),
+               paid_to_families_sats: outMonths.reduce((a, m) => a + m.sats, 0), fees_sats: outMonths.reduce((a, m) => a + m.fees, 0), ledger },
+      learning: { months: learnMonths, lessons: yearLessons.length, households: new Set(yearLessons.map(c => c.owner_id)).size },
+      households: activeOwners,
+    };
+
     return {
       generated_at: nowIso, today, refresh_seconds: Math.round(CACHE_MS / 1000), place: map.place_name,
       month: { period: month, title: monthName(month) },
@@ -176,6 +233,7 @@ function init({ db, pay, learn, send, Bad }) {
                  total_zar: funding.reduce((a, r) => a + (r.amount_zar || 0), 0), sponsors: new Set(funding.map(r => r.sponsor)).size },
       tips: { list: tips, owners: activeOwners },
       sponsors: [...sponsorWalls.values()].sort((a, b) => b.walls - a.walls || a.name.localeCompare(b.name)),
+      accountability,
     };
   }
 
