@@ -38,7 +38,12 @@
     if (c.read_done) return [`Week ${c.week_no}: read, quiz not done`, "p-warn"];
     return [`Week ${c.week_no}: not started`, "p-warn"];
   }
-  const weekBar = (done, total) => `<span class="wbar" title="${done} of ${total} weeks" style="display:inline-grid;grid-template-columns:repeat(${total},1fr);gap:2px;width:min(160px,40vw);vertical-align:middle">${Array.from({length: total}, (_, i) => `<i style="height:8px;border-radius:2px;background:${i < done ? "var(--good)" : "var(--line)"}"></i>`).join("")}</span>`;
+  // 104 weeks are too many for one box each, so this is a plain bar with a mark at the end of every term (8 weeks).
+  const TERM = 8;
+  const weekBar = (done, total) => `<span class="wbar" title="${done} of ${total} weeks" style="display:inline-block;position:relative;height:8px;border-radius:4px;width:min(160px,40vw);vertical-align:middle;background:var(--line);overflow:hidden">
+    <i style="position:absolute;inset:0 auto 0 0;width:${total ? Math.min(100, done / total * 100) : 0}%;background:var(--good)"></i>
+    ${Array.from({length: Math.ceil(total / TERM) - 1}, (_, i) => `<b style="position:absolute;top:0;bottom:0;left:${(i + 1) * TERM / total * 100}%;width:1px;background:var(--bg)"></b>`).join("")}</span>`;
+  const termOf = w => Math.ceil(w / TERM);
 
   /* ---------------------------------------------------------------- Learning page */
   let tab = "progress", filter = "all", query = "";
@@ -133,16 +138,22 @@
     $("#main").innerHTML = `
       <div class="head"><div><h1>Learning</h1><p class="sub">${live} of ${d.settings.total_weeks} lessons live. Owners only see live lessons. Check each draft, then press Publish.</p></div></div>
       ${tabBar}
-      <div class="list">${Array.from({length: total}, (_, i) => i + 1).map(w => {
-        const l = byWeek.get(w);
-        if (!l) return `<a class="item" href="#/lesson/new?week=${w}"><span class="no">${w}</span><div class="main"><b class="muted">No lesson yet</b><small>Add week ${w}</small></div><div class="end"><span class="pill">Empty</span></div></a>`;
-        const ready = l.questions >= d.settings.questions_shown && l.chars > 40;
-        return `<a class="item" href="#/lesson/${esc(l.id)}"><span class="no">${w}</span><div class="main"><b>${esc(l.title)}</b>
-          <small>${l.questions} question${l.questions === 1 ? "" : "s"} · ${l.pictures} picture${l.pictures === 1 ? "" : "s"}${l.done ? ` · finished by ${l.done}` : ""}${l.status === "published" && l.published_by_name ? ` · published by ${esc(l.published_by_name)}` : ""}</small></div>
-          <div class="end">${l.status === "published" ? '<span class="pill p-good">Live</span>' : `<span class="pill p-warn">Draft</span>${ready ? "" : '<span class="pill">Not complete</span>'}`}</div></a>`;
-      }).join("")}</div>
+      ${Array.from({length: Math.ceil(total / TERM)}, (_, i) => i + 1).map(term => {
+        const weeks = Array.from({length: TERM}, (_, i) => (term - 1) * TERM + i + 1).filter(w => w <= total);
+        const liveN = weeks.filter(w => byWeek.get(w)?.status === "published").length;
+        return `<div class="head" style="margin:18px 0 6px"><h2 style="margin:0">Term ${term} <span class="muted" style="font-weight:400;font-size:14px">weeks ${weeks[0]}–${weeks[weeks.length - 1]}</span></h2>
+          <span class="pill ${liveN === weeks.length ? "p-good" : ""}">${liveN}/${weeks.length} live</span></div>
+        <div class="list">${weeks.map(w => {
+        const l = byWeek.get(w), isReview = l ? l.kind === "review" : w % TERM === 0;
+        if (!l) return `<a class="item" href="#/lesson/new?week=${w}${isReview ? "&kind=review" : ""}"><span class="no">${w}</span><div class="main"><b class="muted">No lesson yet</b><small>Add ${isReview ? "the review for" : ""} week ${w}</small></div><div class="end"><span class="pill">Empty</span></div></a>`;
+        const ready = l.chars > 40 && (isReview || l.questions >= d.settings.questions_shown);
+        return `<a class="item" href="#/lesson/${esc(l.id)}"><span class="no">${isReview ? "↻" : w}</span><div class="main"><b>${esc(l.title)}</b>
+          <small>${isReview ? `Week ${w} · review: quiz from weeks ${(term - 1) * TERM + 1}–${w - 1}` : `${l.questions} question${l.questions === 1 ? "" : "s"} · ${l.pictures} picture${l.pictures === 1 ? "" : "s"}`}${l.done ? ` · finished by ${l.done}` : ""}${l.status === "published" && l.published_by_name ? ` · published by ${esc(l.published_by_name)}` : ""}</small></div>
+          <div class="end">${l.status === "published" ? '<span class="pill p-good">Live</span>' : `<span class="pill p-warn">Draft</span>${ready ? "" : `<span class="pill">${l.chars > 40 ? "Not complete" : "Not written yet"}</span>`}`}</div></a>`;
+      }).join("")}</div>`;
+      }).join("")}
       <form class="card f" id="book" style="margin-top:16px"><h2>Book lessons</h2>
-        <p class="muted" style="margin:0" id="bookinfo">The app comes with all 20 weeks drafted from the isiXhosa Bitcoin Diploma book, with its pictures.</p>
+        <p class="muted" style="margin:0" id="bookinfo">The app comes with the 104-week course from the isiXhosa Bitcoin Diploma book, with its pictures. Terms are written one at a time; weeks not written yet come in with their title only.</p>
         <label class="check fld wide"><input type="checkbox" name="replace"> Also replace draft lessons that no owner has opened. Your changes to those drafts will be lost. Live lessons are never changed.</label>
         <div class="actions"><button class="btn" type="submit">Bring in book lessons</button></div></form>
       <form class="card f" id="imp" style="margin-top:16px"><h2>Import lessons file</h2>
@@ -176,7 +187,7 @@
         <div class="fields">
           <label class="fld">Questions shown per quiz<input type="number" name="questions_shown" min="1" max="20" value="${s.questions_shown}"><span class="hint">Picked at random from the lesson's questions each try.</span></label>
           <label class="fld">Right answers needed to pass<input type="number" name="pass_correct" min="1" max="20" value="${s.pass_correct}"></label>
-          <label class="fld">Weeks in the course<input type="number" name="total_weeks" min="1" max="60" value="${s.total_weeks}"></label>
+          <label class="fld">Weeks in the course<input type="number" name="total_weeks" min="1" max="104" value="${s.total_weeks}"></label>
           <label class="fld">Course starts on<input type="date" name="start_date" value="${esc(s.start_date || "")}"><span class="hint">Week 1 opens on this day. Leave empty to open now.</span></label>
           <label class="fld">Practice weeks<input type="number" name="demo_weeks" min="0" max="5" value="${s.demo_weeks ?? 2}"><span class="hint">Anyone can try these first weeks from the owner app's sign-in page ("Try a practice lesson"). Nothing is saved and no sats are earned. 0 turns practice off.</span></label>
           <label class="check fld wide"><input type="checkbox" name="one_per_week" ${s.one_per_week ? "checked" : ""}> One new lesson a week (the next lesson opens on the Monday after finishing one)</label>
@@ -207,12 +218,13 @@
       const week = params.get("week") || "";
       shell("learning", `<a class="back" href="#/learning?t=lessons">${I.back}Lessons</a><div class="head"><div><h1>New lesson</h1></div></div>
         <form class="card f" id="nl"><div class="fields">
-          <label class="fld">Week<input type="number" name="week_no" min="1" max="60" value="${esc(week)}" required></label>
-          <label class="fld">Title<input type="text" name="title" required placeholder="e.g. Kutheni sifuna imali?"></label></div>
+          <label class="fld">Week<input type="number" name="week_no" min="1" max="104" value="${esc(week)}" required></label>
+          <label class="fld">Title<input type="text" name="title" required placeholder="e.g. Kutheni sifuna imali?"></label>
+          <label class="fld">Type<select name="kind"><option value="lesson">Lesson</option><option value="review" ${params.get("kind") === "review" ? "selected" : ""}>Review week (quiz from the term's lessons)</option></select></label></div>
           <div class="actions"><button class="btn" type="submit">Create draft</button></div></form>`);
       $("#nl").addEventListener("submit", async e => {
         e.preventDefault(); const f = new FormData(e.target);
-        try { const l = await call("POST", "/api/lessons", {week_no: Number(f.get("week_no")), title: f.get("title")}); location.hash = "#/lesson/" + l.id; }
+        try { const l = await call("POST", "/api/lessons", {week_no: Number(f.get("week_no")), title: f.get("title"), kind: f.get("kind")}); location.hash = "#/lesson/" + l.id; }
         catch (err) { toast(friendlyError(err), true); }
       });
       return;
@@ -224,16 +236,18 @@
     const live = l.status === "published";
     shell("learning", `
       <a class="back" href="#/learning?t=lessons">${I.back}Lessons</a>
-      <div class="head"><div><h1>Week ${l.week_no}: ${esc(l.title)}</h1>
+      <div class="head"><div><h1>Week ${l.week_no}${l.kind === "review" ? " (review)" : ""}: ${esc(l.title)}</h1>
         <p class="sub">${live ? `<span class="pill p-good">Live</span> published ${esc(when(l.published_at))}${l.published_by_name ? " by " + esc(l.published_by_name) : ""}` : '<span class="pill p-warn">Draft</span> owners can\'t see it yet'}
         · opened by ${l.usage.opened} · finished by ${l.usage.done}${l.source ? ` · from ${esc(l.source)}` : ""}</p></div>
         <div class="actions"><a class="btn ghost" href="#lesson-preview">Preview</a>${live ? '<button class="btn ghost" id="unpub">Move back to draft</button>' : '<button class="btn" id="pub">Publish</button>'}</div></div>
       ${live ? '<div class="note" style="margin-bottom:16px">This lesson is live. Changes you save show to owners straight away.</div>' : ""}
       <div class="card f">
         <div class="fields">
-          <label class="fld" style="max-width:120px">Week<input type="number" id="week_no" min="1" max="60" value="${l.week_no}"></label>
+          <label class="fld" style="max-width:120px">Week<input type="number" id="week_no" min="1" max="104" value="${l.week_no}"></label>
           <label class="fld">Title<input type="text" id="title" value="${esc(l.title)}"></label>
+          <label class="fld" style="max-width:260px">Type<select id="kind"><option value="lesson">Lesson</option><option value="review" ${l.kind === "review" ? "selected" : ""}>Review week</option></select></label>
         </div>
+        <p class="muted" style="margin:0">Term ${l.term}, weeks ${(l.term - 1) * TERM + 1}–${l.term * TERM}.</p>
         <label class="fld wide">Lesson text
           <textarea id="body" style="min-height:360px;font-family:var(--mono);font-size:14px;line-height:1.5">${esc(l.body)}</textarea>
           <span class="hint">Keep pages short for phones. <b>---</b> on its own line = new page · <b># </b>heading · <b>- </b>bullet · <b>&gt; </b>"remember this" box · <b>**bold**</b> · blank line = new paragraph.</span></label>
@@ -242,7 +256,8 @@
           <label class="btn ghost small" style="margin-top:10px;cursor:pointer">Add picture<input type="file" id="addpic" accept="image/*" hidden></label>
           <span class="hint">The picture goes where the cursor is in the text.</span></div>
       </div>
-      <div class="card"><div class="head" style="margin:0"><h2>Quiz questions</h2><span class="muted" style="font-size:13px">Owners get ${s.questions_shown} at random and need ${s.pass_correct} right. Write at least ${s.questions_shown}; 8 or more is better.</span></div>
+      ${l.review ? `<div class="note" style="margin-bottom:16px">Review week: the quiz picks ${s.questions_shown} questions at random from the lessons in weeks ${l.review.from}–${l.review.to} (${l.review.questions} questions, ${l.review.live_questions} in live lessons). Owners only get questions from live lessons. You don't need to write questions here; any you add are used too.</div>` : ""}
+      <div class="card"><div class="head" style="margin:0"><h2>Quiz questions</h2><span class="muted" style="font-size:13px">Owners get ${s.questions_shown} at random and need ${s.pass_correct} right. ${l.review ? "Optional for a review week." : `Write at least ${s.questions_shown}; 8 or more is better.`}</span></div>
         <div id="qs" class="grid"></div>
         <div class="actions"><button class="btn ghost small" id="addq" type="button">Add question</button></div></div>
       <div class="actions" style="position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));background:var(--bg);padding:10px 0;z-index:5">
@@ -287,7 +302,7 @@
     };
     drawPics(); drawQs(); drawPreview();
     $("#body").addEventListener("input", () => { dirty(); clearTimeout(drawPreview.t); drawPreview.t = setTimeout(drawPreview, 400); });
-    ["#title", "#week_no"].forEach(s => $(s).addEventListener("input", dirty));
+    ["#title", "#week_no", "#kind"].forEach(s => $(s).addEventListener("input", dirty));
     $("#addq").addEventListener("click", () => { questions.push({question: "", choices: ["", "", "", ""], answer: 0}); drawQs(); dirty(); });
     $("#addpic").addEventListener("change", async e => {
       const file = e.target.files[0]; if (!file) return;
@@ -300,7 +315,7 @@
       e.target.value = "";
     });
     const save = async () => {
-      const body = {week_no: Number($("#week_no").value), title: $("#title").value, body: $("#body").value,
+      const body = {week_no: Number($("#week_no").value), title: $("#title").value, kind: $("#kind").value, body: $("#body").value,
         questions: questions.map(q => {
           const pairs = q.choices.map((c, j) => ({c: (c || "").trim(), j})).filter(x => x.c);
           return {id: q.id, question: q.question, choices: pairs.map(x => x.c), answer: pairs.findIndex(x => x.j === q.answer)};
@@ -364,7 +379,7 @@
         </div>
         <div class="scroll"><table class="t"><thead><tr><th>Week</th><th>Lesson</th><th>Read</th><th class="r">Quiz tries</th><th>Finished</th><th>Paid in</th></tr></thead><tbody>
           ${d.weeks.filter(w => w.state !== "locked" || w.opened_at).map(w => `<tr>
-            <td class="num">${w.week_no}</td>
+            <td class="num">${w.week_no}${w.kind === "review" ? " ↻" : ""}</td>
             <td>${w.title ? esc(w.title) : '<span class="muted">No lesson yet</span>'}${w.lesson_status === "draft" ? ' <span class="pill p-warn">Draft</span>' : ""}
               ${w.state === "ready" ? ' <span class="pill p-or">Open now</span>' : w.state === "wait" ? ` <span class="pill">Opens ${fmtDate(w.opens_on)}</span>` : w.state === "soon" ? ' <span class="pill">Not live</span>' : ""}</td>
             <td>${w.read_done_at ? "✓ " + esc(when(w.read_done_at)) : w.opened_at ? '<span class="muted">Opened</span>' : '<span class="muted">—</span>'}</td>

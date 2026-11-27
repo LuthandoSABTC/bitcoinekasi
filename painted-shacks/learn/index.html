@@ -53,6 +53,16 @@ h1{font-size:24px;line-height:1.2;margin:4px 0 12px}
 .dots span{aspect-ratio:1;border-radius:50%;background:var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--muted)}
 .dots span.done{background:var(--good);color:#fff}
 .dots span.now{background:var(--orange);color:var(--ink)}
+.dots.term{grid-template-columns:repeat(8,1fr)}
+.termhead{margin-top:10px;font-size:14px;font-weight:700;color:var(--muted)}
+.terms{display:flex;gap:3px;margin-top:12px}
+.terms i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.terms i.part{background:var(--orange)}
+.terms i.on{background:var(--good)}
+.terms i.cur{outline:2px solid var(--ink);outline-offset:1px}
+.termfold{margin-bottom:10px}
+.termfold summary{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;cursor:pointer;font-size:17px;list-style:none}
+.termfold summary::-webkit-details-marker{display:none}
 .menu{display:grid;gap:10px}
 .menu a{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-decoration:none;color:var(--fg);font-weight:600}
 .list{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
@@ -124,6 +134,7 @@ const T = {
     wait: d => `Ugqibile isifundo sale veki. Enkosi! Isifundo esilandelayo sivula ngoMvulo, ${d}.`,
     soon: "Isifundo esilandelayo asikalungi. Siza kufika kungekudala.", alldone: "Ugqibe zonke izifundo. Halala! 🎉",
     progress: "Inkqubela yakho", weeks_of: (n, t) => `${n} kwi-${t} iiveki zigqityiwe`,
+    term: n => `Ikota ${n}`, term_of: (n, t) => `Ikota ${n} kwezi-${t}`, review: "Phinda", term_done: (d, n) => `${d}/${n}`,
     all: "Zonke izifundo", money: "Imali yam", settings: "Useto", home: "Ekhaya",
     next: "Okulandelayo", prev: "Emva", page: (n, m) => `Iphepha ${n} kwa-${m}`, done_reading: "Ndigqibile ukufunda",
     quiz_intro: (n, k) => `Imibuzo eli-${n}. Phendula ezi-${k} ngokuchanekileyo ukuze uphumelele.`, quiz_start: "Qala imibuzo",
@@ -151,6 +162,7 @@ const T = {
     wait: d => `You finished this week's lesson. Thank you! The next lesson opens on Monday, ${d}.`,
     soon: "The next lesson is not ready yet. It's coming soon.", alldone: "You finished all the lessons. Well done! 🎉",
     progress: "Your progress", weeks_of: (n, t) => `${n} of ${t} weeks done`,
+    term: n => `Term ${n}`, term_of: (n, t) => `Term ${n} of ${t}`, review: "Review", term_done: (d, n) => `${d}/${n}`,
     all: "All lessons", money: "My money", settings: "Settings", home: "Home",
     next: "Next", prev: "Back", page: (n, m) => `Page ${n} of ${m}`, done_reading: "I finished reading",
     quiz_intro: (n, k) => `${n} questions. Get ${k} right to pass.`, quiz_start: "Start the questions",
@@ -256,15 +268,26 @@ async function loadMe(force) {
   return me;
 }
 
+// The course runs in terms of 8 weeks: 7 lessons, then a review week (Phinda).
+const TERM = 8;
+const wkLabel = w => t("week", w.week_no) + (w.kind === "review" ? ` · ${t("review")}` : "");
+function terms(weeks) {
+  const out = [];
+  for (const w of weeks) { const n = w.term || Math.ceil(w.week_no / TERM); (out[n - 1] ||= { n, weeks: [] }).weeks.push(w); }
+  return out.filter(Boolean);
+}
+
 async function home() {
   let m; try { m = await loadMe(true); } catch (e) { return; }
   const tm = m.this_month, cur = m.next_week ? m.weeks[m.next_week - 1] : null;
   let lessonCard;
   if (!cur) lessonCard = `<p style="margin:0;font-weight:600">${t("alldone")}</p>`;
-  else if (cur.state === "ready") lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><h3>${esc(cur.title)}</h3>
+  else if (cur.state === "ready") lessonCard = `<div class="wk">${wkLabel(cur)}</div><h3>${esc(cur.title)}</h3>
       <a class="btn" href="#/lesson/${cur.week_no}">${cur.read_done ? t("quiz") : t("start")}</a>`;
-  else if (cur.state === "wait") lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><p style="margin:0">${t(cur.week_no === 1 ? "starts" : "wait", day(cur.opens_on))}</p>`;
-  else lessonCard = `<div class="wk">${t("week", cur.week_no)}</div><p style="margin:0">${t("soon")}</p>`;
+  else if (cur.state === "wait") lessonCard = `<div class="wk">${wkLabel(cur)}</div><p style="margin:0">${t(cur.week_no === 1 ? "starts" : "wait", day(cur.opens_on))}</p>`;
+  else lessonCard = `<div class="wk">${wkLabel(cur)}</div><p style="margin:0">${t("soon")}</p>`;
+  // Progress shows the term the owner is in now (8 dots), not all 104 weeks.
+  const ts = terms(m.weeks), nowTerm = ts.find(x => x.weeks.some(w => w.week_no === (m.next_week || m.total_weeks))) || ts[ts.length - 1];
   render(`
     <h1>${esc(t("hello", m.name ? m.name.split(" ")[0] : ""))}</h1>
     <div class="card lesson-now"><h2>${t("your_lesson")}</h2>${lessonCard}</div>
@@ -274,20 +297,29 @@ async function home() {
       <div style="font-weight:600">${t("of_max", tm.paid_weeks, tm.max_weeks, sats(tm.max_weeks * tm.sats_per_week))}</div>
       <div style="font-size:15px">${t("payday", day(tm.pay_date))}</div></div>
     <div class="card"><h2>${t("progress")}</h2><div style="font-weight:700">${t("weeks_of", m.done_count, m.total_weeks)}</div>
-      <div class="dots">${m.weeks.map(w => `<span class="${w.state === "done" ? "done" : w.state === "ready" ? "now" : ""}">${w.week_no}</span>`).join("")}</div></div>
+      ${nowTerm ? `<div class="termhead">${t("term_of", nowTerm.n, ts.length)}</div>
+      <div class="dots term">${nowTerm.weeks.map(w => `<span class="${w.state === "done" ? "done" : w.state === "ready" ? "now" : ""}${w.kind === "review" ? " rv" : ""}">${w.kind === "review" ? "↻" : w.week_no}</span>`).join("")}</div>
+      <div class="terms">${ts.map(x => { const d = x.weeks.filter(w => w.state === "done").length; return `<i class="${d === x.weeks.length ? "on" : d ? "part" : ""}${x === nowTerm ? " cur" : ""}"></i>`; }).join("")}</div>` : ""}</div>
     <nav class="menu"><a href="#/weeks">${t("all")}<span>›</span></a><a href="#/money">${t("money")}<span>›</span></a><a href="#/me">${t("settings")}<span>›</span></a></nav>`);
 }
 
 async function weeks() {
   let m; try { m = await loadMe(true); } catch (e) { return; }
   const label = { done: ["s_done", "p-good"], ready: ["s_ready", "p-or"], wait: ["s_wait", ""], soon: ["s_soon", ""], locked: ["s_locked", ""] };
-  render(`<h1>${t("all")}</h1><div class="list">${m.weeks.map(w => {
+  const item = w => {
       const open = w.state === "done" || w.state === "ready";
       const tag = open ? "a" : "div";
-      return `<${tag} class="item ${w.state}" ${open ? `href="#/lesson/${w.week_no}"` : ""}><span class="n">${w.week_no}</span>
-        <div class="m"><b>${esc(w.title || t("week", w.week_no))}</b>${w.completed_on ? `<small>${day(w.completed_on)} · ${w.score}/${w.total}</small>` : w.state === "wait" ? `<small>${day(w.opens_on)}</small>` : ""}</div>
+      return `<${tag} class="item ${w.state}" ${open ? `href="#/lesson/${w.week_no}"` : ""}><span class="n">${w.kind === "review" ? "↻" : w.week_no}</span>
+        <div class="m"><b>${esc(w.title || wkLabel(w))}</b>${w.completed_on ? `<small>${day(w.completed_on)} · ${w.score}/${w.total}</small>` : w.state === "wait" ? `<small>${day(w.opens_on)}</small>` : w.title && w.kind === "review" ? `<small>${wkLabel(w)}</small>` : ""}</div>
         <span class="pill ${label[w.state][1]}">${t(label[w.state][0])}</span></${tag}>`;
-    }).join("")}</div>`, "#/");
+  };
+  // One fold per term. The term the owner is in now is open; the others are closed so 104 weeks don't make a long list.
+  const now = m.next_week || m.total_weeks;
+  render(`<h1>${t("all")}</h1>${terms(m.weeks).map(x => {
+      const d = x.weeks.filter(w => w.state === "done").length, cur = x.weeks.some(w => w.week_no === now);
+      return `<details class="termfold" ${cur ? "open" : ""}><summary><b>${t("term", x.n)}</b><span class="pill ${d === x.weeks.length ? "p-good" : ""}">${t("term_done", d, x.weeks.length)}</span></summary>
+        <div class="list">${x.weeks.map(item).join("")}</div></details>`;
+    }).join("")}`, "#/");
 }
 
 /* ---------- lesson reader: one page at a time, then the quiz */
@@ -314,7 +346,7 @@ async function lesson(week, pageNo) {
   else if (l.state === "done") footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="${h}/lesson/${week}/${n - 1}">‹ ${t("prev")}</a>` : ""}<a class="btn" href="#/">${t("go_home")}</a></div>`;
   else footer = `<div class="row">${n > 1 ? `<a class="btn ghost" href="${h}/lesson/${week}/${n - 1}">‹</a>` : ""}<button class="btn" id="readdone" style="flex:3">${t("done_reading")} ✓</button></div>`;
   render(`${demoNote()}
-    <div class="pageno">${t("week", week)} · ${t("page", n, pages.length)}</div>
+    <div class="pageno">${wkLabel({ week_no: week, kind: l.kind })} · ${t("page", n, pages.length)}</div>
     <div class="prog"><i style="width:${Math.round(n / pages.length * 100)}%"></i></div>
     <h1 style="font-size:20px">${esc(l.title)}</h1>
     <article class="page">${pages[n - 1] || ""}</article>
@@ -333,7 +365,7 @@ async function quizIntro(week) {
   let l; try { l = await call("GET", lessonUrl(week)); } catch (e) { return fail(e); }
   if (l.state === "done") { location.hash = "#/"; return; }
   if (!l.read_done) { render(`<div class="note">${t("read_first")}</div><a class="btn" href="#/lesson/${week}">${t("start")}</a>`, "#/"); return; }
-  render(`${demoNote()}<div class="pageno">${t("week", week)}</div><h1>${esc(l.title)}</h1>
+  render(`${demoNote()}<div class="pageno">${wkLabel({ week_no: week, kind: l.kind })}</div><h1>${esc(l.title)}</h1>
     <div class="card"><p style="margin:0 0 16px;font-weight:600">${t("quiz_intro", l.questions, l.pass_correct)}</p>
     <button class="btn" id="go">${t("quiz_start")}</button></div>
     <a class="btn ghost" href="${H()}/lesson/${week}">${t("read_again")}</a>`, isDemo() ? "#/demo" : "#/");
