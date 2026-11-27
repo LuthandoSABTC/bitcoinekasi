@@ -6,6 +6,8 @@ const crypto = require("node:crypto");
 const { open } = require("./db");
 const payments = require("./payments");
 const learning = require("./learn");
+const publicDash = require("./public");
+const partnerView = require("./partner");
 
 const PORT = Number(process.env.PORT || 3417);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -15,7 +17,8 @@ const SESSION_DAYS = 14;
 const COOKIE = COOKIE_SECURE ? "__Host-ps_session" : "ps_session";
 const PHOTO_DIR = process.env.PHOTO_DIR || require("node:path").join(require("node:path").dirname(DB_PATH), "photos");
 const MAX_PHOTO_BYTES = 1.5e6;      // the phone shrinks photos to about 150-300 KB before sending
-const INSPECT_EVERY_DAYS = Number(process.env.INSPECT_EVERY_DAYS || 90);  // each shack checked about every 3 months
+// How often each shack is due for an inspection. Follows the cleaning-check window in payment settings
+// (window minus 5 days, so there is time before pay day), unless INSPECT_EVERY_DAYS is set in the service file.
 const DUE_SOON_DAYS = 14;
 
 const db = open(DB_PATH);
@@ -45,7 +48,15 @@ const T = {
     cols: { sponsor_id: "id!", name: "text!", email: "email", chat: "text", notes: "text" } },
   sponsor_payments: {
     cols: { sponsor_id: "id!", received_on: "date!", amount_sats: "int!", amount_zar: "num", purpose: "text", renews_on: "date",
-            show_publicly: "bool", notes: "text" } },
+            show_publicly: "bool", proof_url: "url", notes: "text" } },
+  // Public report (/dashboard): costs and other money in, and each partner's video post. Everything here is public.
+  report_entries: {
+    cols: { entry_date: "date!", direction: "text!", category: "text", what: "text!", amount_sats: "int!", proof_url: "url" } },
+  past_payouts: {
+    cols: { period: "text!", paid_on: "date!", households: "int!", amount_sats: "int!", proof_url: "url" } },
+  partner_posts: {
+    cols: { sponsor_id: "id!", video_on: "date", video_x_url: "url", video_nostr_url: "url", impressions: "int", views: "int",
+            coming_soon: "bool", note: "text" } },
   owners: {
     cols: { full_name: "text", phone: "text", age: "int", occupation: "text", lightning_address: "lnaddr", show_address_publicly: "bool",
             preferred_language: "text", active: "bool", joined_on: "date", notes: "text" } },
@@ -77,6 +88,22 @@ function clean(table, body, isNew) {
       case "bool": v = v === true || v === 1 || v === "1" || v === "true" ? 1 : 0; break;
     }
     out[col] = v;
+  }
+  if (table === "report_entries") {
+    if ("direction" in out && !["in", "out"].includes(out.direction)) throw new Bad("Choose money in or money out.");
+    if ("category" in out && out.category !== null && !["paint", "running", "partnerships", "donation", "other"].includes(out.category)) throw new Bad("Choose what kind of line this is.");
+    if ("amount_sats" in out && !(out.amount_sats > 0)) throw new Bad("The amount must be more than 0 sats.");
+    if (out.category === null) delete out.category;
+  }
+  if (table === "past_payouts") {
+    if ("period" in out && !/^\d{4}-(0[1-9]|1[0-2])$/.test(out.period)) throw new Bad("Choose the month.");
+    for (const k of ["households", "amount_sats"]) if (out[k] != null && out[k] < 0) throw new Bad("Numbers can't be below 0.");
+    if (isNew && out.period && db.prepare("select 1 from past_payouts where period = ?").get(out.period)) throw new Bad("That month is already in the list. Edit it instead.");
+  }
+  if (table === "partner_posts") {
+    for (const k of ["impressions", "views"]) if (out[k] != null && out[k] < 0) throw new Bad("Reach can't be below 0.");
+    if (isNew && out.sponsor_id && db.prepare("select 1 from partner_posts where sponsor_id = ?").get(out.sponsor_id))
+      throw new Bad("This sponsor already has a video post. Edit that one.");
   }
   return out;
 }
@@ -151,10 +178,16 @@ async function handle(req, res) {
   const p = url.pathname.replace(/\/+$/, "");
   const method = req.method;
 
+  // Public dashboard data (/dashboard): read-only, no sign-in, only non-private numbers. See public.js.
+  if (p.startsWith("/api/public/") && publicData.routes(req, res, p, method)) return;
+
   // Cross-site request protection: every change must carry our header (browsers can't add it cross-site without CORS).
   if (method !== "GET" && req.headers["x-ps-admin"] !== "1") throw new Bad("Missing app header", 403);
 
   if (p === "/api/health") return send(res, 200, { ok: true });
+
+  // Partner view (/dashboard/partners/): paid sponsors only, their own sign-in. See partner.js.
+  if (p.startsWith("/api/partner/")) return partner.routes(req, res, p, method);
 
   // Owner learning app (/learn): owners sign in with shack number + PIN, separate from staff accounts.
   if (p.startsWith("/api/learn/")) return learn.ownerRoutes(req, res, p, method);
@@ -211,7 +244,7 @@ async function handle(req, res) {
     out.inspections = db.prepare(`select i.*, s.full_name as inspector_name from inspections i left join staff s on s.id = i.inspector_id
                                    order by i.inspected_on desc, i.created_at desc`).all();
     out.inspection_photos = db.prepare("select id, inspection_id, label, bytes, created_at from inspection_photos order by created_at").all();
-    out.inspection_rules = { every_days: INSPECT_EVERY_DAYS, due_soon_days: DUE_SOON_DAYS };
+    out.inspection_rules = { every_days: inspectEveryDays(), due_soon_days: dueSoonDays() };
     return send(res, 200, out);
   }
 
@@ -240,11 +273,51 @@ async function handle(req, res) {
     return send(res, 200, buf, { "Content-Type": "application/octet-stream", "Content-Disposition": `attachment; filename="painted-shacks-${day}.db"` });
   }
 
+  // Public dashboard map: place name and where each section is (admin only to change; shown publicly).
+  if (p === "/api/dashboard-map" && method === "GET") return send(res, 200, publicData.mapSettings());
+  if (p === "/api/dashboard-map" && method === "PUT") {
+    const out = publicData.saveMap(await readJson(req), user);
+    audit(user, "dash_map", "1", "UPDATE", null, out);
+    return send(res, 200, out);
+  }
+  // Sign-ins for paid partners (one or more per sponsor).
+  if (p.startsWith("/api/partner-logins") && await partner.adminRoutes(req, res, p, method, user)) return;
+
+  // Public report settings (signed agreements, money left over from last year, wall statuses, questions, draft note).
+  if (p === "/api/report-settings" && method === "GET") return send(res, 200, publicData.reportSettings());
+  if (p === "/api/report-settings" && method === "PUT") {
+    const out = publicData.saveReport(await readJson(req), user);
+    audit(user, "report_settings", "1", "UPDATE", null, out);
+    return send(res, 200, out);
+  }
+  // Put many shacks in a section at once: { areas: { <shack id>: "Zinyoka" | "" } }
+  if (p === "/api/shacks/areas" && method === "POST") {
+    const { areas } = await readJson(req);
+    if (!areas || typeof areas !== "object" || Array.isArray(areas)) throw new Bad("Nothing to save.");
+    const changed = tx(() => {
+      let n = 0;
+      for (const [id, v] of Object.entries(areas)) {
+        if (typeof v !== "string" || v.length > 80) throw new Bad("A section name is too long.");
+        const before = db.prepare("select id, area from shacks where id = ?").get(id);
+        if (!before) throw new Bad("A shack was not found. Reload and try again.", 404);
+        const area = v.trim() || null;
+        if ((before.area || null) === area) continue;
+        db.prepare("update shacks set area = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') where id = ?").run(area, id);
+        audit(user, "shacks", id, "UPDATE", { area: before.area }, { area });
+        n++;
+      }
+      return n;
+    });
+    publicData.clear();
+    return send(res, 200, { changed });
+  }
+
   if (p === "/api/import" && method === "POST") return send(res, 200, importSeed(await readJson(req), user));
 
-  const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks)(?:\/([\w-]{1,64}))?$/);
+  const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks|report_entries|partner_posts|past_payouts)(?:\/([\w-]{1,64}))?$/);
   if (m) {
     const [, table, id] = m;
+    publicData.clear();   // the public dashboard shows sponsors, shacks and report lines: rebuild it on the next visit
     if (method === "POST" && !id) {
       const row = clean(table, await readJson(req), true);
       row.id = crypto.randomUUID();
@@ -285,7 +358,13 @@ async function handle(req, res) {
 }
 
 /* ------------------------------------------------------------------ inspections */
-const PAINT = ["good", "fading", "damaged"], LOGO = ["yes", "partly", "no"];
+const PAINT = ["good", "fading", "damaged"], LOGO = ["yes", "partly", "no"], CLEAN = ["yes", "partly", "no"];
+function inspectEveryDays() {
+  if (process.env.INSPECT_EVERY_DAYS) return Number(process.env.INSPECT_EVERY_DAYS);
+  const w = db.prepare("select clean_window_days from pay_settings where id = 1").get()?.clean_window_days || 35;
+  return Math.max(7, w - 5);
+}
+const dueSoonDays = () => inspectEveryDays() <= 45 ? 7 : DUE_SOON_DAYS;
 function resultOf(i) {
   if (i.paint === "damaged" || i.logo === "no") return "repaint";
   if (i.paint === "fading" || i.logo === "partly") return "touch_up";
@@ -312,8 +391,8 @@ function applyLatestInspection(shackId, user) {
 function dueInfo(lastOn) {
   const t = today();
   if (!lastOn) return { due_on: t, due: "overdue" };
-  const dueOn = addDays(lastOn, INSPECT_EVERY_DAYS);
-  return { due_on: dueOn, due: dueOn <= t ? "overdue" : addDays(t, DUE_SOON_DAYS) >= dueOn ? "due_soon" : "ok" };
+  const dueOn = addDays(lastOn, inspectEveryDays());
+  return { due_on: dueOn, due: dueOn <= t ? "overdue" : addDays(t, dueSoonDays()) >= dueOn ? "due_soon" : "ok" };
 }
 
 function photoPath(file) {
@@ -363,7 +442,7 @@ async function inspectorRoutes(req, res, p, method, user, url) {
     const order = { overdue: 0, due_soon: 1, ok: 2 };
     const shacks = rows.map(r => ({ ...r, ...dueInfo(r.last_on) }))
       .sort((a, b) => order[a.due] - order[b.due] || a.due_on.localeCompare(b.due_on) || a.shack_no - b.shack_no);
-    return send(res, 200, { shacks, rules: { every_days: INSPECT_EVERY_DAYS, due_soon_days: DUE_SOON_DAYS }, today: today() });
+    return send(res, 200, { shacks, rules: { every_days: inspectEveryDays(), due_soon_days: dueSoonDays() }, today: today() });
   }
 
   // My own inspections (last 120 days).
@@ -384,11 +463,13 @@ async function inspectorRoutes(req, res, p, method, user, url) {
     if (existing) return send(res, 200, existing);     // already received (sent twice on bad signal)
     if (!db.prepare("select 1 from shacks where id = ?").get(String(b.shack_id || ""))) throw new Bad("That shack no longer exists. Ask the admin.", 404);
     if (!PAINT.includes(b.paint) || !LOGO.includes(b.logo)) throw new Bad("Please answer both checks.");
+    // Older copies of the app on a phone don't ask about cleaning yet: those inspections are saved without it.
+    if (b.clean != null && !CLEAN.includes(b.clean)) throw new Bad("Please answer the cleaning check.");
     const on = String(b.inspected_on || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(on) || on > addDays(today(), 1) || on < addDays(today(), -60)) throw new Bad("The inspection date is not valid.");
     const notes = b.notes == null ? null : String(b.notes).trim().slice(0, 2000) || null;
     const photoCount = Math.max(0, Math.min(8, Number(b.photo_count) || 0));
-    const row = { id, shack_id: b.shack_id, inspector_id: user.id, inspected_on: on, paint: b.paint, logo: b.logo,
+    const row = { id, shack_id: b.shack_id, inspector_id: user.id, inspected_on: on, paint: b.paint, logo: b.logo, clean: b.clean ?? null,
                   result: resultOf(b), notes, photo_count: photoCount };
     const saved = tx(() => {
       const cols = Object.keys(row);
@@ -516,6 +597,8 @@ function importSeed(d, user) {
 const pay = payments.init({ db, audit, tx, Bad, readJson, send, checkPassword });
 const learn = learning.init({ db, audit, tx, Bad, readJson, send, hashPassword, checkPassword, sha256, readCookie, clientIp, currentUser,
   cookieSecure: COOKIE_SECURE, dataDir: require("node:path").dirname(DB_PATH), pay });
+const publicData = publicDash.init({ db, pay, learn, send, Bad });
+const partner = partnerView.init({ db, send, Bad, readJson, hashPassword, checkPassword, sha256, readCookie, clientIp, audit, cookieSecure: COOKIE_SECURE });
 
 if (require.main === module) {
   pay.startTimers();
@@ -529,4 +612,4 @@ if (require.main === module) {
   }).listen(PORT, HOST, () => console.log(`Painted Shacks API on http://${HOST}:${PORT}, database ${DB_PATH}`));
 }
 
-module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn };
+module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn, publicData, partner };

@@ -151,7 +151,18 @@
     let d;
     try { d = await call("GET", "/api/payout-batches/" + id); } catch (err) { return notFound(); }
     const {batch: b, lines, settings: s} = d;
-    const ready = lines.filter(l => l.status === "pending" && l.amount_sats > 0 && l.owner_address && !(l.address_ok === 0 && l.checked_address === l.owner_address));
+    const cleanOk = l => !l.clean || l.clean.passes;
+    const ready = lines.filter(l => l.status === "pending" && l.amount_sats > 0 && l.owner_address && !(l.address_ok === 0 && l.checked_address === l.owner_address) && cleanOk(l));
+    const notClean = lines.filter(l => l.status === "pending" && l.amount_sats > 0 && !cleanOk(l));
+    const CW = {yes: ["Clean", "p-good"], partly: ["Needs tidying", "p-warn"], no: ["Dirty", "p-bad"]};
+    const cleanCell = l => {
+      if (!l.clean) return '<span class="muted" style="font-size:12px">Not needed</span>';
+      const c = l.clean;
+      const rows = c.shacks.map(x => `<div style="font-size:12px;white-space:nowrap"><a href="#/shack/${esc(x.shack_id)}">#${esc(x.shack_no)}</a> ${x.inspected_on ? `${fmtDate(x.inspected_on)} ${x.clean ? `<span class="pill ${CW[x.clean][1]}">${CW[x.clean][0]}</span>` : '<span class="pill">No cleaning check</span>'}` : '<span class="pill p-bad">Not inspected</span>'}</div>`).join("") || '<div style="font-size:12px;color:var(--bad)">No shack linked</div>';
+      const over = c.overridden ? `<div style="font-size:12px;color:var(--warn);max-width:220px">Paid anyway by ${esc(l.clean_override_by || "admin")}: ${esc(l.clean_override_note)}${l.status === "pending" ? ` <a href="#" data-unover="${esc(l.id)}">undo</a>` : ""}</div>` : "";
+      const btn = !c.ok && !c.overridden && c.required && l.status === "pending" && l.amount_sats > 0 ? `<button class="btn ghost small" data-over="${esc(l.id)}" data-who="${esc(l.owner_name || "this owner")}" style="margin-top:4px">Pay anyway</button>` : "";
+      return rows + over + btn;
+    };
     const notReady = lines.filter(l => l.status === "pending" && l.amount_sats > 0 && !ready.includes(l));
     const waitingWeekly = lines.filter(l => l.status === "pending" && l.reason === "weekly_learning");
     const busy = lines.some(l => ["approved", "sending"].includes(l.status));
@@ -165,13 +176,14 @@
       <div class="stats">
         <div class="stat hero"><span class="lbl">Ready to approve</span><span class="val">${fmtSats(total)}</span><span style="font-size:13px">sats to ${ready.length} owner${ready.length === 1 ? "" : "s"}</span></div>
         <div class="stat"><span class="lbl">Paid</span><span class="val">${fmtSats(paid.reduce((a, l) => a + l.amount_sats, 0))}</span><span class="muted" style="font-size:13px">${paid.length} owners · ${fmtSats(paid.reduce((a, l) => a + (l.fee_sats || 0), 0))} sats fees</span></div>
-        <div class="stat"><span class="lbl">Need attention</span><span class="val">${notReady.length + lines.filter(l => l.status === "failed").length}</span><span class="muted" style="font-size:13px">no working address, or failed</span></div>
+        <div class="stat"><span class="lbl">Need attention</span><span class="val">${notReady.length + lines.filter(l => l.status === "failed").length}</span><span class="muted" style="font-size:13px">${notClean.length} not passed cleaning · no address · failed</span></div>
       </div>
       ${busy ? `<div class="note" style="margin-bottom:16px;color:var(--fg)">Sending… this page updates by itself.</div>` : ""}
       <div class="card"><h2>Owners</h2>
+        <p style="margin:0"><b>Owners are paid only when both are done:</b> lessons finished in the app, and every shack they own passed a cleaning check ${s.require_clean ? `between ${fmtDate(lines.find(l => l.clean)?.clean.from)} and pay day` : "(switched off in payment settings)"}. Open a shack number to see the inspection and photos.</p>
         <p class="muted" style="margin:0">Weeks come from the owner learning app (lesson read and quiz passed). Press <b>Update weeks from app</b> to bring in weeks finished since this batch was drafted. You can still change a line by hand; then the app leaves it alone. Owners with 0 weeks are not paid.</p>
         ${waitingWeekly.length ? `<div class="actions"><button class="btn ghost small" id="fromapp">Update weeks from app</button><a class="btn ghost small" href="#/learning">See learning progress</a></div>` : ""}
-        <div class="scroll"><table class="t"><thead><tr><th>Owner</th><th>Lightning address</th><th class="r">Weeks</th><th class="r">Sats</th><th>Status</th><th></th></tr></thead><tbody>
+        <div class="scroll"><table class="t" style="min-width:1040px"><thead><tr><th>Owner</th><th>Lightning address</th><th class="r">Weeks</th><th>Cleaning check</th><th class="r">Sats</th><th>Status</th><th></th></tr></thead><tbody>
         ${lines.map(l => {
           const addr = l.lightning_address || l.owner_address;
           const chk = l.owner_address && l.checked_address === l.owner_address ? (l.address_ok ? '<span class="pill p-good">Works</span>' : `<span class="pill p-bad" title="${esc(l.address_message)}">Problem</span>`) : "";
@@ -180,10 +192,11 @@
             <td><span class="mono">${esc(addr || "—")}</span> ${chk}${why ? `<div style="font-size:12px;color:var(--warn)">${why}</div>` : ""}</td>
             <td class="r">${l.status === "pending" && l.reason === "weekly_learning" ? weekSel(l) : esc(l.weeks_earned ?? "")}
               ${l.reason === "weekly_learning" ? `<div class="muted" style="font-size:12px;white-space:nowrap">${l.weeks_by_admin ? `set by hand · app: ${l.app_weeks}${l.status === "pending" ? ` <a href="#" data-useapp="${esc(l.id)}">use app</a>` : ""}` : "from app"}</div>` : ""}</td>
+            <td>${cleanCell(l)}</td>
             <td class="r num">${fmtSats(l.amount_sats)}</td>
             <td>${pill(l.status)}${l.status === "failed" ? `<div style="font-size:12px;color:var(--bad);max-width:240px">${esc(l.failure_reason || "")}</div>` : ""}${l.blink_tx_id ? `<div class="mono" style="font-size:11px">${esc(l.blink_tx_id)}</div>` : ""}</td>
             <td class="r">${l.status === "failed" ? `<button class="btn ghost small" data-retry="${esc(l.id)}">Retry</button>` : ""}${["pending", "failed"].includes(l.status) ? ` <button class="btn danger small" data-cancel="${esc(l.id)}">Cancel</button>` : ""}</td></tr>`;
-        }).join("") || '<tr><td colspan="6" class="muted">No owners in this batch.</td></tr>'}
+        }).join("") || '<tr><td colspan="7" class="muted">No owners in this batch.</td></tr>'}
         </tbody></table></div></div>
       ${ready.length ? `<div class="card"><h2>Approve and send</h2>
         <p style="margin:0">Pays <b>${fmtSats(total)} sats</b> to <b>${ready.length}</b> owner${ready.length === 1 ? "" : "s"} from the Blink wallet. Lines that need attention are skipped. Payments can't be taken back.</p>
@@ -200,6 +213,16 @@
     document.querySelectorAll("[data-useapp]").forEach(a => a.addEventListener("click", async e => {
       e.preventDefault();
       try { await call("PATCH", "/api/payouts/" + a.dataset.useapp, {weeks_from_app: true}); route(); } catch (err) { toast(friendlyError(err), true); }
+    }));
+    document.querySelectorAll("[data-over]").forEach(btn => btn.addEventListener("click", async () => {
+      const note = prompt(`Pay ${btn.dataset.who} without a passed cleaning check?\n\nWrite the reason (saved with the payment and your name):`);
+      if (note == null) return;
+      try { await call("PATCH", "/api/payouts/" + btn.dataset.over, {clean_override_note: note}); toast("Saved. It still needs your approval to send."); route(); }
+      catch (err) { toast(friendlyError(err), true); }
+    }));
+    document.querySelectorAll("[data-unover]").forEach(a => a.addEventListener("click", async e => {
+      e.preventDefault();
+      try { await call("PATCH", "/api/payouts/" + a.dataset.unover, {clean_override_note: ""}); route(); } catch (err) { toast(friendlyError(err), true); }
     }));
     bindRowActions(() => route());
     $("#approve")?.addEventListener("click", async e => {
@@ -245,6 +268,9 @@
         ${num("sats_per_week", "Sats per finished week", "Lesson and quiz done in the app.", 1)}
         ${num("max_weeks", "Most weeks paid per month", "", 1)}
         ${num("draft_days_before", "Make the list this many days before pay day", "Pay day is the last Friday of the month.")}
+      </div><h2>Cleaning rule</h2><div class="fields">
+        <label class="fld">Pay learning sats only after a passed cleaning check<select name="require_clean"><option value="1" ${s.require_clean ? "selected" : ""}>Yes (lessons and cleaning)</option><option value="0" ${s.require_clean ? "" : "selected"}>No (lessons only)</option></select></label>
+        ${num("clean_window_days", "The cleaning check must be from the last … days before pay day", "Inspectors are reminded to check each shack 5 days sooner than this.", 7)}
       </div><h2>Safety limits</h2><div class="fields">
         ${num("batch_limit_sats", "Most sats in one approval", "", 1)}
         ${num("single_limit_sats", "Most sats for one single payment", "", 1)}

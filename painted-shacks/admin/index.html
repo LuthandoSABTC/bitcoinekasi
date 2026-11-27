@@ -169,7 +169,7 @@ function toast(msg, err) {
 
 /* ============================================================ data layer
    One interface, two backends: Supabase (real) and an in-memory demo. */
-const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments"];
+const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments", "ps_report_entries", "ps_partner_posts", "ps_past_payouts"];
 const DEMO = !!window.PS_DEMO_DATA || new URLSearchParams(location.search).has("demo");
 const cache = {};
 const api = (t) => "/api/" + t.replace(/^ps_/, "");
@@ -338,6 +338,8 @@ pages.home = () => {
     <div class="card"><h2>Inspections</h2>
       <p style="margin:0"><b>${inspectedMonth}</b> shack${inspectedMonth === 1 ? "" : "s"} inspected this month. ${(cache.inspections || []).length} inspections in total.
       <a href="/inspect/">Open the inspector app</a> · <a href="#/settings">Add an inspector</a></p></div>
+    <div class="card"><h2>Public dashboard</h2>
+      <p style="margin:0">Live totals for everyone at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. It shows shack numbers, never owner names or phone numbers. A Lightning address only shows when the owner agreed (tick on the owner's page). <a href="#/sections">Sections and map</a> · <a href="#/report">Public report: costs, agreements and more</a></p></div>
     ${upcoming ? `<div class="card"><h2>Next sponsor renewal</h2><p style="margin:0"><b>${esc(sponsorName(upcoming.sponsor_id))}</b> on ${fmtDate(upcoming.renews_on)} <span class="muted">(${fmtSats(upcoming.amount_sats)} sats last time)</span></p></div>` : ""}
   `);
 };
@@ -368,7 +370,7 @@ pages.shacks = params => {
     $("#count").textContent = `${rows.length} of ${cache.ps_shacks.length}`;
   };
   shell("shacks", `
-    <div class="head"><div><h1>Shacks</h1><p class="sub" id="count"></p></div><a class="btn" href="#/shack/new">Add shack</a></div>
+    <div class="head"><div><h1>Shacks</h1><p class="sub" id="count"></p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost" href="#/sections">Sections and map</a><a class="btn" href="#/shack/new">Add shack</a></div></div>
     <div class="toolbar"><input type="search" id="q" placeholder="Search number, logo, owner, address" value="${esc(shackQuery)}" aria-label="Search shacks"></div>
     <div class="chips" style="margin-bottom:12px" role="group" aria-label="Filter">${filters.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${shackFilter === k}">${l}</button>`).join("")}</div>
     <div class="list" id="rows"></div>`);
@@ -399,7 +401,8 @@ pages.shack = id => {
           <span class="hint">Owner not in the list? <a href="#/owner/new?shack=${esc(s.id || "")}">Add a new owner</a> first.</span></label>
         <label class="fld">First painted<input type="date" name="first_painted_on" value="${esc(s.first_painted_on)}"></label>
         <label class="fld">Shack name<input type="text" name="name" maxlength="60" value="${esc(s.name)}" placeholder="e.g. Mama Thandi's Spaza"><span class="hint">Owners pick this name to sign in to the learning app. Leave empty to show "Shack ${esc(s.shack_no || "number")} · sponsor".</span></label>
-        <label class="fld">Area or street<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. KwaNonqaba, Section B"></label>
+        <label class="fld">Section of JCC Camp<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. Zinyoka" list="section-names"><span class="hint">Groups the shack on the public dashboard map. <a href="#/sections">Set many shacks at once</a>.</span></label>
+        <datalist id="section-names">${sectionNames().map(n => `<option value="${esc(n)}">`).join("")}</datalist>
         <label class="check fld wide"><input type="checkbox" name="needs_maintenance" ${s.needs_maintenance ? "checked" : ""}> Needs maintenance</label>
         <label class="fld wide">Photo link<input type="url" name="photo_url" value="${esc(s.photo_url)}" placeholder="https://drive.google.com/..."><span class="hint">Paste a Google Drive or other link to the wall photo.</span></label>
         <label class="fld wide">X post<input type="url" name="x_post_url" value="${esc(s.x_post_url)}" placeholder="https://x.com/BitcoinEkasi/status/..."></label>
@@ -433,7 +436,7 @@ function inspectionHistory(s) {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${fmtDate(i.inspected_on)}</b><span class="pill ${RESULT[i.result][1]}">${RESULT[i.result][0]}</span>
           <span class="muted" style="font-size:13px">by ${esc(i.inspector_name || "unknown")}</span>
           <button class="btn danger small" type="button" data-del-insp="${esc(i.id)}" style="margin-left:auto">Delete</button></div>
-        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b></div>
+        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b> · Clean: <b>${i.clean ? {yes: "Clean", partly: "Needs tidying", no: "Dirty"}[i.clean] : "not checked"}</b></div>
         ${i.notes ? `<div style="font-size:14px">${esc(i.notes)}</div>` : ""}
         ${ph.length ? `<div style="display:flex;gap:8px;overflow-x:auto">${ph.map(p => `<a href="/api/photos/${esc(p.id)}" target="_blank" rel="noopener"><img src="/api/photos/${esc(p.id)}" alt="${esc(p.label || "Inspection")} photo" loading="lazy" style="width:120px;height:120px;object-fit:cover;border-radius:10px;background:var(--raise)"></a>`).join("")}</div>` : ""}
         ${i.photo_count > ph.length ? `<div class="muted" style="font-size:13px">${i.photo_count - ph.length} photo(s) still uploading from the inspector's phone.</div>` : ""}
@@ -455,7 +458,7 @@ function bindInspectionHistory() {
 let ownerFilter = "all", ownerQuery = "";
 pages.owners = params => {
   if (params.get("f")) ownerFilter = params.get("f");
-  const filters = [["all", "All"], ["noname", "No name"], ["noln", "No Lightning address"], ["public", "Shown publicly"]];
+  const filters = [["all", "All"], ["noname", "No name"], ["noln", "No Lightning address"]];
   const draw = () => {
     const q = ownerQuery.toLowerCase();
     const rows = cache.ps_owners.map(o => ({o, sh: shacksOf(o.id)})).sort((a, b) => (a.sh[0]?.shack_no ?? 999) - (b.sh[0]?.shack_no ?? 999)).filter(({o, sh}) => {
@@ -501,7 +504,7 @@ pages.owner = (id, params) => {
         <label class="fld">Phone<input type="tel" name="phone" value="${esc(o.phone)}" placeholder="e.g. 072 123 4567"></label>
         <label class="fld wide">Lightning address<input type="text" name="lightning_address" value="${esc(o.lightning_address)}" placeholder="name@blink.sv" autocapitalize="off" spellcheck="false" pattern="[A-Za-z0-9._+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}">
           <span class="hint">Where their weekly sats are paid. Double check it: payments to a wrong address can't be taken back.</span></label>
-        <label class="check fld wide"><input type="checkbox" name="show_address_publicly" ${o.show_address_publicly ? "checked" : ""}> Owner agreed to show their Lightning address on the public dashboard</label>
+        <p class="hint fld wide" style="margin:0">Phone numbers and Lightning addresses are only shown in this admin app, never on the public dashboard or to partners.</p>
         <label class="fld">Age<input type="number" name="age" min="10" max="110" value="${esc(o.age)}"></label>
         <label class="fld">What they do<input type="text" name="occupation" value="${esc(o.occupation)}" placeholder="e.g. Spaza shop owner"></label>
         <label class="fld">Lesson language<select name="preferred_language">${Object.entries(LANG).map(([k, v]) => `<option value="${k}" ${o.preferred_language === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
@@ -516,7 +519,7 @@ pages.owner = (id, params) => {
   bindForm("ps_owners", o, f => {
     const ln = (f.lightning_address || "").trim().toLowerCase();
     if (ln && !LN_RE.test(ln)) throw new Error("That Lightning address doesn't look right. It should look like name@blink.sv");
-    return {full_name: f.full_name.trim(), phone: f.phone.trim(), lightning_address: ln, show_address_publicly: !!f.show_address_publicly,
+    return {full_name: f.full_name.trim(), phone: f.phone.trim(), lightning_address: ln,
       age: f.age === "" ? null : Number(f.age), occupation: f.occupation, preferred_language: f.preferred_language, joined_on: f.joined_on,
       active: !!f.active, notes: f.notes};
   }, async (r, f) => {
@@ -577,8 +580,14 @@ pages.sponsor = id => {
       ${pays.length ? `<div class="scroll"><table class="t"><thead><tr><th>Date</th><th class="r">Sats</th><th class="r">Rand</th><th>Renews</th><th></th></tr></thead><tbody>
         ${pays.map(p => `<tr><td>${fmtDate(p.received_on)}</td><td class="r num">${fmtSats(p.amount_sats)}</td><td class="r num">${fmtZar(p.amount_zar)}</td><td>${fmtDate(p.renews_on)}</td><td class="r"><a href="#/payment/${p.id}">Edit</a></td></tr>`).join("")}
       </tbody></table></div>` : '<p class="muted" style="margin:0">No payments recorded.</p>'}</div>
+    ${(() => { const v = cache.ps_partner_posts.find(x => x.sponsor_id === s.id);
+      return `<div class="card"><div class="head" style="margin:0"><h2>Video post on the public report</h2><a class="btn small" href="#/video/${v ? v.id : "new?sponsor=" + s.id}">${v ? "Edit" : "Add"}</a></div>
+      <p class="muted" style="margin:0">${v ? esc([v.video_on ? "Posted " + fmtDate(v.video_on) : v.coming_soon ? "Coming soon" : "No date", v.impressions != null ? fmtSats(v.impressions) + " impressions" : "", v.views != null ? fmtSats(v.views) + " views" : ""].filter(Boolean).join(" · "))
+        : "Not added yet. The public report shows the draft's text for paid partners until you add it."}</p></div>`; })()}
+    <div class="card" id="plogins"><h2>Partner sign-in</h2><p class="muted" style="margin:0">Loading…</p></div>
     <div class="card"><div class="head" style="margin:0"><h2>Contacts</h2><a class="btn small" href="#/contact/new?sponsor=${s.id}">Add contact</a></div>
       ${contacts.length ? `<div class="list">${contacts.map(c => `<a class="item" href="#/contact/${c.id}"><div class="main"><b>${esc(c.name)}</b><small>${esc([c.email, c.chat].filter(Boolean).join(" · ") || "No details")}</small></div></a>`).join("")}</div>` : '<p class="muted" style="margin:0">No contacts yet.</p>'}</div>`}`);
+  if (!isNew) drawPartnerLogins(s);
   bindForm("ps_sponsors", s, f => ({name: f.name.trim(), website: f.website, kind: f.kind, payment_status: f.payment_status, logo_url: f.logo_url,
     support_in_kind: f.support_in_kind, last_contact: f.last_contact, should_request_sats: !!f.should_request_sats, notes: f.notes}),
     r => "#/sponsor/" + r.id, "#/sponsors", `Delete ${s.name}? Shacks with this logo will show "No logo set".`);
@@ -620,11 +629,12 @@ pages.payment = (id, params) => {
       <label class="fld">Value in Rand<input type="number" name="amount_zar" min="0" step="0.01" value="${esc(p.amount_zar)}"></label>
       <label class="fld wide">For<input type="text" name="purpose" value="${esc(p.purpose)}"></label>
       <label class="check fld wide"><input type="checkbox" name="show_publicly" ${p.show_publicly ? "checked" : ""}> Show on the public dashboard</label>
+      <label class="fld wide">Proof link (public)<input type="url" name="proof_url" value="${esc(p.proof_url)}" placeholder="https://"><span class="hint">A link anyone can open to check this payment, like the transaction or invoice. Shown on the public report.</span></label>
       <label class="fld wide">Notes<textarea name="notes">${esc(p.notes)}</textarea></label></div>
       <div class="actions"><button class="btn" type="submit">Save payment</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
     </form>`);
   bindForm("ps_sponsor_payments", p, f => ({sponsor_id: f.sponsor_id, received_on: f.received_on, renews_on: f.renews_on, amount_sats: Number(f.amount_sats),
-    amount_zar: f.amount_zar === "" ? null : Number(f.amount_zar), purpose: f.purpose, show_publicly: !!f.show_publicly, notes: f.notes}),
+    amount_zar: f.amount_zar === "" ? null : Number(f.amount_zar), purpose: f.purpose, show_publicly: !!f.show_publicly, proof_url: f.proof_url, notes: f.notes}),
     () => "#/funding", "#/funding", "Delete this payment record?");
 };
 
@@ -633,7 +643,7 @@ pages.funding = () => {
   const sats = P.reduce((a, p) => a + Number(p.amount_sats || 0), 0);
   const zar = P.reduce((a, p) => a + Number(p.amount_zar || 0), 0);
   shell("funding", `
-    <div class="head"><div><h1>Funding</h1><p class="sub">Sponsor money received for Painted Shacks.</p></div><a class="btn" href="#/payment/new">Record payment</a></div>
+    <div class="head"><div><h1>Funding</h1><p class="sub">Sponsor money received for Painted Shacks.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost" href="#/report">Costs and public report</a><a class="btn" href="#/payment/new">Record payment</a></div></div>
     <div class="stats">
       <div class="stat hero"><span class="lbl">Total sats</span><span class="val">${fmtSats(sats)}</span></div>
       <div class="stat"><span class="lbl">Total in Rand</span><span class="val">${fmtZar(zar)}</span></div>
@@ -770,6 +780,270 @@ function friendlyError(err) {
   if (/Failed to fetch|NetworkError/i.test(m)) return "No connection. Check your internet and try again.";
   return m;
 }
+
+/* ============================================================ sections of JCC Camp + the public dashboard map */
+let mapCfg = null;
+function sectionNames() {
+  const names = new Map();
+  for (const m of mapCfg?.sections || []) names.set(m.name.toLowerCase(), m.name);
+  for (const s of cache.ps_shacks || []) { const a = (s.area || "").trim(); if (a && !names.has(a.toLowerCase())) names.set(a.toLowerCase(), a); }
+  return [...names.values()];
+}
+// "-34.1712, 22.1034" or a Google Maps link with @-34.1712,22.1034 or ?q=-34.17,22.10
+function parsePlace(v) {
+  const t = String(v || "").trim();
+  if (!t) return { lat: null, lng: null };
+  const m = t.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) || t.match(/[?&](?:q|query|center|ll)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) || t.match(/^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$/);
+  if (!m) throw new Error(`"${t}" doesn't look like a place. Paste the two numbers from Google Maps, like -34.1712, 22.1034`);
+  return { lat: Number(m[1]), lng: Number(m[2]) };
+}
+// "1-29, 33, 40" -> [1..29, 33, 40]
+function parseNumbers(v) {
+  const out = new Set();
+  for (const part of String(v || "").split(/[,\s]+/).filter(Boolean)) {
+    const r = part.match(/^(\d+)(?:-(\d+))?$/);
+    if (!r) throw new Error(`"${part}" is not a shack number or range like 1-29.`);
+    const a = Number(r[1]), b = Number(r[2] || r[1]);
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) out.add(i);
+  }
+  return out;
+}
+pages.sections = async () => {
+  if (!mapCfg && !DEMO) { try { mapCfg = await call("GET", "/api/dashboard-map"); } catch (err) { toast(friendlyError(err), true); } }
+  mapCfg = mapCfg || { place_name: "JCC Camp, Mossel Bay", sections: [{ name: "Zinyoka", lat: null, lng: null, radius_m: 120 }, { name: "Asazani", lat: null, lng: null, radius_m: 90 }] };
+  const shacks = cache.ps_shacks.slice().filter(s => s.status !== "removed").sort((a, b) => a.shack_no - b.shack_no);
+  const pending = new Map(shacks.map(s => [s.id, (s.area || "").trim()]));
+  const secRow = m => `<div class="fields secrow" style="align-items:end">
+      <label class="fld">Section name<input type="text" name="sname" maxlength="40" value="${esc(m?.name || "")}" placeholder="e.g. Zinyoka"></label>
+      <label class="fld">Where it is<input type="text" name="splace" value="${m?.lat != null ? esc(m.lat + ", " + m.lng) : ""}" placeholder="e.g. -34.1712, 22.1034"></label>
+      <label class="fld">Circle size (metres)<input type="number" name="sradius" min="20" max="3000" value="${esc(m?.radius_m || 100)}"></label>
+      <div class="actions" style="margin:0"><button class="btn ghost small" type="button" data-del>Remove</button></div></div>`;
+  shell("shacks", `
+    <a class="back" href="#/shacks">${I.back}Shacks</a>
+    <div class="head"><div><h1>Sections and map</h1><p class="sub">What the public dashboard shows at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a></p></div></div>
+    <form class="card f" id="mapf">
+      <h2>Map on the public dashboard</h2>
+      <p class="muted" style="margin:0">Each section shows as a circle on a satellite map, with a link to Google Maps. Single homes are never shown.
+        To find a place: open Google Maps, press and hold on the middle of the section, and copy the two numbers that appear (like -34.1712, 22.1034). You can also paste a Google Maps link.</p>
+      <label class="fld">Place name<input type="text" name="place_name" maxlength="80" required value="${esc(mapCfg.place_name)}"></label>
+      <div id="secrows" style="display:grid;gap:12px">${mapCfg.sections.map(secRow).join("")}</div>
+      <div class="actions"><button class="btn ghost" type="button" id="addsec">Add section</button><button class="btn" type="submit">Save map</button></div>
+      ${mapCfg.updated_by ? `<p class="hint" style="margin:0">Last changed by ${esc(mapCfg.updated_by)}${mapCfg.updated_at ? " on " + fmtDate(mapCfg.updated_at.slice(0, 10)) : ""}.</p>` : ""}
+    </form>
+    <form class="card f" id="areaf">
+      <h2>Shacks in each section</h2>
+      <p class="sub" id="seccount" style="margin:0"></p>
+      <div class="fields" style="align-items:end">
+        <label class="fld">Shack numbers<input type="text" id="bulknos" placeholder="e.g. 1-29, 35"></label>
+        <label class="fld">Section<select id="bulksec"></select></label>
+        <div class="actions" style="margin:0"><button class="btn ghost" type="button" id="bulkgo">Put them in this section</button></div>
+      </div>
+      <div class="list" id="arearows"></div>
+      <div class="actions"><button class="btn" type="submit">Save sections</button></div>
+    </form>`);
+  const options = cur => `<option value="">Not set</option>` + sectionNames().map(n => `<option value="${esc(n)}" ${cur.toLowerCase() === n.toLowerCase() ? "selected" : ""}>${esc(n)}</option>`).join("");
+  const drawRows = () => {
+    $("#bulksec").innerHTML = options("");
+    $("#arearows").innerHTML = shacks.map(s => `<div class="item" style="align-items:center"><span class="no">${s.shack_no}</span>
+      <div class="main"><b>${esc(sponsorName(s.sponsor_id))}</b><small>${esc(s.name || "")}</small></div>
+      <div class="end"><select data-id="${esc(s.id)}" aria-label="Section of shack ${s.shack_no}">${options(pending.get(s.id))}</select></div></div>`).join("");
+    count();
+  };
+  const count = () => {
+    const by = new Map(); let none = 0;
+    for (const v of pending.values()) { if (!v) { none++; continue; } const k = sectionNames().find(n => n.toLowerCase() === v.toLowerCase()) || v; by.set(k, (by.get(k) || 0) + 1); }
+    $("#seccount").textContent = [...by].map(([k, n]) => `${k}: ${n}`).concat(none ? [`not set: ${none}`] : []).join(" · ") || "No shacks yet.";
+  };
+  $("#arearows").addEventListener("change", e => { const sel = e.target.closest("select[data-id]"); if (sel) { pending.set(sel.dataset.id, sel.value); count(); } });
+  $("#bulkgo").addEventListener("click", () => {
+    try {
+      const nos = parseNumbers($("#bulknos").value), sec = $("#bulksec").value;
+      if (!nos.size) throw new Error("Type shack numbers first, like 1-29.");
+      const hit = shacks.filter(s => nos.has(s.shack_no));
+      hit.forEach(s => pending.set(s.id, sec));
+      drawRows();
+      const missing = [...nos].filter(n => !shacks.some(s => s.shack_no === n));
+      toast(`${hit.length} shack${hit.length === 1 ? "" : "s"} put in ${sec || "Not set"}. Press Save sections to keep it.` + (missing.length ? ` No shack ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? "…" : ""}.` : ""));
+    } catch (err) { toast(err.message, true); }
+  });
+  $("#areaf").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.submitter || e.target.querySelector("button[type=submit]"); btn.disabled = true;
+    try {
+      if (DEMO) throw new Error("Not available in the preview.");
+      const areas = {};
+      for (const s of shacks) if ((s.area || "").trim() !== pending.get(s.id)) areas[s.id] = pending.get(s.id);
+      if (!Object.keys(areas).length) { toast("Nothing changed."); return; }
+      const r = await call("POST", "/api/shacks/areas", { areas });
+      await db.loadAll(); toast(`Saved. ${r.changed} shack${r.changed === 1 ? "" : "s"} changed.`); route();
+    } catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+  $("#addsec").addEventListener("click", () => $("#secrows").insertAdjacentHTML("beforeend", secRow(null)));
+  $("#secrows").addEventListener("click", e => { if (e.target.closest("[data-del]")) e.target.closest(".secrow").remove(); });
+  $("#mapf").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.submitter || e.target.querySelector("button[type=submit]"); btn.disabled = true;
+    try {
+      if (DEMO) throw new Error("Not available in the preview.");
+      const sections = [...document.querySelectorAll(".secrow")].map(r => ({ name: r.querySelector("[name=sname]").value.trim(), ...parsePlace(r.querySelector("[name=splace]").value), radius_m: Number(r.querySelector("[name=sradius]").value) || 100 }))
+        .filter(x => x.name || x.lat != null);
+      mapCfg = await call("PUT", "/api/dashboard-map", { place_name: e.target.place_name.value, sections });
+      toast("Map saved. The public dashboard shows it within a minute."); drawRows();
+    } catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+  drawRows();
+};
+
+/* ============================================================ partner sign-in (/dashboard/partners/)
+   Paid sponsors sign in to follow each family's lessons and inspections (shack numbers only). */
+async function drawPartnerLogins(s) {
+  const box = $("#plogins");
+  if (!box) return;
+  let list = [];
+  if (!DEMO) { try { list = (await call("GET", "/api/partner-logins")).filter(l => l.sponsor_id === s.id); } catch (err) { box.innerHTML = `<h2>Partner sign-in</h2><p class="muted">${esc(friendlyError(err))}</p>`; return; } }
+  const paid = s.payment_status === "paying";
+  box.innerHTML = `<h2>Partner sign-in</h2>
+    <p class="muted" style="margin:0">Lets ${esc(s.name)} see each family's lessons and cleaning inspections at <a href="/dashboard/partners/" target="_blank" rel="noopener">${esc(location.host)}/dashboard/partners</a>, by shack number only (no names, phones or wallets).
+      ${paid ? "" : `<b>Only works while the payment status is Paying.</b>`}</p>
+    ${list.length ? `<div class="list">${list.map(l => `<div class="item"><div class="main"><b>${esc(l.email)}</b><small>${l.last_login_at ? "Last signed in " + fmtDate(l.last_login_at.slice(0, 10)) : "Not signed in yet"}</small></div>
+      <div class="end"><button class="btn ghost small" type="button" data-reset="${l.id}">New password</button><button class="btn danger small" type="button" data-remove="${l.id}">Remove</button></div></div>`).join("")}</div>` : ""}
+    <form id="plf" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end"><label class="fld" style="flex:1;min-width:200px">Partner's email<input type="email" name="email" required></label><button class="btn small" type="submit">Create sign-in</button></form>
+    <p class="hint" id="plpw" style="margin:0" hidden></p>`;
+  const showPw = (email, pw) => { const h = $("#plpw"); h.hidden = false; h.innerHTML = `Password for <b>${esc(email)}</b>: <code style="font-size:15px">${esc(pw)}</code>. Send it to them privately. It won't be shown again.`; };
+  $("#plf").addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = new FormData(e.target).get("email");
+    try { const r = await call("POST", "/api/partner-logins", {sponsor_id: s.id, email}); await drawPartnerLogins(s); showPw(r.email, r.password); }
+    catch (err) { toast(friendlyError(err), true); }
+  });
+  box.querySelectorAll("[data-reset]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("Make a new password? The old one stops working.")) return;
+    try { const r = await call("POST", `/api/partner-logins/${b.dataset.reset}/reset`, {}); showPw(list.find(l => l.id === b.dataset.reset).email, r.password); }
+    catch (err) { toast(friendlyError(err), true); }
+  }));
+  box.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("Remove this sign-in?")) return;
+    try { await call("DELETE", `/api/partner-logins/${b.dataset.remove}`); await drawPartnerLogins(s); toast("Removed"); }
+    catch (err) { toast(friendlyError(err), true); }
+  }));
+}
+
+/* ============================================================ public report (/dashboard)
+   Everything the public report used to take from the 25 Nov draft. A field left empty keeps the draft's text on the page. */
+const CATS = {paint: "Paint and upkeep", donation: "Donation", other: "Other"};
+let reportCfg = null;
+pages.report = async () => {
+  if (!reportCfg && !DEMO) { try { reportCfg = await call("GET", "/api/report-settings"); } catch (err) { toast(friendlyError(err), true); } }
+  const R = reportCfg = reportCfg || {questions: [], show_draft_note: true};
+  const year = saToday().slice(0, 4);
+  const E = cache.ps_report_entries.slice().sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+  const num = (name, label, hint) => `<label class="fld">${label}<input type="number" name="${name}" min="0" step="1" value="${R[name] ?? ""}" placeholder="Not typed yet">${hint ? `<span class="hint">${hint}</span>` : ""}</label>`;
+  shell("funding", `
+    <a class="back" href="#/funding">${I.back}Funding</a>
+    <div class="head"><div><h1>Public report</h1><p class="sub">What partners see at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. Everything on this page is public.</p></div></div>
+    <form class="card f" id="repf">
+      <h2>Report details</h2>
+      <p class="muted" style="margin:0">Leave a box empty to keep the draft's sample text on the page. Type 0 to show nothing.</p>
+      <div class="fields">
+        ${num("agreements_signed", "Signed agreements this year")}
+        <label class="fld">Blank agreement link<input type="url" name="agreement_url" value="${esc(R.agreement_url)}" placeholder="https://"><span class="hint">The unsigned agreement in English and isiXhosa. Never a signed copy.</span></label>
+        ${num("pending_walls", "Walls: payment pending")}
+        <label class="fld">What it means<input type="text" name="pending_note" maxlength="200" value="${esc(R.pending_note)}" placeholder="Said yes for ${year}, invoice sent."></label>
+        ${num("review_walls", "Walls: under review")}
+        <label class="fld">What it means<input type="text" name="review_note" maxlength="200" value="${esc(R.review_note)}" placeholder="Being talked through with the logo's owner."></label>
+        <label class="fld wide">Questions to settle before it goes public (one per line)<textarea name="questions" rows="7">${esc((R.questions || []).join("\n"))}</textarea><span class="hint">Leave empty to hide this list.</span></label>
+        <label class="check fld wide"><input type="checkbox" name="show_draft_note" ${R.show_draft_note !== false ? "checked" : ""}> Show the "Draft for the team" note at the top</label>
+      </div>
+      <div class="actions"><button class="btn" type="submit">Save report details</button></div>
+      ${R.updated_by ? `<p class="hint" style="margin:0">Last changed by ${esc(R.updated_by)}${R.updated_at ? " on " + fmtDate(R.updated_at.slice(0, 10)) : ""}.</p>` : ""}
+    </form>
+    <div class="card"><div class="head" style="margin:0"><h2>Costs and other money in</h2><a class="btn small" href="#/entry/new">Add line</a></div>
+      <p class="muted" style="margin:0">${year} only. Paint and donations. The first line turns on the real money section of the report. Sponsor payments (Funding) and payouts to families are added to the report by the app, so don't type them here.</p>
+      <div class="scroll"><table class="t"><thead><tr><th>Date</th><th>What for</th><th>Kind</th><th class="r">In</th><th class="r">Out</th><th>Proof</th></tr></thead><tbody>
+        ${E.map(e => `<tr><td><a href="#/entry/${e.id}">${fmtDate(e.entry_date)}</a></td><td>${esc(e.what)}</td><td>${esc(CATS[e.category] || "Other")}</td>
+          <td class="r num">${e.direction === "in" ? fmtSats(e.amount_sats) : ""}</td><td class="r num">${e.direction === "out" ? fmtSats(e.amount_sats) : ""}</td>
+          <td>${e.proof_url ? `<a href="${esc(e.proof_url)}" target="_blank" rel="noopener">Link</a>` : ""}</td></tr>`).join("") || '<tr><td colspan="6" class="muted">No lines yet. The report shows the draft\'s sample costs until you add one.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="card"><div class="head" style="margin:0"><h2>Payouts to families before the app</h2><a class="btn small" href="#/pastpay/new">Add month</a></div>
+      <p class="muted" style="margin:0">One line per month, from the attendance register. Only the total and the number of families show publicly, never names. Payouts sent from the Payments screen are added by the app.</p>
+      <div class="scroll"><table class="t"><thead><tr><th>Month</th><th>Paid on</th><th class="r">Families</th><th class="r">Sats</th><th>Proof</th></tr></thead><tbody>
+        ${cache.ps_past_payouts.slice().sort((a, b) => b.period.localeCompare(a.period)).map(x => `<tr><td><a href="#/pastpay/${x.id}">${esc(x.period)}</a></td><td>${fmtDate(x.paid_on)}</td>
+          <td class="r num">${x.households}</td><td class="r num">${fmtSats(x.amount_sats)}</td><td>${x.proof_url ? `<a href="${esc(x.proof_url)}" target="_blank" rel="noopener">Link</a>` : ""}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">None yet.</td></tr>'}
+      </tbody></table></div>
+      <p class="hint" style="margin:0">Total: ${fmtSats(cache.ps_past_payouts.reduce((t, x) => t + Number(x.amount_sats || 0), 0))} sats.</p></div>
+    <div class="card"><h2>Partner video posts</h2>
+      <p class="muted" style="margin:0">Add the video post, its links and reach on each sponsor's page: ${cache.ps_sponsors.filter(x => x.payment_status === "paying").map(x => `<a href="#/sponsor/${x.id}">${esc(x.name)}</a>`).join(", ") || "no paying sponsors yet"}. Missing one? Set its payment status to Paying on its page.</p></div>`);
+  $("#repf").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector("[type=submit]"), f = Object.fromEntries(new FormData(e.target));
+    const body = {...f, show_draft_note: e.target.show_draft_note.checked, questions: f.questions.split("\n")};
+    btn.disabled = true;
+    try { reportCfg = DEMO ? {...R, ...body, questions: body.questions.filter(q => q.trim())} : await call("PUT", "/api/report-settings", body); toast("Saved"); pages.report(); }
+    catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+};
+
+pages.entry = id => {
+  const isNew = id === "new";
+  const e = isNew ? {entry_date: saToday(), direction: "out", category: "paint"} : byId("ps_report_entries", id);
+  if (!e) return notFound();
+  shell("funding", `
+    <a class="back" href="#/report">${I.back}Public report</a>
+    <div class="head"><h1>${isNew ? "New line" : "Edit line"}</h1></div>
+    <form class="card f" id="form"><div class="fields">
+      <label class="fld">Date<input type="date" name="entry_date" required value="${esc(e.entry_date)}"></label>
+      <label class="fld">Money<select name="direction"><option value="out" ${e.direction === "out" ? "selected" : ""}>Out (a cost)</option><option value="in" ${e.direction === "in" ? "selected" : ""}>In (not a sponsor payment)</option></select></label>
+      <label class="fld wide">What for<input type="text" name="what" required maxlength="200" value="${esc(e.what)}" placeholder="e.g. Touch-up paint"></label>
+      <label class="fld">Kind<select name="category">${Object.entries(CATS).map(([k, v]) => `<option value="${k}" ${e.category === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label class="fld">Amount in sats<input type="number" name="amount_sats" min="1" step="1" required value="${esc(e.amount_sats)}"></label>
+      <label class="fld wide">Proof link (public)<input type="url" name="proof_url" value="${esc(e.proof_url)}" placeholder="https://"><span class="hint">Optional. A transaction, receipt photo or invoice anyone can open.</span></label></div>
+      <div class="actions"><button class="btn" type="submit">Save line</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
+    </form>`);
+  bindForm("ps_report_entries", e, f => ({entry_date: f.entry_date, direction: f.direction, category: f.category, what: f.what.trim(), amount_sats: Number(f.amount_sats), proof_url: f.proof_url}),
+    "#/report", "#/report", "Delete this line from the public report?");
+};
+
+pages.pastpay = id => {
+  const isNew = id === "new";
+  const x = isNew ? {period: saToday().slice(0, 7), paid_on: saToday(), households: "", amount_sats: ""} : byId("ps_past_payouts", id);
+  if (!x) return notFound();
+  shell("funding", `
+    <a class="back" href="#/report">${I.back}Public report</a>
+    <div class="head"><h1>${isNew ? "Add a month's payout" : "Payout for " + esc(x.period)}</h1></div>
+    <form class="card f" id="form"><div class="fields">
+      <label class="fld">Month<input type="month" name="period" required value="${esc(x.period)}"></label>
+      <label class="fld">Paid on<input type="date" name="paid_on" required value="${esc(x.paid_on)}"></label>
+      <label class="fld">Families paid<input type="number" name="households" min="0" step="1" required value="${esc(x.households)}"></label>
+      <label class="fld">Total sats<input type="number" name="amount_sats" min="0" step="1" required value="${esc(x.amount_sats)}"><span class="hint">Usually families × 28,000.</span></label>
+      <label class="fld wide">Proof link (public)<input type="url" name="proof_url" value="${esc(x.proof_url)}" placeholder="https://"><span class="hint">Optional. Must not show family names.</span></label></div>
+      <div class="actions"><button class="btn" type="submit">Save</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
+    </form>`);
+  bindForm("ps_past_payouts", x, f => ({period: f.period, paid_on: f.paid_on, households: Number(f.households), amount_sats: Number(f.amount_sats), proof_url: f.proof_url}),
+    "#/report", "#/report", "Delete this month from the public report?");
+};
+
+pages.video = (id, params) => {
+  const isNew = id === "new";
+  const v = isNew ? {sponsor_id: params.get("sponsor"), coming_soon: false} : byId("ps_partner_posts", id);
+  if (!v) return notFound();
+  const sp = byId("ps_sponsors", v.sponsor_id);
+  shell("sponsors", `
+    <a class="back" href="#/sponsor/${esc(v.sponsor_id)}">${I.back}${esc(sp?.name || "Sponsor")}</a>
+    <div class="head"><h1>Video post: ${esc(sp?.name || "")}</h1></div>
+    <form class="card f" id="form"><div class="fields">
+      <label class="fld">Video posted on<input type="date" name="video_on" value="${esc(v.video_on)}"></label>
+      <label class="check fld"><input type="checkbox" name="coming_soon" ${v.coming_soon ? "checked" : ""}> Not posted yet: show "Video coming soon"</label>
+      <label class="fld wide">Video on X<input type="url" name="video_x_url" value="${esc(v.video_x_url)}" placeholder="https://x.com/BitcoinEkasi/status/…"></label>
+      <label class="fld wide">Video on nostr<input type="url" name="video_nostr_url" value="${esc(v.video_nostr_url)}" placeholder="https://primal.net/e/…"></label>
+      <label class="fld">Impressions on X<input type="number" name="impressions" min="0" step="1" value="${esc(v.impressions)}"><span class="hint">From X analytics, four weeks after posting.</span></label>
+      <label class="fld">Video views<input type="number" name="views" min="0" step="1" value="${esc(v.views)}"></label>
+      <label class="fld wide">Note (public)<input type="text" name="note" maxlength="200" value="${esc(v.note)}" placeholder="e.g. Reach is added four weeks after posting."></label></div>
+      <p class="hint" style="margin:0">The wall photo post comes from each shack's "X post" link.</p>
+      <div class="actions"><button class="btn" type="submit">Save video post</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
+    </form>`);
+  const n = x => x === "" ? null : Number(x);
+  bindForm("ps_partner_posts", v, f => ({sponsor_id: v.sponsor_id, video_on: f.video_on, coming_soon: !!f.coming_soon, video_x_url: f.video_x_url,
+    video_nostr_url: f.video_nostr_url, impressions: n(f.impressions), views: n(f.views), note: f.note}),
+    "#/sponsor/" + v.sponsor_id, "#/sponsor/" + v.sponsor_id, "Delete this video post? The report goes back to the draft's text.");
+};
 
 /* ============================================================ router */
 function route() {

@@ -114,6 +114,7 @@ create table if not exists inspections (
   inspected_on  text not null,
   paint         text not null check (paint in ('good','fading','damaged')),
   logo          text not null check (logo in ('yes','partly','no')),
+  clean         text check (clean is null or clean in ('yes','partly','no')),   -- shack and yard clean? 'yes' passes the pay rule
   result        text not null check (result in ('good','touch_up','repaint')),
   notes         text,
   photo_count   integer not null default 0,
@@ -348,6 +349,17 @@ function open(file) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec(SCHEMA);
+  // 2026-11-27: owners are paid only when the lesson is done AND the shack passed a cleaning check.
+  if (!db.prepare("select 1 from pragma_table_info('inspections') where name = 'clean'").get())
+    db.exec("alter table inspections add column clean text check (clean is null or clean in ('yes','partly','no'))");
+  if (!db.prepare("select 1 from pragma_table_info('pay_settings') where name = 'clean_window_days'").get()) {
+    db.exec("alter table pay_settings add column require_clean integer not null default 1");
+    db.exec("alter table pay_settings add column clean_window_days integer not null default 35 check (clean_window_days between 7 and 366)");
+  }
+  if (!db.prepare("select 1 from pragma_table_info('payouts') where name = 'clean_override_note'").get()) {
+    db.exec("alter table payouts add column clean_override_note text");
+    db.exec("alter table payouts add column clean_override_by text");
+  }
   // 2026-11-24: the "Roof and walls" check was removed from inspections.
   if (db.prepare("select 1 from pragma_table_info('inspections') where name = 'structure'").get())
     db.exec("alter table inspections drop column structure");
@@ -372,6 +384,102 @@ function open(file) {
   // 2026-11-25: the learning programme starts on 1 December 2026.
   if (!db.prepare("select 1 from pragma_table_info('learn_settings') where name = 'start_date'").get())
     db.exec("alter table learn_settings add column start_date text default '2026-12-01'");
+  // 2026-11-25: the public dashboard's place name and its map of sections (JCC Camp: Zinyoka and Asazani).
+  // sections = JSON list of {name, lat, lng, radius_m}. Shacks are put in a section by their "area".
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'dash_map'").get()) {
+    db.exec(`create table dash_map (
+      id          integer primary key check (id = 1),
+      place_name  text not null default 'JCC Camp, Mossel Bay',
+      sections    text not null default '[]',
+      updated_by  text,
+      updated_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.prepare("insert into dash_map(id, sections, updated_by) values (1, ?, 'Luthando')")
+      .run(JSON.stringify([{ name: "Zinyoka", lat: null, lng: null, radius_m: 120 }, { name: "Asazani", lat: null, lng: null, radius_m: 90 }]));
+  }
+  // 2026-11-27: the parts of the public report (/dashboard) that used to come from the 25 Nov draft, now typed in the admin app
+  // (Public report page). Everything in these tables is meant to be public. A value left empty keeps the draft's text on the page.
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'report_settings'").get()) {
+    db.exec(`create table report_settings (
+      id                 integer primary key check (id = 1),
+      agreements_signed  integer check (agreements_signed >= 0),
+      agreement_url      text,
+      carried_over_sats  integer check (carried_over_sats >= 0),
+      pending_walls      integer check (pending_walls >= 0),
+      pending_note       text,
+      review_walls       integer check (review_walls >= 0),
+      review_note        text,
+      questions          text,
+      show_draft_note    integer not null default 1,
+      updated_by         text,
+      updated_at         text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.prepare("insert into report_settings(id, questions) values (1, ?)").run([
+      "The status names, especially how thank-you walls are described.",
+      "Whether amounts show for each partner or only as totals.",
+      "Payouts to families: the total paid and the number of households together reveal the amount per family. Show both, or only one?",
+      "How each family's photo consent is recorded.",
+      "Who updates the information, and how often.",
+      "Hosting on a bitcoinekasi.com subdomain."].join("\n"));
+    // Costs (paint, class venue, outreach) and money in that isn't a sponsor payment (donations, other).
+    db.exec(`create table report_entries (
+      id           text primary key,
+      entry_date   text not null,
+      direction    text not null check (direction in ('out','in')),
+      category     text not null default 'other' check (category in ('paint','running','partnerships','donation','other')),
+      what         text not null,
+      amount_sats  integer not null check (amount_sats > 0),
+      proof_url    text,
+      created_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    // A partner's video post and its reach (one row per sponsor).
+    db.exec(`create table partner_posts (
+      id            text primary key,
+      sponsor_id    text not null unique references sponsors(id) on delete cascade,
+      video_on      text,
+      video_x_url   text,
+      video_nostr_url text,
+      impressions   integer check (impressions >= 0),
+      views         integer check (views >= 0),
+      coming_soon   integer not null default 0,
+      note          text,
+      created_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+  }
+  // 2026-11-27: a public proof link (transaction or invoice) on each sponsor payment, shown on the report's ledger.
+  if (!db.prepare("select 1 from pragma_table_info('sponsor_payments') where name = 'proof_url'").get())
+    db.exec("alter table sponsor_payments add column proof_url text");
+  // 2026-11-27: monthly payouts to families made before the payout screen existed (from the attendance register sheet,
+  // one tab per month). Totals only, never per family. Shown on the public report next to payouts sent from the app.
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'past_payouts'").get()) {
+    db.exec(`create table past_payouts (
+      id           text primary key,
+      period       text not null unique check (period glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]'),
+      paid_on      text not null,
+      households   integer not null check (households >= 0),
+      amount_sats  integer not null check (amount_sats >= 0),
+      proof_url    text,
+      created_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    // Counted from the register: each family paid 28,000 sats (4 weeks) that month.
+    const ins = db.prepare("insert into past_payouts(id, period, paid_on, households, amount_sats) values (?,?,?,?,?)");
+    for (const [period, paid_on, n] of [["2026-05", "2026-05-08", 8], ["2026-06", "2026-06-30", 10], ["2026-07", "2026-07-30", 10],
+      ["2026-08", "2026-08-27", 7], ["2026-09", "2026-09-24", 6], ["2026-10", "2026-10-29", 8], ["2026-11", "2026-11-25", 5]])
+      ins.run(require("node:crypto").randomUUID(), period, paid_on, n, n * 28000);
+  }
+  // 2026-11-27: paid partners sign in to /dashboard/partners/ to follow each family's lessons and inspections (server/partner.js).
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'partner_logins'").get()) {
+    db.exec(`create table partner_logins (
+      id            text primary key,
+      sponsor_id    text not null references sponsors(id) on delete cascade,
+      email         text not null unique collate nocase,
+      pw_hash       text not null,
+      disabled      integer not null default 0,
+      last_login_at text,
+      created_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.exec(`create table partner_sessions (
+      token_hash  text primary key,
+      login_id    text not null references partner_logins(id) on delete cascade,
+      expires_at  integer not null)`);
+  }
   // 2026-11-27: the course grows from 20 to 104 weeks (two years) with review weeks. SQLite can't change a check, so rebuild.
   const sqlOf = t => db.prepare("select sql from sqlite_master where type = 'table' and name = ?").get(t).sql;
   if (/between 1 and 60/.test(sqlOf("lessons")) || /between 1 and 60/.test(sqlOf("learn_settings"))) {

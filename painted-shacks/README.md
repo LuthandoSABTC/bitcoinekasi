@@ -4,6 +4,7 @@ Mobile-friendly apps for the Bitcoin Ekasi Painted Shacks project:
 
 - **Admin app** (`/`): shacks, owners, sponsor logos, sponsor contacts, sponsor funding, inspection results, the accounts of inspectors, and **Lightning payouts** to shack owners.
 - **Inspector app** (`/inspect`): phone-first. Shacks to inspect (overdue first), a checklist with photos, works with no signal and uploads later. Inspectors never see payments, phone numbers or Lightning addresses.
+- **Public dashboard** (`/dashboard`): anyone can open it. Live totals from the three apps (shacks, lessons, inspections, sats paid, sponsor funding, opt-in tip addresses). Read-only; see "Public dashboard" below.
 - **Owner learning app** (`/learn`): phone-first, isiXhosa first (English switch). Owners sign in with their shack number and a PIN, read the weekly lesson, pass the quiz, and see the sats they earned this month and their payments.
 
 It runs entirely on our own server. No Supabase, no outside database, no npm packages.
@@ -15,6 +16,7 @@ phone / laptop ──HTTPS──> Caddy (web server, certificate)
                              ├── /        -> admin/ (the admin app)
                              ├── /inspect -> inspector/ (the inspector app, works offline)
                              ├── /learn   -> learn/ (the owner learning app)
+                             ├── /dashboard -> dashboard/ (public, reads /api/public/dashboard)
                              └── /api/*   -> Node.js server (127.0.0.1:3417)
                                                  ├── SQLite file /var/lib/painted-shacks/painted-shacks.db
                                                  └── inspection photos /var/lib/painted-shacks/photos/YYYY-MM/*.jpg
@@ -44,6 +46,33 @@ nightly 01:30 -> database copy to /var/backups/painted-shacks (kept 30 days), ne
 
 Real data (owner Lightning addresses, sponsor contacts) is **not** kept in this public repo. Load it once through Settings > Import data file.
 
+## Public dashboard
+
+`dashboard/index.html` + `accountability.js` is the main page: **Painted Shacks Accountability**, in the format of the team's draft of 25 Nov 2026 (walls, family terms, learning, money in and out, partners, photos). The team fills in the rest in the admin app's **Public report** page (Funding → Costs and public report): signed agreements, the blank agreement link, costs and donations with proof links, walls waiting on payment or under review, the questions list and the draft note. Each sponsor's page has its video post and reach; each sponsor payment can carry a public proof link. Until a part is filled in, the page keeps the draft's text and made-up numbers, marked SAMPLE or DRAFT 25 NOV (the list `D` at the top of `accountability.js`). Learning switches to real numbers once the first lesson is finished. `/dashboard/accountability/` forwards to it.
+
+### Partner view (paid sponsors only)
+
+`/dashboard/partners/` (`dashboard/partners/`, `server/partner.js`): paid partners sign in with an email and password made by an admin on the sponsor's page (Partner sign-in). They see each family's lessons finished and cleaning inspections passed, by shack number, section and logo only; never names, phone numbers, PINs or Lightning addresses. Access works only while the sponsor's payment status is Paying, checked on every request. The public report shows only totals. Phone numbers and Lightning addresses are shown only in the admin app (decided 27 Nov 2026), so the old "show my address publicly" option and the "Tip a shack" list are gone.
+
+
+`dashboard/live.html` + `dashboard.js` is the live view (the retro "Painted Shacks Dashboard" design, fonts in `dashboard/fonts`, all self-hosted so no visitor data goes to Google). The page calls `GET /api/public/dashboard` every minute. That endpoint (`server/public.js`):
+
+- needs no sign-in and is read-only; it is worked out at most once a minute and kept in memory, so many visitors cost the server almost nothing;
+- returns only totals, dates and shack numbers. Never owner names, phone numbers, PINs, notes, inspection photos or payment details;
+- shows an owner's Lightning address only when "Owner agreed to show their Lightning address" is ticked on the owner's page, and a sponsor payment only when "show publicly" is on;
+- groups shacks into sections of JCC Camp (Zinyoka, Asazani) by each shack's "Section" field. Admins set them in Shacks > **Sections and map**, many at once ("1-29" → Zinyoka). There they also set the place name and where each section is (paste the numbers or a link from Google Maps). With places set, the dashboard shows a satellite map (Leaflet in `dashboard/leaflet`, Esri World Imagery tiles, loaded only then) with one circle per section and links to Google Maps. Single homes are never shown. Without places it shows the sketch.
+
+Tests: `node --test --disable-warning=ExperimentalWarning public.test.js`
+
+**On bitcoinekasi.com/painted-shacks (WordPress.com).** Two ways, nothing to change on the server:
+
+1. Link: a button or link to `https://89-125-10-8.sslip.io/dashboard/` (works on every WordPress plan).
+2. Embed: a Custom HTML block with
+   `<iframe src="https://89-125-10-8.sslip.io/dashboard/?embed=1" style="width:100%;height:2600px;border:0" title="Painted Shacks live dashboard" loading="lazy"></iframe>`
+   (`?embed=1` hides the dashboard's own top bar). WordPress.com only keeps iframes on plans that allow custom HTML/plugins. The server allows the page to be framed by bitcoinekasi.com and *.wordpress.com only; the admin, inspector and owner apps can never be framed.
+
+When Bitcoin Ekasi gets its own domain for the server (for example `shacks.bitcoinekasi.com`), run the setup again with that name and use it in the link.
+
 ## Install or update on the server
 
 ```
@@ -61,8 +90,8 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 ## Inspections
 
 - Add inspectors in the admin app under **Settings > Inspectors and admins**. It shows their password once.
-- Each shack is due for an inspection every 90 days (set `INSPECT_EVERY_DAYS` in the service file to change it). Never-inspected shacks count as overdue.
-- The checklist is Paint (good / fading / damaged), Logo visible from the road (yes / partly / no).
+- Each shack is due for an inspection every 30 days: 5 days before the end of the cleaning-check window in Payments > Settings (35 days). Set `INSPECT_EVERY_DAYS` in the service file to override it. Never-inspected shacks count as overdue.
+- The checklist is Paint (good / fading / damaged), Logo visible from the road (yes / partly / no), and Shack and yard clean (clean / needs tidying / dirty). Only "clean" passes the pay rule.
   Result: **Needs repaint** if paint is damaged or the logo is not visible, **Needs attention** if paint is fading or the logo is only partly visible, otherwise **Good**.
 - The newest inspection sets the shack's "Needs maintenance" flag and moves it between Painted and Needs repaint (other statuses are left alone).
 - On the phone, an inspection and its photos are saved in the browser (IndexedDB) first, then sent. Each one has an id made on the phone, so sending twice on bad signal stores it once.
@@ -92,6 +121,7 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 ## Payments (Lightning payouts to owners)
 
 - Owners earn 7,000 sats per finished week (lesson and quiz in the app), up to 28,000 sats a month. Change it under Payments > Settings.
+- Learning sats are paid only when **both** are done: the lessons, and a passed cleaning check. The newest inspection of each of the owner's shacks in the 35 days before pay day must say "clean". The payout list shows each shack's check next to the owner. An admin can press **Pay anyway** with a written reason (saved with their name); the line still needs approval. Bonus and correction payments don't need a cleaning check.
 - Pay day is the **last Friday** of the month. Two days before, the server drafts that month's list (one line per active owner). Nothing is sent.
 - Weeks come from the learning app. An admin checks the weeks per owner, then presses **Approve and send** and types their password. Only then does the server pay.
 - Owners can use **any** Lightning address (Blink, Fedi, Aqua, Wallet of Satoshi, Phoenix, Coinos, ...). The server asks the owner's wallet for an invoice of the exact amount (LNURL-pay), checks the amount, and pays it from the Blink wallet. Bitcoin Ekasi pays the network fee.
