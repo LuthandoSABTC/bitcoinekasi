@@ -207,9 +207,12 @@ function init({ db, pay, learn, send, Bad }) {
                          views: v.views, coming_soon: !!v.coming_soon, note: v.note || null };
     }
     // Cleaning inspections this year: totals only (each family's results are for paid partners, see partner.js).
-    const yearInsp = db.prepare("select shack_id, result from inspections where inspected_on like ?").all(year + "-%").filter(i => shackById.has(i.shack_id));
-    const inspections = { total: yearInsp.length, passed: yearInsp.filter(i => i.result === "good").length,
-      not_passed: yearInsp.filter(i => i.result !== "good").length, shacks: new Set(yearInsp.map(i => i.shack_id)).size,
+    // Passed = the inspector found the shack and yard clean (inspections.clean). Older inspections without that question are left out.
+    const hasClean = !!db.prepare("select 1 from pragma_table_info('inspections') where name = 'clean'").get();
+    const yearInsp = db.prepare(`select shack_id, ${hasClean ? "clean" : "null as clean"} from inspections where inspected_on like ?`).all(year + "-%")
+      .filter(i => shackById.has(i.shack_id) && i.clean);
+    const inspections = { total: yearInsp.length, passed: yearInsp.filter(i => i.clean === "yes").length,
+      not_passed: yearInsp.filter(i => i.clean !== "yes").length, shacks: new Set(yearInsp.map(i => i.shack_id)).size,
       latest_good: good, latest_of: latest.length };
     const accountability = {
       year,

@@ -47,10 +47,13 @@ function init({ db, send, Bad, readJson, hashPassword, checkPassword, sha256, re
       lessons.set(c.owner_id, e);
     }
     const insp = new Map();
-    for (const i of db.prepare("select shack_id, result, inspected_on, created_at from inspections order by inspected_on, created_at").all()) {
+    // "Passed" = the inspector found the shack and yard clean (inspections.clean, added with monthly cleaning checks).
+    // Older inspections without that question count as checked but not as a cleaning result.
+    const hasClean = !!db.prepare("select 1 from pragma_table_info('inspections') where name = 'clean'").get();
+    for (const i of db.prepare(`select shack_id, ${hasClean ? "clean" : "null as clean"}, inspected_on, created_at from inspections order by inspected_on, created_at`).all()) {
       const e = insp.get(i.shack_id) || { total: 0, passed: 0, latest: null, latest_on: null };
-      e.total++; if (i.result === "good") e.passed++;
-      e.latest = i.result; e.latest_on = i.inspected_on;
+      e.total++; if (i.clean === "yes") e.passed++;
+      e.latest = i.clean || "unknown"; e.latest_on = i.inspected_on;
       insp.set(i.shack_id, e);
     }
     const seen = new Set();   // an owner with two walls shows once, under their lowest shack number
@@ -67,7 +70,7 @@ function init({ db, send, Bad, readJson, hashPassword, checkPassword, sha256, re
     return {
       sponsor: u.sponsor, email: u.email, today, total_weeks: ls.total_weeks || 20, start_date: ls.start_date || null, families: rows,
       totals: { families: rows.length, lessons: rows.reduce((t, r) => t + r.lessons_done, 0), inspections: rows.reduce((t, r) => t + r.inspections, 0),
-                passed: rows.reduce((t, r) => t + r.inspections_passed, 0), latest_good: rows.filter(r => r.latest_inspection === "good").length },
+                passed: rows.reduce((t, r) => t + r.inspections_passed, 0), latest_good: rows.filter(r => r.latest_inspection === "yes").length },
     };
   }
 

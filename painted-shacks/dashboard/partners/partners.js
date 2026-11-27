@@ -6,7 +6,7 @@
   const n = v => Number(v || 0).toLocaleString("en-US");
   const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const day = d => { if (!d) return ""; const t = new Date(d + "T12:00:00Z"); return t.getUTCDate() + " " + MON[t.getUTCMonth()] + " " + t.getUTCFullYear(); };
-  const RESULT = { good: ["Clean", "p-good"], touch_up: ["Needs attention", "p-warn"], repaint: ["Needs repaint", "p-bad"] };
+  const RESULT = { yes: ["Clean", "p-good"], partly: ["Partly clean", "p-warn"], no: ["Not clean", "p-bad"], unknown: ["Checked before cleaning checks", ""] };
   const api = (method, url, body) => fetch(url, { method, credentials: "same-origin",
     headers: body ? { "Content-Type": "application/json", "X-PS-Admin": "1" } : { "X-PS-Admin": "1" }, body: body ? JSON.stringify(body) : undefined });
 
@@ -22,7 +22,7 @@
   function showLogin(msg) { $("view").hidden = true; $("out").hidden = true; $("login").hidden = false; $("err").textContent = msg || ""; }
 
   function draw() {
-    const rows = data.families.filter(f => filter === "all" || (filter === "mine" ? f.your_wall : f.latest_inspection && f.latest_inspection !== "good"));
+    const rows = data.families.filter(f => filter === "all" || (filter === "mine" ? f.your_wall : f.latest_inspection === "partly" || f.latest_inspection === "no"));
     const total = data.total_weeks || 20;
     $("rows").innerHTML = rows.map(f => {
       const r = RESULT[f.latest_inspection];
@@ -43,7 +43,7 @@
     $("login").hidden = true; $("view").hidden = false; $("out").hidden = false;
     $("hello").textContent = "Family progress for " + data.sponsor;
     $("intro").textContent = "Each family learns Bitcoin in the Painted Shacks app, " + data.total_weeks + " weekly lessons in isiXhosa, and keeps their home and wall clean. " +
-      "Inspectors check each home about every three months." + (data.start_date && data.start_date > data.today ? " Lessons start on " + day(data.start_date) + "." : "");
+      "Inspectors check each home every month that the shack and yard are clean, and families are paid only when both lessons and cleaning are done." + (data.start_date && data.start_date > data.today ? " Lessons start on " + day(data.start_date) + "." : "");
     const t = data.totals;
     $("t-fam").textContent = n(t.families); $("t-les").textContent = n(t.lessons);
     $("t-ins").textContent = n(t.passed) + " of " + n(t.inspections); $("t-now").textContent = n(t.latest_good) + " of " + n(t.families);
