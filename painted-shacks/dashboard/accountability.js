@@ -21,7 +21,7 @@
     walls: [{ group: "support", label: "Payment pending", count: 2, desc: "Said yes for 2026, invoice sent." },
             { group: "not", label: "Under review", count: 1, desc: "Being talked through with the logo's owner." }],
     classes: { count: 11, avg: 33, months: [29, 31, 30, 33, 32, 34, 31, 35, 36, 34, 37] },
-    sum: [["Left over from 2025", "1,200,000"], ["Received in 2026", "+6,100,000"], ["Paid out in 2026", "−3,985,000"]], held: "3,315,000",
+    sum: [["Received in 2026", "6,100,000"], ["Paid out in 2026", "−3,985,000"]], held: "2,115,000",
     spend: [["Families", 68, "2.7M", "Monthly payouts in sats to every family in the program."],
             ["Paint and upkeep", 17, "685k", "Paint, brushes and labour for new and repainted walls."],
             ["Running the program", 8, "330k", "The monthly class: venue and snacks."],
@@ -35,7 +35,7 @@
             ["2026-05-14", "Monthly class: venue and snacks", 0, 30000], ["2026-04-30", "Outreach and partner posts", 0, 120000],
             ["2026-04-14", "Monthly class: venue and snacks", 0, 30000], ["2026-03-14", "Monthly class: venue and snacks", 0, 30000],
             ["2026-02-20", "Touch-up paint", 0, 140000], ["2026-02-14", "Monthly class: venue and snacks", 0, 30000],
-            ["2026-01-14", "Monthly class: venue and snacks", 0, 30000], ["2026-01-01", "Carried over from 2025", 1200000, 0]],
+            ["2026-01-14", "Monthly class: venue and snacks", 0, 30000]],
     payouts: ["2026-10-28", "2026-09-28", "2026-08-28", "2026-07-28", "2026-06-28", "2026-05-28", "2026-04-28", "2026-03-28", "2026-02-28", "2026-01-28"]
       .map(d => [d, "Monthly payout to families", 0, 270000]),
     // Paid sponsors whose admin record may still say in-kind (Casa confirmed paid by Luthando, 26 Nov 2026).
@@ -71,7 +71,7 @@
     // Top numbers
     $("s-walls").textContent = n(walls);
     $("s-partners-k").textContent = "Partners in " + y; $("s-partners").textContent = n(partners);
-    const paidReal = M.paid_to_families_sats > 0 || R.carried_over_sats != null || R.has_entries;
+    const paidReal = M.paid_to_families_sats > 0 || R.has_entries;
     $("s-paid-k").innerHTML = "Paid to families in " + y + (paidReal ? "" : " " + SAMPLE);
     $("s-paid").innerHTML = esc(paidReal ? short(M.paid_to_families_sats) : short(D.paidToFamilies)) + " <small>sats</small>";
 
@@ -111,8 +111,8 @@
       cols(D.classes.months.map((v, i) => [MON[i], v]), Math.max(...D.classes.months));
     }
 
-    // Money: real once the team has typed costs or last year's left-over in the admin app; the draft's numbers until then.
-    const realMoney = R.carried_over_sats != null || R.has_entries;
+    // Money (this year only): real once the team has typed a cost or donation in the admin app; the draft's numbers until then.
+    const realMoney = R.has_entries;
     const ins = R.entries.filter(e => e.direction === "in"), outs = R.entries.filter(e => e.direction === "out");
     const sum = list => list.reduce((t, e) => t + e.sats, 0);
     $("toc-money").innerHTML = realMoney ? "›" : SAMPLE;
@@ -120,13 +120,13 @@
     $("m-note").hidden = realMoney;
     $("m-title").textContent = "This year so far, in sats";
     if (realMoney) {
-      const left = R.carried_over_sats || 0, got = M.received_sats + sum(ins), spent = M.paid_to_families_sats + sum(outs);
-      $("m-sum").innerHTML = [["Left over from " + (y - 1), n(left)], ["Received in " + y, "+" + n(got)], ["Paid out in " + y, "−" + n(spent)]]
+      const got = M.received_sats + sum(ins), spent = M.paid_to_families_sats + sum(outs);
+      $("m-sum").innerHTML = [["Received in " + y, n(got)], ["Paid out in " + y, "−" + n(spent)]]
         .map(([k, v]) => "<div><span>" + k + "</span><span>" + v + "</span></div>").join("") +
-        '<div class="big"><span>Held now</span><b>' + n(left + got - spent) + "</b></div>";
+        '<div class="big"><span>Held now from ' + y + "</span><b>" + n(got - spent) + "</b></div>";
     } else {
       $("m-sum").innerHTML = D.sum.map(([k, v]) => "<div><span>" + k + "</span><span>" + v + "</span></div>").join("") +
-        '<div class="big"><span>Held now</span><b>' + D.held + "</b></div>";
+        '<div class="big"><span>Held now from ' + y + '</span><b>' + D.held + "</b></div>";
     }
     $("m-real").innerHTML = "Real so far: <b>" + n(M.received_sats) + " sats</b> received from partners in " + y +
       (M.received_zar ? " (R" + M.received_zar.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ")" : "") +
