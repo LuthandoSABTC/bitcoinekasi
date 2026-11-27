@@ -458,7 +458,7 @@ function bindInspectionHistory() {
 let ownerFilter = "all", ownerQuery = "";
 pages.owners = params => {
   if (params.get("f")) ownerFilter = params.get("f");
-  const filters = [["all", "All"], ["noname", "No name"], ["noln", "No Lightning address"], ["public", "Shown publicly"]];
+  const filters = [["all", "All"], ["noname", "No name"], ["noln", "No Lightning address"]];
   const draw = () => {
     const q = ownerQuery.toLowerCase();
     const rows = cache.ps_owners.map(o => ({o, sh: shacksOf(o.id)})).sort((a, b) => (a.sh[0]?.shack_no ?? 999) - (b.sh[0]?.shack_no ?? 999)).filter(({o, sh}) => {
@@ -504,7 +504,7 @@ pages.owner = (id, params) => {
         <label class="fld">Phone<input type="tel" name="phone" value="${esc(o.phone)}" placeholder="e.g. 072 123 4567"></label>
         <label class="fld wide">Lightning address<input type="text" name="lightning_address" value="${esc(o.lightning_address)}" placeholder="name@blink.sv" autocapitalize="off" spellcheck="false" pattern="[A-Za-z0-9._+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}">
           <span class="hint">Where their weekly sats are paid. Double check it: payments to a wrong address can't be taken back.</span></label>
-        <label class="check fld wide"><input type="checkbox" name="show_address_publicly" ${o.show_address_publicly ? "checked" : ""}> Owner agreed to show their Lightning address on the public dashboard</label>
+        <p class="hint fld wide" style="margin:0">Phone numbers and Lightning addresses are only shown in this admin app, never on the public dashboard or to partners.</p>
         <label class="fld">Age<input type="number" name="age" min="10" max="110" value="${esc(o.age)}"></label>
         <label class="fld">What they do<input type="text" name="occupation" value="${esc(o.occupation)}" placeholder="e.g. Spaza shop owner"></label>
         <label class="fld">Lesson language<select name="preferred_language">${Object.entries(LANG).map(([k, v]) => `<option value="${k}" ${o.preferred_language === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
@@ -519,7 +519,7 @@ pages.owner = (id, params) => {
   bindForm("ps_owners", o, f => {
     const ln = (f.lightning_address || "").trim().toLowerCase();
     if (ln && !LN_RE.test(ln)) throw new Error("That Lightning address doesn't look right. It should look like name@blink.sv");
-    return {full_name: f.full_name.trim(), phone: f.phone.trim(), lightning_address: ln, show_address_publicly: !!f.show_address_publicly,
+    return {full_name: f.full_name.trim(), phone: f.phone.trim(), lightning_address: ln,
       age: f.age === "" ? null : Number(f.age), occupation: f.occupation, preferred_language: f.preferred_language, joined_on: f.joined_on,
       active: !!f.active, notes: f.notes};
   }, async (r, f) => {
@@ -584,8 +584,10 @@ pages.sponsor = id => {
       return `<div class="card"><div class="head" style="margin:0"><h2>Video post on the public report</h2><a class="btn small" href="#/video/${v ? v.id : "new?sponsor=" + s.id}">${v ? "Edit" : "Add"}</a></div>
       <p class="muted" style="margin:0">${v ? esc([v.video_on ? "Posted " + fmtDate(v.video_on) : v.coming_soon ? "Coming soon" : "No date", v.impressions != null ? fmtSats(v.impressions) + " impressions" : "", v.views != null ? fmtSats(v.views) + " views" : ""].filter(Boolean).join(" · "))
         : "Not added yet. The public report shows the draft's text for paid partners until you add it."}</p></div>`; })()}
+    <div class="card" id="plogins"><h2>Partner sign-in</h2><p class="muted" style="margin:0">Loading…</p></div>
     <div class="card"><div class="head" style="margin:0"><h2>Contacts</h2><a class="btn small" href="#/contact/new?sponsor=${s.id}">Add contact</a></div>
       ${contacts.length ? `<div class="list">${contacts.map(c => `<a class="item" href="#/contact/${c.id}"><div class="main"><b>${esc(c.name)}</b><small>${esc([c.email, c.chat].filter(Boolean).join(" · ") || "No details")}</small></div></a>`).join("")}</div>` : '<p class="muted" style="margin:0">No contacts yet.</p>'}</div>`}`);
+  if (!isNew) drawPartnerLogins(s);
   bindForm("ps_sponsors", s, f => ({name: f.name.trim(), website: f.website, kind: f.kind, payment_status: f.payment_status, logo_url: f.logo_url,
     support_in_kind: f.support_in_kind, last_contact: f.last_contact, should_request_sats: !!f.should_request_sats, notes: f.notes}),
     r => "#/sponsor/" + r.id, "#/sponsors", `Delete ${s.name}? Shacks with this logo will show "No logo set".`);
@@ -889,6 +891,40 @@ pages.sections = async () => {
   });
   drawRows();
 };
+
+/* ============================================================ partner sign-in (/dashboard/partners/)
+   Paid sponsors sign in to follow each family's lessons and inspections (shack numbers only). */
+async function drawPartnerLogins(s) {
+  const box = $("#plogins");
+  if (!box) return;
+  let list = [];
+  if (!DEMO) { try { list = (await call("GET", "/api/partner-logins")).filter(l => l.sponsor_id === s.id); } catch (err) { box.innerHTML = `<h2>Partner sign-in</h2><p class="muted">${esc(friendlyError(err))}</p>`; return; } }
+  const paid = s.payment_status === "paying";
+  box.innerHTML = `<h2>Partner sign-in</h2>
+    <p class="muted" style="margin:0">Lets ${esc(s.name)} see each family's lessons and cleaning inspections at <a href="/dashboard/partners/" target="_blank" rel="noopener">${esc(location.host)}/dashboard/partners</a>, by shack number only (no names, phones or wallets).
+      ${paid ? "" : `<b>Only works while the payment status is Paying.</b>`}</p>
+    ${list.length ? `<div class="list">${list.map(l => `<div class="item"><div class="main"><b>${esc(l.email)}</b><small>${l.last_login_at ? "Last signed in " + fmtDate(l.last_login_at.slice(0, 10)) : "Not signed in yet"}</small></div>
+      <div class="end"><button class="btn ghost small" type="button" data-reset="${l.id}">New password</button><button class="btn danger small" type="button" data-remove="${l.id}">Remove</button></div></div>`).join("")}</div>` : ""}
+    <form id="plf" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end"><label class="fld" style="flex:1;min-width:200px">Partner's email<input type="email" name="email" required></label><button class="btn small" type="submit">Create sign-in</button></form>
+    <p class="hint" id="plpw" style="margin:0" hidden></p>`;
+  const showPw = (email, pw) => { const h = $("#plpw"); h.hidden = false; h.innerHTML = `Password for <b>${esc(email)}</b>: <code style="font-size:15px">${esc(pw)}</code>. Send it to them privately. It won't be shown again.`; };
+  $("#plf").addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = new FormData(e.target).get("email");
+    try { const r = await call("POST", "/api/partner-logins", {sponsor_id: s.id, email}); await drawPartnerLogins(s); showPw(r.email, r.password); }
+    catch (err) { toast(friendlyError(err), true); }
+  });
+  box.querySelectorAll("[data-reset]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("Make a new password? The old one stops working.")) return;
+    try { const r = await call("POST", `/api/partner-logins/${b.dataset.reset}/reset`, {}); showPw(list.find(l => l.id === b.dataset.reset).email, r.password); }
+    catch (err) { toast(friendlyError(err), true); }
+  }));
+  box.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
+    if (!confirm("Remove this sign-in?")) return;
+    try { await call("DELETE", `/api/partner-logins/${b.dataset.remove}`); await drawPartnerLogins(s); toast("Removed"); }
+    catch (err) { toast(friendlyError(err), true); }
+  }));
+}
 
 /* ============================================================ public report (/dashboard)
    Everything the public report used to take from the 25 Nov draft. A field left empty keeps the draft's text on the page. */

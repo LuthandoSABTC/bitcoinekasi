@@ -50,6 +50,11 @@ Real data (owner Lightning addresses, sponsor contacts) is **not** kept in this 
 
 `dashboard/index.html` + `accountability.js` is the main page: **Painted Shacks Accountability**, in the format of the team's draft of 25 Nov 2026 (walls, family terms, learning, money in and out, partners, photos). The team fills in the rest in the admin app's **Public report** page (Funding → Costs and public report): signed agreements, the blank agreement link, costs and donations with proof links, walls waiting on payment or under review, the questions list and the draft note. Each sponsor's page has its video post and reach; each sponsor payment can carry a public proof link. Until a part is filled in, the page keeps the draft's text and made-up numbers, marked SAMPLE or DRAFT 25 NOV (the list `D` at the top of `accountability.js`). Learning switches to real numbers once the first lesson is finished. `/dashboard/accountability/` forwards to it.
 
+### Partner view (paid sponsors only)
+
+`/dashboard/partners/` (`dashboard/partners/`, `server/partner.js`): paid partners sign in with an email and password made by an admin on the sponsor's page (Partner sign-in). They see each family's lessons finished and cleaning inspections passed, by shack number, section and logo only; never names, phone numbers, PINs or Lightning addresses. Access works only while the sponsor's payment status is Paying, checked on every request. The public report shows only totals. Phone numbers and Lightning addresses are shown only in the admin app (decided 27 Nov 2026), so the old "show my address publicly" option and the "Tip a shack" list are gone.
+
+
 `dashboard/live.html` + `dashboard.js` is the live view (the retro "Painted Shacks Dashboard" design, fonts in `dashboard/fonts`, all self-hosted so no visitor data goes to Google). The page calls `GET /api/public/dashboard` every minute. That endpoint (`server/public.js`):
 
 - needs no sign-in and is read-only; it is worked out at most once a minute and kept in memory, so many visitors cost the server almost nothing;

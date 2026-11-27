@@ -65,11 +65,10 @@ test("no names, phones, notes, private addresses or hidden payments; public numb
   assert.equal(r.status, 200);
   assert.equal(r.headers.get("access-control-allow-origin"), "*");
   const text = await r.text(), d = JSON.parse(text);
-  for (const secret of ["Thandi", "Sipho", "Gone Owner", "0721112222", "0823334444", "sipho@private.example", "gone@blink.sv", "owner note", "shack note",
+  for (const secret of ["Thandi", "Sipho", "Gone Owner", "0721112222", "0823334444", "sipho@private.example", "gone@blink.sv", "thandi@blink.sv", "@blink.sv", "owner note", "shack note",
                         "inspection note", "999999", "hash-secret", "javascript:", "pin", "o1", "o2", "s1\""])
     assert.ok(!text.includes(secret), `public data must not contain ${secret}`);
-  assert.deepEqual(d.tips.list, [{ shack_no: 7, address: "thandi@blink.sv", logo: "Fedi" }]);
-  assert.equal(d.tips.owners, 2, "owners with a shack that are active");
+  assert.equal(d.tips, undefined, "no Lightning addresses publicly, even when the owner agreed (admin only)");
   assert.equal(d.tiles.shacks_painted.of, 4, "removed shacks are left out");
   assert.deepEqual(d.tiles.good_condition, { value: 1, of: 2 });
   assert.deepEqual(d.tiles.paid_on_time, { value: 1, of: 2, pct: 50 });
@@ -81,7 +80,7 @@ test("no names, phones, notes, private addresses or hidden payments; public numb
   const a = d.sections.find(s => s.name === "Section A");
   assert.equal(a.shacks, 2); assert.equal(a.lessons, 2);
   const lesson = d.feed.find(e => e.kind === "lesson" && e.shack.shack_no === 8);
-  assert.equal(lesson.shack.address, null); assert.equal(lesson.shack.address_state, "private");
+  assert.deepEqual(Object.keys(lesson.shack).sort(), ["logo", "shack_no"]);
   assert.ok(d.sponsors.find(s => s.name === "Fedi").walls === 2);
   assert.equal(d.sponsors.find(s => s.name === "Secret Sponsor").website, null, "only web links");
 });
@@ -181,4 +180,42 @@ test("public report: admins type costs, agreements, wall statuses and video post
   assert.equal(p.video.impressions, 11820);
   assert.equal(p.video.x, "https://x.com/BitcoinEkasi/status/2");
   assert.ok(!JSON.stringify(d).includes("Luthando"), "who changed the settings stays private");
+});
+
+test("partner view: only paid partners sign in; families by shack number only, never names, phones or addresses", async () => {
+  const login = await fetch(appUrl + "/api/login", { method: "POST", headers: { "Content-Type": "application/json", "X-PS-Admin": "1" }, body: JSON.stringify({ email: "a@x.co", password: "admin-password-1" }) });
+  const admin = login.headers.get("set-cookie").split(";")[0];
+  const call = (method, p, body, cookie = admin) => fetch(appUrl + p, { method, headers: { "Content-Type": "application/json", "X-PS-Admin": "1", Cookie: cookie }, body: body && JSON.stringify(body) });
+  q("update sponsors set payment_status = 'paying' where id = 'spn1'").run();
+  const made = await call("POST", "/api/partner-logins", { sponsor_id: "spn1", email: "Team@Fedi.example" });
+  assert.equal(made.status, 201);
+  const { password, id } = await made.json();
+  assert.equal(password.length, 12);
+  assert.equal((await call("POST", "/api/partner-logins", { sponsor_id: "spn1", email: "team@fedi.example" })).status, 400, "one account per email");
+  assert.equal((await fetch(appUrl + "/api/partner-logins", { headers: { "X-PS-Admin": "1" } })).status, 401, "admins only");
+
+  assert.equal((await fetch(appUrl + "/api/partner/progress")).status, 401);
+  assert.equal((await call("POST", "/api/partner/login", { email: "team@fedi.example", password: "wrong" }, "")).status, 401);
+  const ok = await call("POST", "/api/partner/login", { email: "team@fedi.example", password }, "");
+  assert.equal(ok.status, 200);
+  const pc = ok.headers.get("set-cookie").split(";")[0];
+  assert.equal((await call("GET", "/api/me", undefined, pc)).status, 401, "a partner sign-in is not a staff sign-in");
+  const r = await call("GET", "/api/partner/progress", undefined, pc);
+  assert.equal(r.status, 200);
+  const text = await r.text(), d = JSON.parse(text);
+  for (const secret of ["Thandi", "Sipho", "0721112222", "0823334444", "@blink.sv", "sipho@private", "owner note", "inspection note", "pin_hash"])
+    assert.ok(!text.includes(secret), `partner data must not contain ${secret}`);
+  assert.ok(d.families.length > 0);
+  assert.ok(d.families.some(f => f.your_wall), "their own walls are marked");
+  assert.deepEqual(Object.keys(d.families[0]).sort(), ["inspections", "inspections_passed", "last_lesson_on", "latest_inspection", "latest_inspection_on",
+    "lessons_done", "lessons_this_month", "logo", "section", "shack_no", "your_wall"]);
+
+  q("update sponsors set payment_status = 'lapsed' where id = 'spn1'").run();
+  assert.equal((await call("GET", "/api/partner/progress", undefined, pc)).status, 403, "a lapsed sponsor loses access at once");
+  assert.equal((await call("POST", "/api/partner/login", { email: "team@fedi.example", password }, "")).status, 403);
+  q("update sponsors set payment_status = 'paying' where id = 'spn1'").run();
+  const reset = await call("POST", `/api/partner-logins/${id}/reset`);
+  assert.equal(reset.status, 200);
+  assert.equal((await call("GET", "/api/partner/progress", undefined, pc)).status, 401, "a new password signs the old session out");
+  assert.equal((await call("DELETE", `/api/partner-logins/${id}`)).status, 200);
 });
