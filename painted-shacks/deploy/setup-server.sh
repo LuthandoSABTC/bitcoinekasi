@@ -122,6 +122,8 @@ $DOMAIN {
   }
   @dash path /dashboard /dashboard/*
   header @dash {
+    # Browsers check for a newer copy on every visit, so updates show without a hard refresh.
+    Cache-Control "no-cache"
     Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://server.arcgisonline.com; connect-src 'self'; frame-ancestors 'self' https://bitcoinekasi.com https://*.bitcoinekasi.com https://*.wordpress.com; form-action 'self'; base-uri 'none'"
   }
 }
