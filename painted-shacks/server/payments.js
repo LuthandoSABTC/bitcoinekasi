@@ -62,6 +62,35 @@ function init(ctx) {
     left join address_checks ac on ac.owner_id = p.owner_id`;
   const pub = r => { if (!r) return r; const { payment_request, ...rest } = r; return rest; };
 
+  /* ---------------------------------------------------------------- cleaning rule
+     Learning sats are paid only when the owner finished lessons AND their shack passed a cleaning check:
+     the newest inspection of each of their shacks in the window before pay day must say "clean".
+     An admin can still pay a line anyway, with a written reason (kept on the payment and in the audit log). */
+  const CLEAN_WORD = { yes: "Clean", partly: "Needs tidying", no: "Dirty" };
+  function cleanStatus(ownerId, period) {
+    const s = settings();
+    const to = payDay(period), from = addDays(to, -s.clean_window_days);
+    const shacks = db.prepare("select id, shack_no from shacks where owner_id = ? and status <> 'removed' order by shack_no").all(ownerId).map(sh => {
+      const i = db.prepare(`select id, inspected_on, clean from inspections where shack_id = ? and inspected_on between ? and ?
+                            order by inspected_on desc, created_at desc limit 1`).get(sh.id, from, to);
+      return { shack_id: sh.id, shack_no: sh.shack_no, inspection_id: i?.id || null, inspected_on: i?.inspected_on || null, clean: i?.clean || null };
+    });
+    const bad = shacks.find(x => x.clean !== "yes");
+    const why = !shacks.length ? "No shack linked to this owner"
+      : !bad ? null
+      : !bad.inspected_on ? `Shack ${bad.shack_no} has no inspection since ${from}`
+      : !bad.clean ? `Shack ${bad.shack_no}'s last inspection (${bad.inspected_on}) had no cleaning check`
+      : `Shack ${bad.shack_no} was ${CLEAN_WORD[bad.clean].toLowerCase()} on ${bad.inspected_on}`;
+    return { required: !!s.require_clean, ok: !why, why, from, to, shacks };
+  }
+  // Adds the cleaning result to a payout line. Only monthly learning payouts need it.
+  function withClean(r) {
+    if (!r || r.reason !== "weekly_learning") return r;
+    const c = cleanStatus(r.owner_id, r.period);
+    const passes = !c.required || c.ok || !!r.clean_override_note;
+    return { ...r, clean: { ...c, passes, overridden: !c.ok && !!r.clean_override_note } };
+  }
+
   function batchInfo(b) {
     const rows = db.prepare("select status, count(*) n, sum(amount_sats) sats, sum(coalesce(fee_sats,0)) fees from payouts where batch_id = ? group by status").all(b.id);
     const by = Object.fromEntries(rows.map(r => [r.status, { n: r.n, sats: r.sats || 0, fees: r.fees || 0 }]));
@@ -139,6 +168,7 @@ function init(ctx) {
         : r.address_ok === 0 && r.checked_address === r.owner_address ? `address check failed: ${r.address_message}`
         : r.reason === "weekly_learning" && r.amount_sats > s.sats_per_week * s.max_weeks ? "more than the monthly maximum"
         : r.reason !== "weekly_learning" && r.amount_sats > s.single_limit_sats ? `more than the single payment limit (${s.single_limit_sats} sats)`
+        : r.reason === "weekly_learning" && !withClean(r).clean.passes ? `cleaning check not passed: ${withClean(r).clean.why}`
         : null;
       if (why) skipped.push({ id: r.id, owner: r.owner_name, why }); else ok.push(r);
     }
@@ -331,7 +361,7 @@ function init(ctx) {
       const b = await readJson(req);
       confirmPassword(user, b.password);
       const before = settings(), upd = {};
-      for (const k of ["sats_per_week", "max_weeks", "draft_days_before", "batch_limit_sats", "single_limit_sats", "max_fee_sats"]) {
+      for (const k of ["sats_per_week", "max_weeks", "draft_days_before", "batch_limit_sats", "single_limit_sats", "max_fee_sats", "require_clean", "clean_window_days"]) {
         if (b[k] === undefined) continue;
         const v = Number(b[k]);
         if (!Number.isInteger(v) || v < 0) throw new Bad(`${k} must be a whole number`);
@@ -372,7 +402,7 @@ function init(ctx) {
     if (m && method === "GET") {
       const b = db.prepare("select * from payout_batches where id = ?").get(m[1]);
       if (!b) throw new Bad("Not found", 404);
-      const lines = db.prepare(LIST_SQL + " where p.batch_id = ? order by cast(coalesce(shacks,'999') as integer), o.full_name").all(b.id).map(pub);
+      const lines = db.prepare(LIST_SQL + " where p.batch_id = ? order by cast(coalesce(shacks,'999') as integer), o.full_name").all(b.id).map(r => withClean(pub(r)));
       return send(res, 200, { batch: batchInfo(b), lines, settings: settings() });
     }
 
@@ -430,6 +460,11 @@ function init(ctx) {
           const a = Number(b.amount_sats);
           if (!Number.isInteger(a) || a < 1 || a > s.single_limit_sats) throw new Bad("Amount is not allowed.");
           upd.amount_sats = a;
+        }
+        if (b.clean_override_note !== undefined && before.reason === "weekly_learning") {
+          const n = String(b.clean_override_note || "").trim().slice(0, 500);
+          if (b.clean_override_note && n.length < 5) throw new Bad("Please write why this owner is paid without a passed cleaning check.");
+          upd.clean_override_note = n || null; upd.clean_override_by = n ? user.full_name : null;
         }
         if (b.note !== undefined) upd.note = String(b.note || "").trim().slice(0, 500) || null;
         if (Object.keys(upd).length)
@@ -489,7 +524,7 @@ function init(ctx) {
     setInterval(() => reconcile().catch(e => console.error("payout check", e)), 10 * 60e3).unref();
   }
 
-  return { routes, startTimers, draftBatch, syncWeeks, weeksEarned, settings, payDay, draftDay, approve, runSender, reconcile, autoDraft, summary, isSending: () => sending };
+  return { routes, startTimers, draftBatch, cleanStatus, syncWeeks, weeksEarned, settings, payDay, draftDay, approve, runSender, reconcile, autoDraft, summary, isSending: () => sending };
 }
 
 module.exports = { init, lastFriday, addDays, monthName };

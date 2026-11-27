@@ -16,7 +16,8 @@ const SESSION_DAYS = 14;
 const COOKIE = COOKIE_SECURE ? "__Host-ps_session" : "ps_session";
 const PHOTO_DIR = process.env.PHOTO_DIR || require("node:path").join(require("node:path").dirname(DB_PATH), "photos");
 const MAX_PHOTO_BYTES = 1.5e6;      // the phone shrinks photos to about 150-300 KB before sending
-const INSPECT_EVERY_DAYS = Number(process.env.INSPECT_EVERY_DAYS || 90);  // each shack checked about every 3 months
+// How often each shack is due for an inspection. Follows the cleaning-check window in payment settings
+// (window minus 5 days, so there is time before pay day), unless INSPECT_EVERY_DAYS is set in the service file.
 const DUE_SOON_DAYS = 14;
 
 const db = open(DB_PATH);
@@ -239,7 +240,7 @@ async function handle(req, res) {
     out.inspections = db.prepare(`select i.*, s.full_name as inspector_name from inspections i left join staff s on s.id = i.inspector_id
                                    order by i.inspected_on desc, i.created_at desc`).all();
     out.inspection_photos = db.prepare("select id, inspection_id, label, bytes, created_at from inspection_photos order by created_at").all();
-    out.inspection_rules = { every_days: INSPECT_EVERY_DAYS, due_soon_days: DUE_SOON_DAYS };
+    out.inspection_rules = { every_days: inspectEveryDays(), due_soon_days: dueSoonDays() };
     return send(res, 200, out);
   }
 
@@ -350,7 +351,13 @@ async function handle(req, res) {
 }
 
 /* ------------------------------------------------------------------ inspections */
-const PAINT = ["good", "fading", "damaged"], LOGO = ["yes", "partly", "no"];
+const PAINT = ["good", "fading", "damaged"], LOGO = ["yes", "partly", "no"], CLEAN = ["yes", "partly", "no"];
+function inspectEveryDays() {
+  if (process.env.INSPECT_EVERY_DAYS) return Number(process.env.INSPECT_EVERY_DAYS);
+  const w = db.prepare("select clean_window_days from pay_settings where id = 1").get()?.clean_window_days || 35;
+  return Math.max(7, w - 5);
+}
+const dueSoonDays = () => inspectEveryDays() <= 45 ? 7 : DUE_SOON_DAYS;
 function resultOf(i) {
   if (i.paint === "damaged" || i.logo === "no") return "repaint";
   if (i.paint === "fading" || i.logo === "partly") return "touch_up";
@@ -377,8 +384,8 @@ function applyLatestInspection(shackId, user) {
 function dueInfo(lastOn) {
   const t = today();
   if (!lastOn) return { due_on: t, due: "overdue" };
-  const dueOn = addDays(lastOn, INSPECT_EVERY_DAYS);
-  return { due_on: dueOn, due: dueOn <= t ? "overdue" : addDays(t, DUE_SOON_DAYS) >= dueOn ? "due_soon" : "ok" };
+  const dueOn = addDays(lastOn, inspectEveryDays());
+  return { due_on: dueOn, due: dueOn <= t ? "overdue" : addDays(t, dueSoonDays()) >= dueOn ? "due_soon" : "ok" };
 }
 
 function photoPath(file) {
@@ -428,7 +435,7 @@ async function inspectorRoutes(req, res, p, method, user, url) {
     const order = { overdue: 0, due_soon: 1, ok: 2 };
     const shacks = rows.map(r => ({ ...r, ...dueInfo(r.last_on) }))
       .sort((a, b) => order[a.due] - order[b.due] || a.due_on.localeCompare(b.due_on) || a.shack_no - b.shack_no);
-    return send(res, 200, { shacks, rules: { every_days: INSPECT_EVERY_DAYS, due_soon_days: DUE_SOON_DAYS }, today: today() });
+    return send(res, 200, { shacks, rules: { every_days: inspectEveryDays(), due_soon_days: dueSoonDays() }, today: today() });
   }
 
   // My own inspections (last 120 days).
@@ -449,11 +456,13 @@ async function inspectorRoutes(req, res, p, method, user, url) {
     if (existing) return send(res, 200, existing);     // already received (sent twice on bad signal)
     if (!db.prepare("select 1 from shacks where id = ?").get(String(b.shack_id || ""))) throw new Bad("That shack no longer exists. Ask the admin.", 404);
     if (!PAINT.includes(b.paint) || !LOGO.includes(b.logo)) throw new Bad("Please answer both checks.");
+    // Older copies of the app on a phone don't ask about cleaning yet: those inspections are saved without it.
+    if (b.clean != null && !CLEAN.includes(b.clean)) throw new Bad("Please answer the cleaning check.");
     const on = String(b.inspected_on || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(on) || on > addDays(today(), 1) || on < addDays(today(), -60)) throw new Bad("The inspection date is not valid.");
     const notes = b.notes == null ? null : String(b.notes).trim().slice(0, 2000) || null;
     const photoCount = Math.max(0, Math.min(8, Number(b.photo_count) || 0));
-    const row = { id, shack_id: b.shack_id, inspector_id: user.id, inspected_on: on, paint: b.paint, logo: b.logo,
+    const row = { id, shack_id: b.shack_id, inspector_id: user.id, inspected_on: on, paint: b.paint, logo: b.logo, clean: b.clean ?? null,
                   result: resultOf(b), notes, photo_count: photoCount };
     const saved = tx(() => {
       const cols = Object.keys(row);

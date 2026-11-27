@@ -114,6 +114,7 @@ create table if not exists inspections (
   inspected_on  text not null,
   paint         text not null check (paint in ('good','fading','damaged')),
   logo          text not null check (logo in ('yes','partly','no')),
+  clean         text check (clean is null or clean in ('yes','partly','no')),   -- shack and yard clean? 'yes' passes the pay rule
   result        text not null check (result in ('good','touch_up','repaint')),
   notes         text,
   photo_count   integer not null default 0,
@@ -344,6 +345,17 @@ function open(file) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec(SCHEMA);
+  // 2026-11-27: owners are paid only when the lesson is done AND the shack passed a cleaning check.
+  if (!db.prepare("select 1 from pragma_table_info('inspections') where name = 'clean'").get())
+    db.exec("alter table inspections add column clean text check (clean is null or clean in ('yes','partly','no'))");
+  if (!db.prepare("select 1 from pragma_table_info('pay_settings') where name = 'clean_window_days'").get()) {
+    db.exec("alter table pay_settings add column require_clean integer not null default 1");
+    db.exec("alter table pay_settings add column clean_window_days integer not null default 35 check (clean_window_days between 7 and 366)");
+  }
+  if (!db.prepare("select 1 from pragma_table_info('payouts') where name = 'clean_override_note'").get()) {
+    db.exec("alter table payouts add column clean_override_note text");
+    db.exec("alter table payouts add column clean_override_by text");
+  }
   // 2026-11-24: the "Roof and walls" check was removed from inspections.
   if (db.prepare("select 1 from pragma_table_info('inspections') where name = 'structure'").get())
     db.exec("alter table inspections drop column structure");

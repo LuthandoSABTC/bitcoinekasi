@@ -1,7 +1,7 @@
 // Keeps the inspector app working with no signal. Only the app's own files are cached here;
 // shack lists and unsent inspections are kept by the page itself (localStorage + IndexedDB).
 "use strict";
-const VERSION = "inspector-v3";   // only clears its own caches: the learning app shares this site
+const VERSION = "inspector-v4";   // only clears its own caches: the learning app shares this site
 const SHELL = ["./", "index.html", "logo.png", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

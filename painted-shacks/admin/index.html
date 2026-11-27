@@ -436,7 +436,7 @@ function inspectionHistory(s) {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${fmtDate(i.inspected_on)}</b><span class="pill ${RESULT[i.result][1]}">${RESULT[i.result][0]}</span>
           <span class="muted" style="font-size:13px">by ${esc(i.inspector_name || "unknown")}</span>
           <button class="btn danger small" type="button" data-del-insp="${esc(i.id)}" style="margin-left:auto">Delete</button></div>
-        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b></div>
+        <div class="muted" style="font-size:14px">Paint: <b>${ANSWER[i.paint]}</b> · Logo visible: <b>${ANSWER[i.logo]}</b> · Clean: <b>${i.clean ? {yes: "Clean", partly: "Needs tidying", no: "Dirty"}[i.clean] : "not checked"}</b></div>
         ${i.notes ? `<div style="font-size:14px">${esc(i.notes)}</div>` : ""}
         ${ph.length ? `<div style="display:flex;gap:8px;overflow-x:auto">${ph.map(p => `<a href="/api/photos/${esc(p.id)}" target="_blank" rel="noopener"><img src="/api/photos/${esc(p.id)}" alt="${esc(p.label || "Inspection")} photo" loading="lazy" style="width:120px;height:120px;object-fit:cover;border-radius:10px;background:var(--raise)"></a>`).join("")}</div>` : ""}
         ${i.photo_count > ph.length ? `<div class="muted" style="font-size:13px">${i.photo_count - ph.length} photo(s) still uploading from the inspector's phone.</div>` : ""}

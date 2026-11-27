@@ -133,6 +133,7 @@ const DUE = {overdue: ["Overdue", "p-bad"], due_soon: ["Due soon", "p-warn"], ok
 const Q = [
   ["paint", "Paint", [["good", "Good", "g"], ["fading", "Fading", "w"], ["damaged", "Damaged", "b"]]],
   ["logo", "Logo visible from the road", [["yes", "Yes", "g"], ["partly", "Partly", "w"], ["no", "No", "b"]]],
+  ["clean", "Shack and yard clean", [["yes", "Clean", "g"], ["partly", "Needs tidying", "w"], ["no", "Dirty", "b"]]],
 ];
 const SLOTS = ["Front", "Logo", "Side"];
 const MAX_PHOTOS = 6;
@@ -212,7 +213,7 @@ async function sync({quiet} = {}) {
       try {
         if (!item.sent) {
           await call("POST", "/api/inspections", {id: item.id, shack_id: item.shack_id, inspected_on: item.inspected_on,
-            paint: item.paint, logo: item.logo, notes: item.notes, photo_count: item.photos.length});
+            paint: item.paint, logo: item.logo, clean: item.clean ?? null, notes: item.notes, photo_count: item.photos.length});
           item.sent = true; item.error = null; await idb.put(item);
         }
         for (const p of item.photos) {
@@ -373,7 +374,8 @@ pages.inspect = id => {
   const form = $("#form");
   const showResult = () => {
     const a = draft.answers;
-    $("#res").innerHTML = Q.every(([k]) => a[k]) ? (([t, c]) => `Result: <span class="pill ${c}">${t}</span>`)(RESULT[resultOf(a)]) : "";
+    $("#res").innerHTML = Q.every(([k]) => a[k]) ? `<div style="display:grid;gap:6px">${(([t, c]) => `<span>Result: <span class="pill ${c}">${t}</span></span>`)(RESULT[resultOf(a)])}
+      <span>Cleaning: ${a.clean === "yes" ? '<span class="pill p-good">Passed</span>' : '<span class="pill p-bad">Not passed: no sats this month until a clean check</span>'}</span></div>` : "";
   };
   form.addEventListener("change", e => {
     if (e.target.type === "radio") draft.answers[e.target.name] = e.target.value;

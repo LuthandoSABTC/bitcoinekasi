@@ -85,8 +85,8 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 ## Inspections
 
 - Add inspectors in the admin app under **Settings > Inspectors and admins**. It shows their password once.
-- Each shack is due for an inspection every 90 days (set `INSPECT_EVERY_DAYS` in the service file to change it). Never-inspected shacks count as overdue.
-- The checklist is Paint (good / fading / damaged), Logo visible from the road (yes / partly / no).
+- Each shack is due for an inspection every 30 days: 5 days before the end of the cleaning-check window in Payments > Settings (35 days). Set `INSPECT_EVERY_DAYS` in the service file to override it. Never-inspected shacks count as overdue.
+- The checklist is Paint (good / fading / damaged), Logo visible from the road (yes / partly / no), and Shack and yard clean (clean / needs tidying / dirty). Only "clean" passes the pay rule.
   Result: **Needs repaint** if paint is damaged or the logo is not visible, **Needs attention** if paint is fading or the logo is only partly visible, otherwise **Good**.
 - The newest inspection sets the shack's "Needs maintenance" flag and moves it between Painted and Needs repaint (other statuses are left alone).
 - On the phone, an inspection and its photos are saved in the browser (IndexedDB) first, then sent. Each one has an id made on the phone, so sending twice on bad signal stores it once.
@@ -116,6 +116,7 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 ## Payments (Lightning payouts to owners)
 
 - Owners earn 7,000 sats per finished week (lesson and quiz in the app), up to 28,000 sats a month. Change it under Payments > Settings.
+- Learning sats are paid only when **both** are done: the lessons, and a passed cleaning check. The newest inspection of each of the owner's shacks in the 35 days before pay day must say "clean". The payout list shows each shack's check next to the owner. An admin can press **Pay anyway** with a written reason (saved with their name); the line still needs approval. Bonus and correction payments don't need a cleaning check.
 - Pay day is the **last Friday** of the month. Two days before, the server drafts that month's list (one line per active owner). Nothing is sent.
 - Weeks come from the learning app. An admin checks the weeks per owner, then presses **Approve and send** and types their password. Only then does the server pay.
 - Owners can use **any** Lightning address (Blink, Fedi, Aqua, Wallet of Satoshi, Phoenix, Coinos, ...). The server asks the owner's wallet for an invoice of the exact amount (LNURL-pay), checks the amount, and pays it from the Blink wallet. Bitcoin Ekasi pays the network fee.

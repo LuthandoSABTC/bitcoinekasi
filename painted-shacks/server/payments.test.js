@@ -170,6 +170,38 @@ test("approving needs the right password", async () => {
   assert.equal(world.sent.length, 0);
 });
 
+test("learning sats need a passed cleaning check before pay day", async () => {
+  const insp = (id, shack, on, clean) => api("POST", "/api/inspections", { id, shack_id: shack, inspected_on: on, paint: "good", logo: "yes", clean, photo_count: 0 });
+  assert.equal((await insp("insp-bad-value-1", "s1", "2026-11-20", "sparkling")).status, 400);
+  // The inspection API checks dates against today, so write test inspections straight into the database.
+  const add = (id, shack, on, clean) => app.db.prepare("insert into inspections(id, shack_id, inspected_on, paint, logo, clean, result) values (?,?,?,'good','yes',?,'good')").run(id, shack, on, clean);
+  add("insp-s1-old", "s1", "2026-09-01", "yes");      // too old: outside the 35 days before pay day (27 Nov)
+  add("insp-s1-nov", "s1", "2026-11-20", "partly");
+  add("insp-s2-nov", "s2", "2026-11-20", "yes");
+  const get = async o => (await api("GET", `/api/payout-batches/${batch}`)).data.lines.find(l => l.owner_id === o);
+  let o1 = await get("owner-o1");
+  assert.equal(o1.clean.passes, false);
+  assert.match(o1.clean.why, /needs tidying on 2026-11-20/);
+  assert.equal((await get("owner-o2")).clean.passes, true);
+  const r = await api("POST", "/api/payouts/approve", { ids: [o1.id], password: "correct horse battery" });
+  assert.equal(r.data.approved, 0);
+  assert.match(r.data.skipped[0].why, /cleaning check not passed/);
+  // Admin can pay anyway, but only with a written reason, and it still needs approval to send.
+  assert.equal((await api("PATCH", `/api/payouts/${o1.id}`, { clean_override_note: "ok" })).status, 400);
+  await api("PATCH", `/api/payouts/${o1.id}`, { clean_override_note: "Inspector was sick; checked by phone photo" });
+  o1 = await get("owner-o1");
+  assert.equal(o1.clean.passes, true);
+  assert.equal(o1.clean.overridden, true);
+  assert.equal(o1.clean_override_by, "Admin One");
+  assert.equal(o1.status, "pending");
+  await api("PATCH", `/api/payouts/${o1.id}`, { clean_override_note: "" });
+  assert.equal((await get("owner-o1")).clean.passes, false);
+  // A newer clean inspection passes.
+  add("insp-s1-late", "s1", "2026-11-25", "yes");
+  assert.equal((await get("owner-o1")).clean.passes, true);
+  assert.equal(world.sent.length, 0);
+});
+
 test("approve and send pays only good lines, once", async () => {
   const lines = (await api("GET", `/api/payout-batches/${batch}`)).data.lines;
   const r = await api("POST", "/api/payouts/approve", { ids: lines.map(l => l.id), password: "correct horse battery" });
