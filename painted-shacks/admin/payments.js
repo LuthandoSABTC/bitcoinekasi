@@ -70,7 +70,7 @@
     const tm = o.this_month, cur = o.batches.find(b => b.period === tm.period), c = o.counts;
     const tabs = [["batches", "Monthly batches"], ["pending", `Waiting${c.pending ? ` (${c.pending})` : ""}`], ["paid", "Paid"], ["failed", `Failed${c.failed ? ` (${c.failed})` : ""}`], ["all", "All"]];
     $("#main").innerHTML = `
-      <div class="head"><div><h1>Payments</h1><p class="sub">Owners earn ${fmtSats(o.settings.sats_per_week)} sats per finished week, up to ${fmtSats(o.settings.sats_per_week * o.settings.max_weeks)} a month. Paid on the last Friday, after an admin approves.</p></div>
+      <div class="head"><div><h1>Payments</h1><p class="sub">Owners earn ${fmtSats(o.settings.sats_per_week)} sats per finished week, up to ${fmtSats(o.settings.sats_per_week * o.settings.max_weeks)} a month. Paid on the last Friday (unless moved), after an admin approves.</p></div>
         <div class="actions"><a class="btn ghost" href="#/paysettings">Settings</a><a class="btn" href="#/payout/new">Single payment</a></div></div>
       <div class="stats">
         ${walletCard(o.wallet)}
@@ -169,8 +169,8 @@
       </div>
       ${busy ? `<div class="note" style="margin-bottom:16px;color:var(--fg)">Sending… this page updates by itself.</div>` : ""}
       <div class="card"><h2>Owners</h2>
-        <p class="muted" style="margin:0">Until the owner app records lessons, set how many weeks each owner finished (lesson and quiz). The amount follows. Owners with 0 weeks are not paid.</p>
-        ${waitingWeekly.length ? `<div class="actions"><span class="muted" style="font-size:14px">Set all ${waitingWeekly.length} waiting owners to</span><select id="allweeks" style="width:auto;padding:6px 8px">${Array.from({length: s.max_weeks + 1}, (_, i) => `<option value="${i}" ${i === s.max_weeks ? "selected" : ""}>${i}</option>`).join("")}</select><span class="muted" style="font-size:14px">weeks</span><button class="btn ghost small" id="setall">Set</button></div>` : ""}
+        <p class="muted" style="margin:0">Weeks come from the owner learning app (lesson read and quiz passed). Press <b>Update weeks from app</b> to bring in weeks finished since this batch was drafted. You can still change a line by hand; then the app leaves it alone. Owners with 0 weeks are not paid.</p>
+        ${waitingWeekly.length ? `<div class="actions"><button class="btn ghost small" id="fromapp">Update weeks from app</button><a class="btn ghost small" href="#/learning">See learning progress</a></div>` : ""}
         <div class="scroll"><table class="t"><thead><tr><th>Owner</th><th>Lightning address</th><th class="r">Weeks</th><th class="r">Sats</th><th>Status</th><th></th></tr></thead><tbody>
         ${lines.map(l => {
           const addr = l.lightning_address || l.owner_address;
@@ -178,7 +178,8 @@
           const why = l.status !== "pending" ? "" : !l.owner_address ? "No Lightning address" : l.address_ok === 0 && l.checked_address === l.owner_address ? esc(l.address_message) : !l.amount_sats ? "0 weeks: not paid" : "";
           return `<tr><td><a href="#/owner/${esc(l.owner_id)}">${esc(l.owner_name || "Name not added yet")}</a>${l.shacks ? `<div class="muted" style="font-size:12px">Shack ${esc(l.shacks)}</div>` : ""}</td>
             <td><span class="mono">${esc(addr || "—")}</span> ${chk}${why ? `<div style="font-size:12px;color:var(--warn)">${why}</div>` : ""}</td>
-            <td class="r">${l.status === "pending" && l.reason === "weekly_learning" ? weekSel(l) : esc(l.weeks_earned ?? "")}</td>
+            <td class="r">${l.status === "pending" && l.reason === "weekly_learning" ? weekSel(l) : esc(l.weeks_earned ?? "")}
+              ${l.reason === "weekly_learning" ? `<div class="muted" style="font-size:12px;white-space:nowrap">${l.weeks_by_admin ? `set by hand · app: ${l.app_weeks}${l.status === "pending" ? ` <a href="#" data-useapp="${esc(l.id)}">use app</a>` : ""}` : "from app"}</div>` : ""}</td>
             <td class="r num">${fmtSats(l.amount_sats)}</td>
             <td>${pill(l.status)}${l.status === "failed" ? `<div style="font-size:12px;color:var(--bad);max-width:240px">${esc(l.failure_reason || "")}</div>` : ""}${l.blink_tx_id ? `<div class="mono" style="font-size:11px">${esc(l.blink_tx_id)}</div>` : ""}</td>
             <td class="r">${l.status === "failed" ? `<button class="btn ghost small" data-retry="${esc(l.id)}">Retry</button>` : ""}${["pending", "failed"].includes(l.status) ? ` <button class="btn danger small" data-cancel="${esc(l.id)}">Cancel</button>` : ""}</td></tr>`;
@@ -190,14 +191,16 @@
     document.querySelectorAll("[data-weeks]").forEach(sel => sel.addEventListener("change", async () => {
       try { await call("PATCH", "/api/payouts/" + sel.dataset.weeks, {weeks_earned: Number(sel.value)}); route(); } catch (err) { toast(friendlyError(err), true); }
     }));
-    $("#setall")?.addEventListener("click", async e => {
-      const w = Number($("#allweeks").value);
-      if (!confirm(`Set all ${waitingWeekly.length} waiting owners to ${w} week${w === 1 ? "" : "s"}? You can still change each one after.`)) return;
+    $("#fromapp")?.addEventListener("click", async e => {
       e.target.disabled = true;
-      try { for (const l of waitingWeekly) await call("PATCH", "/api/payouts/" + l.id, {weeks_earned: w}); toast("Weeks updated. Nothing has been sent."); }
+      try { const r = await call("POST", "/api/payout-batches", {period: b.period}); toast(r.updated || r.added ? `Updated ${r.updated} line${r.updated === 1 ? "" : "s"}, added ${r.added}. Nothing has been sent.` : "Already up to date."); }
       catch (err) { toast(friendlyError(err), true); }
       route();
     });
+    document.querySelectorAll("[data-useapp]").forEach(a => a.addEventListener("click", async e => {
+      e.preventDefault();
+      try { await call("PATCH", "/api/payouts/" + a.dataset.useapp, {weeks_from_app: true}); route(); } catch (err) { toast(friendlyError(err), true); }
+    }));
     bindRowActions(() => route());
     $("#approve")?.addEventListener("click", async e => {
       e.target.disabled = true;
@@ -249,9 +252,26 @@
       </div>
       <label class="fld" style="max-width:320px">Your password<input type="password" name="password" required autocomplete="current-password"><span class="hint">Needed to change payment settings.</span></label>
       <div class="actions"><button class="btn" type="submit">Save settings</button></div></form>
+      <div class="card" id="paydays"><h2>Move pay day for one month</h2>
+        <p class="muted" style="margin-top:0">Pay day is the last Friday of the month. Move it for a month when that Friday is a holiday. The list of payments is made ${esc(s.draft_days_before)} days before the new pay day, and weeks finished before then count for that month.</p>
+        ${(o.paydays || []).length ? `<div class="list">${o.paydays.map(d => `<div class="item"><div class="main"><b>${esc(new Date(d.period + "-01T00:00:00").toLocaleDateString("en-ZA", {month: "long", year: "numeric"}))}: ${fmtDate(d.pay_date)}</b><small>Set by ${esc(d.set_by_name || "admin")}</small></div><button class="btn ghost" type="button" data-undo="${esc(d.period)}">Back to last Friday</button></div>`).join("")}</div>` : `<p class="muted">No months moved.</p>`}
+        <form class="f" id="pdform"><div class="fields">
+          <label class="fld">Month<input type="month" name="period" required></label>
+          <label class="fld">New pay day<input type="date" name="pay_date" required></label>
+        </div><div class="actions"><button class="btn" type="submit">Move pay day</button></div></form></div>
       <div class="card"><h2>Blink wallet</h2>
         ${walletCard(o.wallet)}
         <p class="muted" style="margin:0">The wallet key is kept only on the server, in a file only the server can read. To connect or change it, sign in to the server and run <span class="mono">bash /opt/painted-shacks/deploy/set-blink-key.sh</span>. Owners can use any Lightning wallet; Blink is only where Bitcoin Ekasi pays from.</p></div>`);
+    $("#pdform").addEventListener("submit", async e => {
+      e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+      try { await call("PUT", "/api/paydays/" + f.period, {pay_date: f.pay_date}); toast("Pay day moved"); pages.paysettings(); }
+      catch (err) { toast(friendlyError(err), true); }
+    });
+    $("#paydays").addEventListener("click", async e => {
+      const b = e.target.closest("[data-undo]"); if (!b) return;
+      try { await call("DELETE", "/api/paydays/" + b.dataset.undo); toast("Pay day is the last Friday again"); pages.paysettings(); }
+      catch (err) { toast(friendlyError(err), true); }
+    });
     $("#form").addEventListener("submit", async e => {
       e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)), btn = e.target.querySelector("button"); btn.disabled = true;
       const body = {password: f.password}; for (const k of Object.keys(s)) if (k in f && k !== "password") body[k] = Number(f[k]);

@@ -1,9 +1,11 @@
-# Painted Shacks admin and inspector apps
+# Painted Shacks admin, inspector and owner learning apps
 
 Mobile-friendly apps for the Bitcoin Ekasi Painted Shacks project:
 
 - **Admin app** (`/`): shacks, owners, sponsor logos, sponsor contacts, sponsor funding, inspection results, the accounts of inspectors, and **Lightning payouts** to shack owners.
 - **Inspector app** (`/inspect`): phone-first. Shacks to inspect (overdue first), a checklist with photos, works with no signal and uploads later. Inspectors never see payments, phone numbers or Lightning addresses.
+- **Owner learning app** (`/learn`): phone-first, isiXhosa first (English switch). Owners sign in with their shack number and a PIN, read the weekly lesson, pass the quiz, and see the sats they earned this month and their payments.
+
 It runs entirely on our own server. No Supabase, no outside database, no npm packages.
 
 ## How it fits together
@@ -12,6 +14,7 @@ It runs entirely on our own server. No Supabase, no outside database, no npm pac
 phone / laptop ──HTTPS──> Caddy (web server, certificate)
                              ├── /        -> admin/ (the admin app)
                              ├── /inspect -> inspector/ (the inspector app, works offline)
+                             ├── /learn   -> learn/ (the owner learning app)
                              └── /api/*   -> Node.js server (127.0.0.1:3417)
                                                  ├── SQLite file /var/lib/painted-shacks/painted-shacks.db
                                                  └── inspection photos /var/lib/painted-shacks/photos/YYYY-MM/*.jpg
@@ -30,6 +33,11 @@ nightly 01:30 -> database copy to /var/backups/painted-shacks (kept 30 days), ne
 | `server/blink.js` | Talks to the Blink API to pay invoices from Bitcoin Ekasi's wallet. |
 | `server/payments.test.js` | Tests with a fake Blink and fake wallets: `node --test --disable-warning=ExperimentalWarning payments.test.js` |
 | `deploy/set-blink-key.sh` | Saves the Blink key on the server (root only) and tests it. |
+| `learn/` | The owner learning app: `index.html`, `lesson-render.js` (lesson text to phone pages, also used by the admin preview), `sw.js`. |
+| `admin/learning.js` | Learning screens: owner progress, lesson editor and review, quiz settings, owner sign-in PINs. |
+| `server/learn.js` | Owner sign-in, lessons, quizzes (marked on the server), progress, finished weeks for payouts. |
+| `server/learn.test.js` | Tests: `node --test --disable-warning=ExperimentalWarning learn.test.js` |
+| `content/lessons-xh-draft.json` | Draft lessons from the isiXhosa Bitcoin Diploma book (CC BY-SA 4.0, My First Bitcoin). Import in Learning > Lessons; they arrive as drafts. |
 | `server/admin-user.js` | Add, reset or disable admin accounts from the server's command line. |
 | `server/backup.js` | Nightly backup (run by a systemd timer). |
 | `deploy/setup-server.sh` | One command that installs or updates everything on Ubuntu. |
@@ -72,11 +80,20 @@ cd /opt/painted-shacks/server && sudo -u painted-shacks DB_PATH=/var/lib/painted
 - The Blink key is only in `/etc/painted-shacks/blink.env` (root-only, loaded by systemd). Never in the database, backups, browser or GitHub.
 - No payment is sent without an admin approving it with their password. Timers only draft the monthly list and check payments already sent.
 
+## Learning app (owners)
+
+- **Sign-in**: on an owner's page, press *Make app sign-in (PIN)*. The admin sees a 6-digit PIN once and can send it on WhatsApp. Owners sign in with their shack number (or phone number) and the PIN. 5 wrong PINs lock it for 15 minutes. Owners can change their PIN; admins can make a new one or block sign-in.
+- **Lessons**: one lesson per week, 20 weeks. Lessons are drafts until an admin publishes them; owners only see published lessons. Learning > Lessons has an editor with pictures, quiz questions and a preview of the phone pages. Lesson text format: `---` new page, `# ` heading, `- ` bullet, `> ` box, `**bold**`.
+- **Quiz**: the server picks questions at random (default 4 of the lesson's questions, 3 right to pass) and shuffles the answers, and marks them. The phone never gets the answers first. Right answers are shown only after passing.
+- **One lesson a week**: the next lesson opens on the Monday after the last one was finished (can be turned off in Quiz settings).
+- **Payouts**: each finished week (lesson read + quiz passed) counts 7,000 sats for that month's payout, up to 4 weeks. Weeks finished on or after the day the monthly batch is drafted count for the next month. The batch takes weeks from the app; *Update weeks from app* brings in late ones. An admin can still change a line by hand.
+- **Progress**: Learning > Owner progress shows every owner's weeks done, this month's weeks and sats, where they are now, last activity, and a WhatsApp *Remind* button. Each owner's page shows week-by-week detail.
+
 ## Payments (Lightning payouts to owners)
 
 - Owners earn 7,000 sats per finished week (lesson and quiz in the app), up to 28,000 sats a month. Change it under Payments > Settings.
 - Pay day is the **last Friday** of the month. Two days before, the server drafts that month's list (one line per active owner). Nothing is sent.
-- An admin checks the weeks per owner, then presses **Approve and send** and types their password. Only then does the server pay.
+- Weeks come from the learning app. An admin checks the weeks per owner, then presses **Approve and send** and types their password. Only then does the server pay.
 - Owners can use **any** Lightning address (Blink, Fedi, Aqua, Wallet of Satoshi, Phoenix, Coinos, ...). The server asks the owner's wallet for an invoice of the exact amount (LNURL-pay), checks the amount, and pays it from the Blink wallet. Bitcoin Ekasi pays the network fee.
 - Safety: one learning payout per owner per month (database rule); the payment hash is saved before paying, and a payment whose answer was lost is checked with Blink, never sent again; limits per approval, per single payment and per fee; the wallet balance is checked before approving; inspectors can't see payments.
 - Statuses: waiting for approval, approved (in queue), sending, paid, failed (retry needs approval again), cancelled.

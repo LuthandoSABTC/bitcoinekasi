@@ -29,21 +29,34 @@ const addDays = (d, n) => new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toI
 function init(ctx) {
   const { db, audit, tx, Bad, readJson, send, checkPassword } = ctx;
   const settings = () => db.prepare("select * from pay_settings where id = 1").get();
+  // Pay day of a month: the last Friday, unless an admin moved it for that month.
+  const payDay = period => db.prepare("select pay_date from paydays where period = ?").get(period)?.pay_date || lastFriday(period);
+  const draftDay = period => addDays(payDay(period), -settings().draft_days_before);
 
   /* ---------------------------------------------------------------- weeks earned
-     The owner app (lesson + quiz) will record finished weeks. Until it does, an admin types the weeks in. */
+     The owner app records each finished week (lesson read + quiz passed) in lesson_completions, with the
+     monthly payout it belongs to (pay_period). An admin can still change the weeks on a line by hand. */
   function weeksEarned(ownerId, period) {
-    const t = db.prepare("select name from sqlite_master where type = 'table' and name = 'lesson_completions'").get();
-    if (!t) return null;
-    try {
-      return db.prepare("select count(distinct week_no) n from lesson_completions where owner_id = ? and substr(completed_on, 1, 7) = ? and passed = 1")
-        .get(ownerId, period).n;
-    } catch { return null; }
+    return db.prepare("select count(*) n from lesson_completions where owner_id = ? and pay_period = ? and passed = 1").get(ownerId, period).n;
+  }
+
+  // Bring the weeks on an owner's waiting learning payout up to date with the app (unless an admin set them by hand).
+  function syncWeeks(ownerId, period) {
+    const s = settings();
+    const row = db.prepare(`select * from payouts where owner_id = ? and period = ? and reason = 'weekly_learning'
+                            and status = 'pending' and weeks_by_admin = 0`).get(ownerId, period);
+    if (!row) return false;
+    const weeks = Math.min(weeksEarned(ownerId, period), s.max_weeks);
+    if (weeks === row.weeks_earned && row.amount_sats === weeks * s.sats_per_week) return false;
+    db.prepare("update payouts set weeks_earned = ?, amount_sats = ?, updated_at = ? where id = ?").run(weeks, weeks * s.sats_per_week, now(), row.id);
+    audit(null, "payouts", row.id, "WEEKS_FROM_APP", { weeks_earned: row.weeks_earned }, { weeks_earned: weeks });
+    return true;
   }
 
   /* ---------------------------------------------------------------- reading */
   const LIST_SQL = `select p.*, o.full_name as owner_name, o.active as owner_active, o.lightning_address as owner_address,
       (select group_concat(shack_no, ', ') from (select shack_no from shacks where owner_id = p.owner_id order by shack_no)) as shacks,
+      (select count(*) from lesson_completions lc where lc.owner_id = p.owner_id and lc.pay_period = p.period and lc.passed = 1) as app_weeks,
       b.title as batch_title, ac.ok as address_ok, ac.message as address_message, ac.address as checked_address
     from payouts p join owners o on o.id = p.owner_id left join payout_batches b on b.id = p.batch_id
     left join address_checks ac on ac.owner_id = p.owner_id`;
@@ -70,23 +83,25 @@ function init(ctx) {
       if (!b) {
         const id = crypto.randomUUID();
         db.prepare("insert into payout_batches(id, period, title, pay_date, created_by) values (?,?,?,?,?)")
-          .run(id, period, `${monthName(period)} payout`, lastFriday(period), user?.id || null);
+          .run(id, period, `${monthName(period)} payout`, payDay(period), user?.id || null);
         b = db.prepare("select * from payout_batches where id = ?").get(id);
         audit(user, "payout_batches", id, "INSERT", null, b);
       }
-      let added = 0;
+      let added = 0, updated = 0;
       const owners = db.prepare("select id from owners where active = 1").all();
       for (const o of owners) {
-        if (db.prepare("select 1 from payouts where owner_id = ? and period = ? and reason = 'weekly_learning' and status <> 'cancelled'").get(o.id, period)) continue;
-        const w = weeksEarned(o.id, period);
-        const weeks = w == null ? 0 : Math.min(w, s.max_weeks);
+        if (db.prepare("select 1 from payouts where owner_id = ? and period = ? and reason = 'weekly_learning' and status <> 'cancelled'").get(o.id, period)) {
+          if (syncWeeks(o.id, period)) updated++;
+          continue;
+        }
+        const weeks = Math.min(weeksEarned(o.id, period), s.max_weeks);
         db.prepare(`insert into payouts(id, batch_id, owner_id, period, reason, weeks_earned, amount_sats, created_by)
                     values (?,?,?,?, 'weekly_learning', ?, ?, ?)`)
           .run(crypto.randomUUID(), b.id, o.id, period, weeks, weeks * s.sats_per_week, user?.id || null);
         added++;
       }
       if (added) audit(user, "payouts", b.id, "DRAFT", null, { period, added });
-      return { batch: batchInfo(b), added };
+      return { batch: batchInfo(b), added, updated };
     });
   }
 
@@ -95,7 +110,7 @@ function init(ctx) {
     try {
       const period = saToday().slice(0, 7);
       if (db.prepare("select 1 from payout_batches where period = ?").get(period)) return;
-      if (saToday() < addDays(lastFriday(period), -settings().draft_days_before)) return;
+      if (saToday() < draftDay(period)) return;
       if (!db.prepare("select 1 from owners where active = 1").get()) return;
       draftBatch(period, null);
       console.log(new Date().toISOString(), "drafted payout batch", period);
@@ -306,7 +321,8 @@ function init(ctx) {
       const counts = Object.fromEntries(db.prepare("select status, count(*) n from payouts group by status").all().map(r => [r.status, r.n]));
       const period = day.slice(0, 7);
       return send(res, 200, { settings: settings(), wallet: await walletStatus(), batches, counts, sending,
-        this_month: { period, title: monthName(period), pay_date: lastFriday(period), draft_on: addDays(lastFriday(period), -settings().draft_days_before) },
+        this_month: { period, title: monthName(period), pay_date: payDay(period), draft_on: draftDay(period) },
+        paydays: db.prepare("select * from paydays where period >= ? order by period").all(period),
         today: day });
     }
     if (p === "/api/payments/summary" && method === "GET") return send(res, 200, summary());
@@ -325,6 +341,27 @@ function init(ctx) {
         db.prepare(`update pay_settings set ${Object.keys(upd).map(k => k + " = ?").join(", ")}, updated_at = ? where id = 1`).run(...Object.values(upd), now());
       audit(user, "pay_settings", "1", "UPDATE", before, settings());
       return send(res, 200, settings());
+    }
+
+    let pd = p.match(/^\/api\/paydays\/(\d{4}-(?:0[1-9]|1[0-2]))$/);
+    if (pd && (method === "PUT" || method === "DELETE")) {
+      const period = pd[1], before = db.prepare("select * from paydays where period = ?").get(period) || null;
+      const b = method === "PUT" ? await readJson(req) : {};
+      const date = method === "PUT" ? String(b.pay_date || "") : null;
+      if (method === "PUT" && !(/^\d{4}-\d{2}-\d{2}$/.test(date) && date.slice(0, 7) === period && !isNaN(Date.parse(date + "T00:00:00Z"))))
+        throw new Bad(`Pay day must be a date in ${monthName(period)}.`);
+      const batch = db.prepare("select * from payout_batches where period = ?").get(period);
+      if (batch && db.prepare("select 1 from payouts where batch_id = ? and status not in ('pending','cancelled')").get(batch.id))
+        throw new Bad("Payments for this month are already approved or sent, so its pay day can't change.");
+      tx(() => {
+        if (method === "PUT") db.prepare(`insert into paydays(period, pay_date, set_by_name, updated_at) values (?,?,?,?)
+                                         on conflict(period) do update set pay_date = excluded.pay_date, set_by_name = excluded.set_by_name, updated_at = excluded.updated_at`)
+          .run(period, date, user?.full_name || null, now());
+        else db.prepare("delete from paydays where period = ?").run(period);
+        if (batch) db.prepare("update payout_batches set pay_date = ? where id = ?").run(payDay(period), batch.id);
+        audit(user, "paydays", period, method === "PUT" ? "UPDATE" : "DELETE", before, db.prepare("select * from paydays where period = ?").get(period) || null);
+      });
+      return send(res, 200, { period, pay_date: payDay(period), draft_on: draftDay(period) });
     }
 
     if (p === "/api/payout-batches" && method === "POST") {
@@ -382,10 +419,12 @@ function init(ctx) {
         if (!before) throw new Bad("Not found", 404);
         if (before.status !== "pending") throw new Bad("Only payments waiting for approval can be changed.");
         const upd = {};
-        if (b.weeks_earned !== undefined && before.reason === "weekly_learning") {
-          const w = Number(b.weeks_earned);
+        if ((b.weeks_earned !== undefined || b.weeks_from_app) && before.reason === "weekly_learning") {
+          const w = b.weeks_from_app ? 0 : Number(b.weeks_earned);
           if (!Number.isInteger(w) || w < 0 || w > s.max_weeks) throw new Bad(`Weeks must be 0 to ${s.max_weeks}.`);
           upd.weeks_earned = w; upd.amount_sats = w * s.sats_per_week;
+          if (b.weeks_from_app) { upd.weeks_earned = Math.min(weeksEarned(before.owner_id, before.period), s.max_weeks); upd.amount_sats = upd.weeks_earned * s.sats_per_week; upd.weeks_by_admin = 0; }
+          else upd.weeks_by_admin = 1;
         }
         if (b.amount_sats !== undefined && before.reason !== "weekly_learning") {
           const a = Number(b.amount_sats);
@@ -450,7 +489,7 @@ function init(ctx) {
     setInterval(() => reconcile().catch(e => console.error("payout check", e)), 10 * 60e3).unref();
   }
 
-  return { routes, startTimers, draftBatch, approve, runSender, reconcile, autoDraft, summary, isSending: () => sending };
+  return { routes, startTimers, draftBatch, syncWeeks, weeksEarned, settings, payDay, draftDay, approve, runSender, reconcile, autoDraft, summary, isSending: () => sending };
 }
 
-module.exports = { init, lastFriday };
+module.exports = { init, lastFriday, addDays, monthName };

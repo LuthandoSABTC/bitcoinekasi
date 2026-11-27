@@ -1,0 +1,364 @@
+// Tests for the owner learning app, lesson review and how finished weeks reach payouts.
+// Run:  node --test --disable-warning=ExperimentalWarning learn.test.js
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert");
+const http = require("node:http");
+const os = require("node:os");
+const path = require("node:path");
+const fs = require("node:fs");
+
+let app, server, appUrl;
+const jars = { admin: "", insp: "", owner: "", owner2: "" };
+async function api(who, method, p, body, headers = {}) {
+  const isJson = body !== undefined && !Buffer.isBuffer(body);
+  const res = await fetch(appUrl + p, { method, headers: { ...(isJson ? { "Content-Type": "application/json" } : {}), "X-PS-Admin": "1", Cookie: jars[who] || "", ...headers },
+    body: isJson ? JSON.stringify(body) : body });
+  const sc = res.headers.get("set-cookie"); if (sc && who) jars[who] = sc.split(";")[0];
+  const text = await res.text(); let data; try { data = JSON.parse(text); } catch { data = text; }
+  return { status: res.status, data };
+}
+const q = sql => app.db.prepare(sql);
+let owner1, owner2, lesson1, lesson2;
+
+test.before(async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ps-learn-"));
+  const book = path.join(dir, "book"); fs.mkdirSync(path.join(book, "pictures"), { recursive: true });
+  fs.writeFileSync(path.join(book, "pictures", "bd25-w30-1.jpg"), Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(600)]));
+  fs.writeFileSync(path.join(book, "lessons-xh-draft.json"), JSON.stringify({ about: "test", lessons: [
+    { week_no: 30, title: "Incwadi", body: "# Incwadi\n\n[[picture:bd25-w30-1]]\n\nUmfanekiso osuka encwadini.", pictures: ["bd25-w30-1", "bd25-nothere"], questions: [{ question: "Q?", choices: ["a", "b"], answer: 0 }] }] }));
+  Object.assign(process.env, { DB_PATH: path.join(dir, "t.db"), COOKIE_SECURE: "0", LESSON_BOOK_DIR: book });
+  app = require("./server");
+  server = http.createServer(async (req, res) => {
+    try { await app.handle(req, res); }
+    catch (e) { res.writeHead(e.status || 500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: e.message })); }
+  });
+  await new Promise(r => server.listen(0, "127.0.0.1", r));
+  appUrl = `http://127.0.0.1:${server.address().port}`;
+  q("insert into staff(id, email, full_name, role, pw_hash) values ('adm00001','a@x.co','Admin','admin',?)").run(app.hashPassword("admin-password-1"));
+  q("insert into staff(id, email, full_name, role, pw_hash) values ('ins00001','i@x.co','Insp','inspector',?)").run(app.hashPassword("insp-password-1"));
+  q("insert into owners(id, full_name, phone, lightning_address) values ('own00001','Thandi','072 111 2222','thandi@blink.sv')").run();
+  q("insert into owners(id, full_name, phone, lightning_address) values ('own00002','Sipho','+27 82 333 4444','sipho@blink.sv')").run();
+  q("insert into owners(id, full_name) values ('own00003','No shack no phone')").run();
+  q("insert into shacks(id, shack_no, owner_id) values ('shk00001', 7, 'own00001')").run();
+  owner1 = "own00001"; owner2 = "own00002";
+  q("update learn_settings set start_date = null, demo_weeks = 0").run();   // practice mode has its own test   // tests run on any date; the start date has its own test
+  assert.equal((await api("admin", "POST", "/api/login", { email: "a@x.co", password: "admin-password-1" })).status, 200);
+  assert.equal((await api("insp", "POST", "/api/login", { email: "i@x.co", password: "insp-password-1" })).status, 200);
+});
+test.after(() => server.close());
+
+const QS = n => Array.from({ length: n }, (_, i) => ({ question: `Umbuzo ${i + 1}?`, choices: ["Ewe", "Hayi", "Andazi"], answer: i % 3 }));
+const BODY = "# Intshayelelo\n\nLe yindlela yokufunda nge-Bitcoin. Imali yinto esiyisebenzisayo yonke imihla.\n\n---\n\nIphepha lesibini.";
+
+test("owners need a PIN from an admin, and wrong PINs lock the sign-in", async () => {
+  assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: "000000" })).status, 401);
+  assert.equal((await api("admin", "POST", "/api/owners/own00003/app-pin", {})).status, 400, "no shack and no phone: nothing to sign in with");
+  const r = await api("admin", "POST", `/api/owners/${owner1}/app-pin`, {});
+  assert.equal(r.status, 200); assert.match(r.data.pin, /^\d{4}$/); assert.deepEqual(r.data.shacks, [7]);
+  assert.ok(!JSON.stringify(q("select * from owner_logins").all()).includes(r.data.pin), "PIN is stored hashed");
+  const wrong = r.data.pin === "8888" ? "7777" : "8888";
+  for (let i = 0; i < 5; i++) assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: wrong })).status, 401);
+  assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: r.data.pin })).status, 429, "locked after 5 wrong PINs");
+  const r2 = await api("admin", "POST", `/api/owners/${owner1}/app-pin`, {});     // admin gives a new PIN, which also unlocks
+  assert.equal((await api("owner", "POST", "/api/learn/login", { who: "7", pin: r2.data.pin })).status, 200);
+  assert.equal((await api("owner", "GET", "/api/learn/me")).data.name, "Thandi");
+  // Owner 2 has no shack: signs in with the phone number in any format.
+  const r3 = await api("admin", "POST", `/api/owners/${owner2}/app-pin`, {});
+  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "082 333 4444", pin: r3.data.pin })).status, 200);
+});
+
+test("an owner session can't reach staff or admin routes", async () => {
+  assert.equal((await api("owner", "GET", "/api/data")).status, 401);
+  assert.equal((await api("owner", "GET", "/api/learn-admin/progress")).status, 401);
+  assert.equal((await api("owner", "GET", "/api/payments/overview")).status, 401);
+  assert.equal((await api("insp", "GET", "/api/learn-admin/progress")).status, 403, "inspectors can't see owner progress");
+  assert.equal((await api("insp", "GET", "/api/learn/me")).status, 401, "a staff session is not an owner session");
+  assert.equal((await api("owner", "POST", "/api/learn/logout", {}, { "X-PS-Admin": "" })).status, 403, "changes need the app header");
+});
+
+test("lessons are drafts until an admin publishes a complete one", async () => {
+  let r = await api("admin", "POST", "/api/lessons", { week_no: 1, title: "Kutheni sifuna imali?" });
+  assert.equal(r.status, 201); lesson1 = r.data.id;
+  assert.equal((await api("admin", "POST", "/api/lessons", { week_no: 1, title: "dup" })).status, 409);
+  let me = (await api("owner", "GET", "/api/learn/me")).data;
+  assert.equal(me.weeks[0].state, "soon"); assert.equal(me.weeks[0].title, null, "draft titles are hidden from owners");
+  assert.equal((await api("owner", "GET", "/api/learn/lessons/1")).status, 403);
+  r = await api("admin", "POST", `/api/lessons/${lesson1}/publish`, {});
+  assert.equal(r.status, 400); assert.match(r.data.error, /at least 4 questions/);
+  r = await api("admin", "PATCH", `/api/lessons/${lesson1}`, { body: BODY, questions: QS(6) });
+  assert.equal(r.status, 200); assert.equal(r.data.questions.length, 6);
+  assert.equal((await api("admin", "PATCH", `/api/lessons/${lesson1}`, { questions: [{ question: "x", choices: ["a"], answer: 0 }] })).status, 400);
+  r = await api("admin", "POST", `/api/lessons/${lesson1}/publish`, {});
+  assert.equal(r.status, 200); assert.equal(r.data.status, "published"); assert.equal(r.data.published_by_name, "Admin");
+  assert.equal((await api("admin", "PATCH", `/api/lessons/${lesson1}`, { questions: QS(2) })).status, 400, "a live lesson can't lose its quiz");
+  me = (await api("owner", "GET", "/api/learn/me")).data;
+  assert.equal(me.weeks[0].state, "ready"); assert.equal(me.weeks[1].state, "locked");
+});
+
+test("lesson pictures: JPEG only, admins upload, owners see only published ones", async () => {
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(2000, 1)]);
+  assert.equal((await api("admin", "PUT", `/api/lessons/${lesson1}/pictures/pic000001`, Buffer.from("not a picture at all".repeat(50)), { "Content-Type": "image/jpeg" })).status, 415);
+  assert.equal((await api("admin", "PUT", `/api/lessons/${lesson1}/pictures/pic000001`, jpeg, { "Content-Type": "image/jpeg" })).status, 201);
+  assert.equal((await api("owner", "GET", "/api/learn/pictures/pic000001")).status, 200);
+  assert.equal((await api("", "GET", "/api/learn/pictures/pic000001")).status, 401, "not signed in");
+  await api("admin", "PATCH", `/api/lessons/${lesson1}`, { body: BODY + "\n\n[[picture:pic000001]]" });
+  assert.equal((await api("admin", "DELETE", "/api/lesson-pictures/pic000001")).status, 400, "still used by a live lesson");
+});
+
+test("quiz: must read first, the server marks it, a pass records the week once", async () => {
+  assert.equal((await api("owner", "POST", "/api/learn/lessons/1/quiz", {})).status, 403, "read first");
+  const l = await api("owner", "GET", "/api/learn/lessons/1");
+  assert.equal(l.status, 200); assert.equal(l.data.questions, 4); assert.equal(l.data.pass_correct, 3);
+  assert.ok(!JSON.stringify(l.data).includes('"answer"'));
+  assert.equal((await api("owner", "POST", "/api/learn/lessons/1/read", {})).status, 200);
+
+  // Wrong answers: not passed, no right answers given away, nothing recorded.
+  let s = await api("owner", "POST", "/api/learn/lessons/1/quiz", {});
+  assert.equal(s.status, 200); assert.equal(s.data.questions.length, 4);
+  assert.ok(s.data.questions.every(x => !("answer" in x)), "the phone never gets the answers");
+  // Where the right answer is on the phone (answers are shuffled per try).
+  const keyOf = x => { const r = q("select answer, choices from quiz_questions where id = ?").get(x.id); return x.choices.indexOf(JSON.parse(r.choices)[r.answer]); };
+  let r = await api("owner", "POST", `/api/learn/quiz/${s.data.attempt_id}`, { answers: s.data.questions.map(x => (keyOf(x) + 1) % 3) });
+  assert.equal(r.data.passed, false); assert.equal(r.data.score, 0); assert.ok(r.data.results.every(x => !("answer" in x)));
+  assert.equal((await api("owner", "POST", `/api/learn/quiz/${s.data.attempt_id}`, { answers: [0, 0, 0, 0] })).status, 409, "can't resend an attempt");
+  assert.equal(q("select count(*) n from lesson_completions").get().n, 0);
+
+  // Owner 2 can't send answers for owner 1's quiz.
+  s = await api("owner", "POST", "/api/learn/lessons/1/quiz", {});
+  assert.equal((await api("owner2", "POST", `/api/learn/quiz/${s.data.attempt_id}`, { answers: [0, 0, 0, 0] })).status, 404);
+
+  // 3 of 4 right is a pass.
+  const ans = s.data.questions.map(keyOf); ans[0] = (ans[0] + 1) % 3;
+  r = await api("owner", "POST", `/api/learn/quiz/${s.data.attempt_id}`, { answers: ans });
+  assert.equal(r.data.passed, true); assert.equal(r.data.score, 3); assert.equal(r.data.newly_done, true);
+  assert.ok(r.data.results.every(x => "answer" in x), "right answers shown after passing");
+  assert.deepEqual(r.data.results.map(x => x.answer), s.data.questions.map(keyOf), "right answers given in the order the phone showed");
+  const c = q("select * from lesson_completions where owner_id = ?").get(owner1);
+  assert.equal(c.week_no, 1); assert.equal(c.pay_period, app.learn.payPeriodFor(c.completed_on));
+  assert.equal((await api("owner", "POST", "/api/learn/lessons/1/quiz", {})).status, 403, "week already done");
+  const me = (await api("owner", "GET", "/api/learn/me")).data;
+  assert.equal(me.done_count, 1); assert.equal(me.weeks[0].state, "done");
+  assert.equal(me.this_month.weeks, c.pay_period === me.this_month.period ? 1 : 0);
+});
+
+test("one new lesson a week", async () => {
+  lesson2 = (await api("admin", "POST", "/api/lessons", { week_no: 2, title: "Yintoni imali?" })).data.id;
+  await api("admin", "PATCH", `/api/lessons/${lesson2}`, { body: BODY, questions: QS(4) });
+  await api("admin", "POST", `/api/lessons/${lesson2}/publish`, {});
+  let w2 = (await api("owner", "GET", "/api/learn/me")).data.weeks[1];
+  assert.equal(w2.state, "wait"); assert.ok(w2.opens_on > q("select completed_on d from lesson_completions").get().d);
+  assert.equal((await api("owner", "GET", "/api/learn/lessons/2")).status, 403);
+  // Pretend week 1 was finished last week: week 2 opens.
+  const lastWeek = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  q("update lesson_completions set completed_on = ? where owner_id = ?").run(lastWeek, owner1);
+  w2 = (await api("owner", "GET", "/api/learn/me")).data.weeks[1];
+  assert.equal(w2.state, "ready");
+  assert.equal((await api("owner", "GET", "/api/learn/lessons/2")).status, 200);
+});
+
+test("finishing on or after the payout draft day counts for next month", () => {
+  const { lastFriday, addDays } = require("./payments");
+  const draftDay = addDays(lastFriday("2026-11"), -2);           // 25 Nov 2026
+  assert.equal(app.learn.payPeriodFor(addDays(draftDay, -1)), "2026-11");
+  assert.equal(app.learn.payPeriodFor(draftDay), "2026-12");
+  assert.equal(app.learn.payPeriodFor("2026-12-31"), "2027-01");
+  assert.equal(require("./learn").weekStart("2026-11-25"), "2026-11-23");   // a Wednesday -> Monday
+});
+
+test("payout batch takes weeks from the app; an admin change sticks until reset", async () => {
+  const period = "2027-03";
+  q("delete from lesson_completions").run();
+  const add = (o, w) => q("insert into lesson_completions(owner_id, week_no, completed_on, completed_at, pay_period, score, total) values (?,?,?,?,?,3,4)")
+    .run(o, w, "2027-03-0" + w, "2027-03-0" + w + "T10:00:00Z", period);
+  add(owner1, 1); add(owner1, 2); add(owner1, 3); add(owner2, 1);
+  let r = await api("admin", "POST", "/api/payout-batches", { period });
+  assert.equal(r.status, 200);
+  const line = o => q("select * from payouts where owner_id = ? and period = ?").get(o, period);
+  assert.equal(line(owner1).weeks_earned, 3); assert.equal(line(owner1).amount_sats, 21000);
+  assert.equal(line(owner2).weeks_earned, 1); assert.equal(line(owner2).amount_sats, 7000);
+  assert.equal(line("own00003").weeks_earned, 0);
+  // More weeks finished before approval: redraft brings them in.
+  add(owner1, 4); add(owner1, 5);
+  r = await api("admin", "POST", "/api/payout-batches", { period });
+  assert.equal(r.data.updated, 1);
+  assert.equal(line(owner1).weeks_earned, 4, "capped at 4 weeks a month"); assert.equal(line(owner1).amount_sats, 28000);
+  // Admin sets weeks by hand: the app no longer changes that line...
+  await api("admin", "PATCH", `/api/payouts/${line(owner2).id}`, { weeks_earned: 2 });
+  add(owner2, 2); add(owner2, 3);
+  await api("admin", "POST", "/api/payout-batches", { period });
+  assert.equal(line(owner2).weeks_earned, 2);
+  // ...until they press "use the app's count" again.
+  await api("admin", "PATCH", `/api/payouts/${line(owner2).id}`, { weeks_from_app: true });
+  assert.equal(line(owner2).weeks_earned, 3); assert.equal(line(owner2).weeks_by_admin, 0);
+  const b = await api("admin", "GET", `/api/payout-batches/${line(owner2).batch_id}`);
+  assert.equal(b.data.lines.find(l => l.owner_id === owner1).app_weeks, 5);
+});
+
+test("admin progress view shows each owner's weeks, current lesson and last activity", async () => {
+  const r = await api("admin", "GET", "/api/learn-admin/progress");
+  assert.equal(r.status, 200);
+  assert.equal(r.data.published, 2); assert.equal(r.data.total_weeks, 104);
+  const t = r.data.owners.find(o => o.owner_id === owner1);
+  assert.equal(t.has_login, true); assert.ok(t.last_activity); assert.deepEqual(t.shacks, [7]);
+  const n = r.data.owners.find(o => o.owner_id === "own00003");
+  assert.equal(n.has_login, false); assert.equal(n.weeks_done, 0); assert.equal(n.current.week_no, 1);
+  const one = await api("admin", "GET", `/api/learn-admin/owners/${owner1}`);
+  assert.equal(one.status, 200); assert.equal(one.data.weeks.length, 104);
+  assert.equal(one.data.weeks[0].attempts, 2); assert.ok(one.data.weeks[0].read_done_at);
+  assert.ok(one.data.periods.find(p => p.period === "2027-03").weeks === 5);
+});
+
+test("blocking an owner signs them out; PIN change by the owner", async () => {
+  const p = await api("admin", "POST", `/api/owners/${owner2}/app-pin`, {});
+  await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: p.data.pin });
+  assert.equal((await api("owner2", "POST", "/api/learn/pin", { current: p.data.pin, next: "1234" })).status, 400, "too easy");
+  assert.equal((await api("owner2", "POST", "/api/learn/pin", { current: p.data.pin, next: "8043" })).status, 200);
+  assert.equal((await api("owner2", "GET", "/api/learn/me")).status, 200);
+  await api("admin", "POST", `/api/owners/${owner2}/app-block`, {});
+  assert.equal((await api("owner2", "GET", "/api/learn/me")).status, 401);
+  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: "8043" })).status, 401);
+  await api("admin", "POST", `/api/owners/${owner2}/app-unblock`, {});
+  assert.equal((await api("owner2", "POST", "/api/learn/login", { who: "0823334444", pin: "8043" })).status, 200);
+});
+
+test("lessons that owners opened can't be deleted; import adds drafts only", async () => {
+  assert.equal((await api("admin", "DELETE", `/api/lessons/${lesson1}`)).status, 400);
+  const r = await api("admin", "POST", "/api/lessons/import", { lessons: [
+    { week_no: 1, title: "already there" }, { week_no: 3, title: "Imbali yemali", body: BODY, questions: QS(5), source: "Bitcoin Diploma, isahluko 3" }] });
+  assert.deepEqual([r.data.added, r.data.skipped], [1, 1]);
+  const l = (await api("admin", "GET", "/api/lessons")).data.lessons.find(x => x.week_no === 3);
+  assert.equal(l.status, "draft"); assert.equal(l.questions, 5);
+});
+
+test("nothing opens before the course start date", async () => {
+  const st = () => app.learn.ownerState("own00003").weeks[0];
+  assert.equal(st().state, "ready");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: "1 Dec" })).status, 400);
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: "2999-12-01" })).status, 200);
+  assert.deepEqual([st().state, st().opens_on], ["wait", "2999-12-01"]);
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: "2020-01-01" })).status, 200);
+  assert.equal(st().state, "ready");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { start_date: null })).status, 200);
+  assert.equal(q("select start_date from learn_settings").get().start_date, null);
+});
+
+test("book lessons come in with their pictures, and only unopened drafts are replaced", async () => {
+  const b = await api("admin", "GET", "/api/lessons/book");
+  assert.deepEqual(b.data.weeks.map(w => [w.week_no, w.pictures, w.now]), [[30, 2, "empty"]]);
+  let r = await api("admin", "POST", "/api/lessons/import-book", {});
+  assert.deepEqual([r.data.added, r.data.pictures, r.data.missing_pictures], [1, 1, 1]);
+  const l = q("select * from lessons where week_no = 30").get();
+  assert.deepEqual(q("select id from lesson_pictures where lesson_id = ?").all(l.id).map(x => x.id), ["bd25-w30-1"]);
+  r = await api("admin", "POST", "/api/lessons/import-book", {});
+  assert.deepEqual([r.data.added, r.data.skipped], [0, 1], "without replace, existing weeks are skipped");
+  q("update lessons set body = 'edited' where id = ?").run(l.id);
+  r = await api("admin", "POST", "/api/lessons/import-book", { replace_drafts: true });
+  assert.deepEqual([r.data.replaced, r.data.pictures], [1, 1]);
+  assert.match(q("select body from lessons where id = ?").get(l.id).body, /picture:bd25-w30-1/);
+  q("update lessons set status = 'published' where id = ?").run(l.id);
+  r = await api("admin", "POST", "/api/lessons/import-book", { replace_drafts: true });
+  assert.deepEqual([r.data.replaced, r.data.skipped], [0, 1], "live lessons are never replaced");
+  assert.equal((await api("insp", "POST", "/api/lessons/import-book", {})).status, 403);
+  q("delete from lessons where id = ?").run(l.id);
+});
+
+test("owners pick their shack by name; bulk PINs; 15 wrong PINs need a new PIN", async () => {
+  q("update shacks set name = 'Mama Thandi Spaza' where id = 'shk00001'").run();
+  const list = (await api("anon", "GET", "/api/learn/shacks")).data.shacks;
+  assert.deepEqual(list.find(s => s.no === 7), { no: 7, label: "Mama Thandi Spaza" });
+  assert.ok(!JSON.stringify(list).includes("Thandi\""), "no owner names in the public list");
+  q("insert into owners(id, full_name, phone) values ('own00009','Lwazi','074 777 8888')").run();
+  q("insert into shacks(id, shack_no, owner_id) values ('shk00009', 12, 'own00009')").run();
+  const b = await api("admin", "POST", "/api/learn-admin/pins", {});
+  assert.equal(b.status, 200);
+  assert.deepEqual(b.data.made.map(m => [m.owner_id, m.shack]), [["own00009", "Shack 12"]], "only owners with a shack and no PIN");
+  assert.match(b.data.made[0].pin, /^\d{4}$/);
+  assert.equal((await api("admin", "POST", "/api/learn-admin/pins", {})).data.made.length, 0, "running it again makes none");
+  assert.equal((await api("insp", "POST", "/api/learn-admin/pins", {})).status, 403);
+  assert.ok((await api("anon", "GET", "/api/learn/shacks")).data.shacks.some(s => s.no === 12));
+  q("update owner_logins set failed = 15 where owner_id = 'own00009'").run();
+  const r = await api("lwazi", "POST", "/api/learn/login", { who: "12", pin: b.data.made[0].pin });
+  assert.equal(r.status, 429); assert.match(r.data.error, /new PIN/);
+  const n = await api("admin", "POST", "/api/owners/own00009/app-pin", {});
+  assert.equal((await api("lwazi", "POST", "/api/learn/login", { who: "12", pin: n.data.pin })).status, 200);
+  assert.equal(n.data.shack_label, "Shack 12");
+});
+
+test("practice mode: first weeks without sign-in, nothing saved, no sats", async () => {
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 2 })).status, 200);
+  const before = { c: q("select count(*) n from lesson_completions").get().n, a: q("select count(*) n from quiz_attempts").get().n, r: q("select count(*) n from lesson_reads").get().n };
+  const list = await api("visitor", "GET", "/api/learn/demo");
+  assert.equal(list.status, 200);
+  assert.ok(list.data.weeks.every(w => w.week_no <= 2) && list.data.weeks.some(w => w.week_no === 1));
+  const l = await api("visitor", "GET", "/api/learn/demo/lessons/1");
+  assert.equal(l.status, 200); assert.equal(l.data.demo, true);
+  assert.equal((await api("visitor", "GET", "/api/learn/demo/lessons/3")).status, 404, "only the practice weeks");
+  const quiz = await api("visitor", "POST", "/api/learn/demo/lessons/1/quiz", {});
+  assert.equal(quiz.status, 200);
+  assert.ok(!JSON.stringify(quiz.data).includes('"answer"'), "right answers are not sent");
+  const lesson1 = q("select id from lessons where week_no = 1").get().id;
+  const key = Object.fromEntries(q("select id, choices, answer from quiz_questions where lesson_id = ?").all(lesson1).map(x => [x.id, JSON.parse(x.choices)[x.answer]]));
+  const answers = quiz.data.questions.map(x => x.choices.indexOf(key[x.id]));
+  const r = await api("visitor", "POST", `/api/learn/demo/quiz/${quiz.data.attempt_id}`, { answers });
+  assert.equal(r.status, 200); assert.equal(r.data.passed, true); assert.equal(r.data.added_sats, 0);
+  assert.equal((await api("visitor", "POST", `/api/learn/demo/quiz/${quiz.data.attempt_id}`, { answers })).status, 404, "an answer sheet is used once");
+  assert.deepEqual({ c: q("select count(*) n from lesson_completions").get().n, a: q("select count(*) n from quiz_attempts").get().n, r: q("select count(*) n from lesson_reads").get().n }, before, "nothing saved");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 0 })).status, 200);
+  assert.equal((await api("visitor", "GET", "/api/learn/demo/lessons/1")).status, 404, "practice can be switched off");
+  assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 6 })).status, 400);
+});
+
+test("104 weeks: a review week's quiz uses the questions of that term's live lessons", async () => {
+  assert.equal(q("select total_weeks from learn_settings").get().total_weeks, 104);
+  assert.equal((await api("admin", "POST", "/api/lessons", { week_no: 105, title: "too far" })).status, 400);
+  // Term 6 = weeks 41-48. Week 48 is its review week.
+  const a = (await api("admin", "POST", "/api/lessons", { week_no: 41, title: "Isifundo 41" })).data.id;
+  const b = (await api("admin", "POST", "/api/lessons", { week_no: 42, title: "Isifundo 42" })).data.id;
+  const other = (await api("admin", "POST", "/api/lessons", { week_no: 49, title: "Ikota 7" })).data.id;
+  const rv = (await api("admin", "POST", "/api/lessons", { week_no: 48, kind: "review", title: "Phinda: ikota 6" })).data;
+  assert.equal(rv.kind, "review"); assert.equal(rv.term, 6); assert.deepEqual([rv.review.from, rv.review.to], [41, 47]);
+  const mk = (n, tag) => Array.from({ length: n }, (_, i) => ({ question: `${tag} ${i}?`, choices: ["Ewe", "Hayi"], answer: 0 }));
+  for (const [id, tag] of [[a, "w41"], [b, "w42"], [other, "w49"]]) assert.equal((await api("admin", "PATCH", `/api/lessons/${id}`, { body: BODY, questions: mk(4, tag) })).status, 200);
+  assert.equal((await api("admin", "PATCH", `/api/lessons/${rv.id}`, { body: BODY })).status, 200);
+  let r = await api("admin", "POST", `/api/lessons/${rv.id}/publish`, {});
+  assert.equal(r.status, 400); assert.match(r.data.error, /weeks 41–47/, "needs the term's lessons live first");
+  for (const id of [a, b, other]) assert.equal((await api("admin", "POST", `/api/lessons/${id}/publish`, {})).status, 200);
+  r = await api("admin", "POST", `/api/lessons/${rv.id}/publish`, {});
+  assert.equal(r.status, 200); assert.equal(r.data.review.live_questions, 8);
+  // Owner 2 has finished weeks 1-47 (put in directly), so the review week is next.
+  const ins = q("insert or ignore into lesson_completions(owner_id, week_no, completed_on, completed_at, pay_period) values (?,?,?,?,?)");
+  for (let w = 1; w <= 47; w++) ins.run(owner2, w, "2020-01-06", "2020-01-06T10:00:00Z", "2020-01");
+  const me = (await api("owner2", "GET", "/api/learn/me")).data;
+  const w48 = me.weeks.find(w => w.week_no === 48);
+  assert.equal(w48.state, "ready"); assert.equal(w48.kind, "review"); assert.equal(w48.term, 6); assert.equal(me.weeks.length, 104);
+  assert.equal((await api("owner2", "GET", "/api/learn/lessons/48")).data.kind, "review");
+  assert.equal((await api("owner2", "GET", "/api/learn/lessons/100")).status, 403, "3-digit weeks reach the route");
+  assert.equal((await api("owner2", "POST", "/api/learn/lessons/48/read", {})).status, 200);
+  for (let i = 0; i < 3; i++) {
+    const s = (await api("owner2", "POST", "/api/learn/lessons/48/quiz", {})).data;
+    assert.equal(s.questions.length, 4);
+    for (const x of s.questions) assert.match(x.question, /^w4[12] /, "only questions from weeks 41-47");
+  }
+});
+
+test("moving to 104 weeks rebuilds an old database and keeps its lessons and questions", () => {
+  const { open } = require("./db");
+  const { DatabaseSync } = require("node:sqlite");
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "ps-old-")), "old.db");
+  const old = open(file);   // make the current tables, then put back the old 60-week checks
+  old.exec(`pragma foreign_keys = off; drop table lessons; create table lessons (id text primary key, week_no integer not null unique check (week_no between 1 and 60),
+    title text not null, body text not null default '', status text not null default 'draft', source text, published_at text, published_by_name text, updated_by_name text,
+    created_at text not null default 'x', updated_at text not null default 'x');
+    update learn_settings set total_weeks = 20;`);
+  old.prepare("insert into lessons(id, week_no, title) values ('L1', 1, 'Old')").run();
+  old.prepare("insert into quiz_questions(id, lesson_id, question, choices, answer) values ('q1', 'L1', 'Q', '[\"a\",\"b\"]', 0)").run();
+  old.close();
+  const db = open(file);
+  assert.equal(db.prepare("select kind from lessons where id = 'L1'").get().kind, "lesson");
+  assert.equal(db.prepare("select total_weeks from learn_settings").get().total_weeks, 104);
+  db.prepare("insert into lessons(id, week_no, title) values ('L104', 104, 'Last')").run();
+  db.prepare("delete from lessons where id = 'L1'").run();
+  assert.equal(db.prepare("select count(*) n from quiz_questions").get().n, 0, "questions still go with their lesson");
+  db.close(); void DatabaseSync;
+});

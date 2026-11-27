@@ -5,6 +5,7 @@ const http = require("node:http");
 const crypto = require("node:crypto");
 const { open } = require("./db");
 const payments = require("./payments");
+const learning = require("./learn");
 
 const PORT = Number(process.env.PORT || 3417);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -50,7 +51,7 @@ const T = {
             preferred_language: "text", active: "bool", joined_on: "date", notes: "text" } },
   shacks: {
     cols: { shack_no: "int!", owner_id: "id", sponsor_id: "id", status: "text", needs_maintenance: "bool", first_painted_on: "date",
-            photo_url: "url", x_post_url: "url", area: "text", latitude: "num", longitude: "num", notes: "text" } },
+            photo_url: "url", x_post_url: "url", area: "text", name: "text", latitude: "num", longitude: "num", notes: "text" } },
 };
 const BOOL_COLS = new Set(Object.values(T).flatMap(t => Object.entries(t.cols).filter(([, v]) => v === "bool").map(([k]) => k)));
 
@@ -92,6 +93,7 @@ function friendly(e) {
   if (/UNIQUE.*shacks\.shack_no/.test(m)) return "That shack number is already used.";
   if (/UNIQUE.*sponsors\.name/.test(m)) return "A sponsor with that name already exists.";
   if (/owners_lnaddr_uq|UNIQUE.*lightning_address/i.test(m)) return "Another owner already has that Lightning address.";
+  if (/UNIQUE.*lessons\.week_no/.test(m)) return "That week already has a lesson.";
   if (/UNIQUE.*payouts\.owner_id/.test(m)) return "This owner already has a learning payment for that month.";
   if (/FOREIGN KEY/.test(m)) return "This is still linked to other records (for example payments). Remove those first.";
   if (/CHECK constraint/.test(m)) return "One of the values is not allowed.";
@@ -154,6 +156,9 @@ async function handle(req, res) {
 
   if (p === "/api/health") return send(res, 200, { ok: true });
 
+  // Owner learning app (/learn): owners sign in with shack number + PIN, separate from staff accounts.
+  if (p.startsWith("/api/learn/")) return learn.ownerRoutes(req, res, p, method);
+
   if (p === "/api/login" && method === "POST") {
     const ip = clientIp(req);
     if (tooMany(ip)) throw new Bad("Too many tries. Wait 15 minutes and try again.", 429);
@@ -196,6 +201,9 @@ async function handle(req, res) {
 
   // Lightning payouts to owners (server/payments.js). Sending always needs an admin's password.
   if (await pay.routes(req, res, p, method, user, url)) return;
+
+  // Lessons, quizzes and each owner's learning progress (server/learn.js).
+  if (await learn.adminRoutes(req, res, p, method, user, url)) return;
 
   if (p === "/api/data" && method === "GET") {
     const out = {};
@@ -506,6 +514,8 @@ function importSeed(d, user) {
 
 /* ------------------------------------------------------------------ start */
 const pay = payments.init({ db, audit, tx, Bad, readJson, send, checkPassword });
+const learn = learning.init({ db, audit, tx, Bad, readJson, send, hashPassword, checkPassword, sha256, readCookie, clientIp, currentUser,
+  cookieSecure: COOKIE_SECURE, dataDir: require("node:path").dirname(DB_PATH), pay });
 
 if (require.main === module) {
   pay.startTimers();
@@ -519,4 +529,4 @@ if (require.main === module) {
   }).listen(PORT, HOST, () => console.log(`Painted Shacks API on http://${HOST}:${PORT}, database ${DB_PATH}`));
 }
 
-module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay };
+module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn };

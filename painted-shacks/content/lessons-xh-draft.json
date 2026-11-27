@@ -1,0 +1,1382 @@
+{
+ "about": "Weekly lessons for the Painted Shacks owner app: 104 weeks (two years) in 13 terms of 8 weeks, 7 lessons and 1 review week (Phinda) each. Based on the isiXhosa Bitcoin Diploma book by My First Bitcoin (CC BY-SA 4.0), split into smaller parts. Term 1 (weeks 1-8) is written; the other weeks have a title and book section only and are written term by term. Every lesson imports as a DRAFT: an admin checks the isiXhosa and the answers, then publishes. A review week has no questions of its own: its quiz uses the questions of that term's lessons. Pictures are taken from the same book (CC BY-SA 4.0).",
+ "lessons": [
+  {
+   "week_no": 1,
+   "kind": "lesson",
+   "title": "Intshayelelo: le khosi ne-app zisebenza njani",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 1",
+   "body": "# Siyakwamkela!\n\nSiyakwamkela kwi-Bitcoin Diploma yePainted Shacks. Esi sisifundo sakho sokuqala.\n\nImali siyisebenzisa yonke imihla: xa sithenga isonka, xa sihlawula iteksi, xa sithengisa kwi-spaza. Kule khosi siza kufunda ukuba yintoni kanye imali, ukuba isebenza njani, kwaye yintoni i-Bitcoin.\n\n> \"Imali sesona sixhobo singundoqo sokukhulula abantu.\" – Friedrich Hayek\n\n---\n\n# Le khosi isebenza njani\n\nLe khosi ineeveki eziyi-104, oko kukuthi iminyaka emibini.\n\n- Iiveki zahlulwe zaba **ziikota ezili-13**. Ikota nganye ineeveki ezisi-8.\n- Kwikota nganye kukho **izifundo ezisi-7** ezifutshane.\n- Iveki yesi-8 yeyo**Phinda**: akukho sifundo sitsha, uphendula imibuzo esuka kwizifundo zale kota.\n\nIsifundo ngasinye sifutshane. Ungasifunda efowunini yakho xa uphumle kancinci.\n\n---\n\n# I-app isebenza njani\n\n1. Vula isifundo seveki, ufunde iphepha ngalinye ukuya esiphelweni.\n2. Cofa **\"Ndigqibile ukufunda\"**.\n3. Phendula **imibuzo emi-4**. Kufuneka uphendule **emi-3 ngokuchanekileyo**.\n4. Ukuba awuphumelelanga, funda kwakhona uze uzame kwakhona.\n\nIsifundo esilandelayo sivuleka ngoMvulo emva kokuba ugqibe esi. Isifundo esinye ngeveki.\n\n---\n\n# Iisats zakho\n\nXa ugqibe isifundo sale veki nemibuzo yaso, ufumana **7,000 sats**.\n\n- Iisats zihlawulwa kanye ngenyanga, **ngoLwesihlanu lokugqibela** lwenyanga, kwidilesi yakho ye-Lightning.\n- Kwinyanga ufumana ukuya kuthi ga kwi-**28,000 sats** (iiveki ezi-4).\n- I-shack yakho kufuneka icoceke xa ihlolwa.\n\n> Funda isifundo esinye ngeveki. Ungalibali!\n",
+   "pictures": [],
+   "questions": [
+    {
+     "question": "Le khosi ineeveki ezingaphi?",
+     "choices": [
+      "Eziyi-104 (iminyaka emibini)",
+      "Ezingama-20",
+      "Ezisi-8",
+      "Ezingama-52"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ufumana malini xa ugqibe isifundo seveki nemibuzo yaso?",
+     "choices": [
+      "7,000 sats",
+      "1,000 sats",
+      "28,000 sats",
+      "Akukho nto"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kufuneka uphendule imibuzo emingaphi ngokuchanekileyo ukuze uphumelele?",
+     "choices": [
+      "Emi-3 kwemi-4",
+      "Omnye",
+      "Emi-2 kwemi-4",
+      "Emi-4 kwemi-4"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kwenzeka ntoni kwiveki yesi-8 yekota nganye (Phinda)?",
+     "choices": [
+      "Uphendula imibuzo esuka kwizifundo zale kota",
+      "Akukho nto, ziiholide",
+      "Uya eklasini",
+      "Ufunda isifundo esitsha esinde"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Iisats zihlawulwa nini?",
+     "choices": [
+      "Kanye ngenyanga, ngoLwesihlanu lokugqibela",
+      "Yonke imihla",
+      "Kanye ngonyaka",
+      "Xa ufuna"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ukuba awuphumelelanga imibuzo, wenza ntoni?",
+     "choices": [
+      "Ufunda kwakhona uze uzame kwakhona",
+      "Uyeka ikhosi",
+      "Ulinda unyaka",
+      "Ubuza umhlobo iimpendulo"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 2,
+   "kind": "lesson",
+   "title": "Dibana noSatoshi: imibuzo emihlanu ngemali",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 1.1",
+   "body": "# Dibana noSatoshi\n\nMolo! NdinguSatoshi. Ndiza kuhamba nawe kwesi sifundo se-Bitcoin Diploma.\n\nKwiiveki ezizayo siza kufunda:\n- ukuba yintoni imali nokuba isebenza njani\n- imbali yemali ukusuka kudala ukuya namhlanje\n- ukuba yintoni i-Bitcoin nokuba ungayisebenzisa njani\n- indlela yokugcina iisats zakho zikhuselekile\n\n---\n\n# Imibuzo emihlanu ngemali\n\nNgaphambi kokuba siqhubeke, cinga ngale mibuzo mihlanu. Cinga ngezinto zokwenyani ebomini bakho, ezifana nokutya nezinto ozithengayo yonke imihla.\n\n1. Kutheni sifuna imali?\n2. Yintoni imali?\n3. Ngubani olawula imali?\n4. Yintoni eyenza imali ibe nexabiso?\n5. Ngowuphi umbuzo onawo wena ngemali?\n\n---\n\n# Akukho mpendulo ingachanekanga\n\nApha akukho mpendulo ilungileyo okanye ingalunganga. Le mibuzo yeyokuba ucinge.\n\nGcina iimpendulo zakho engqondweni, okanye uzibhale phantsi. Siza kubuyela kule mibuzo ekupheleni kwekhosi, siza kubona ukuba izimvo zakho zitshintshe njani.\n\n> Umbuzo olungileyo sisiqalo sokufunda.\n",
+   "pictures": [],
+   "questions": [
+    {
+     "question": "Igama lomntu oza kuhamba nawe kwesi sifundo ngubani?",
+     "choices": [
+      "USatoshi",
+      "UNelson",
+      "UThandi",
+      "UHayek"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kule veki ucinge ngemibuzo emingaphi ngemali?",
+     "choices": [
+      "Mihlanu",
+      "Mibini",
+      "Mithathu",
+      "Lishumi"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Yeyiphi kwezi ingeyiyo enye yemibuzo emihlanu ngemali?",
+     "choices": [
+      "Imali yenziwa ngombala bani?",
+      "Kutheni sifuna imali?",
+      "Ngubani olawula imali?",
+      "Yintoni eyenza imali ibe nexabiso?"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kule mibuzo emihlanu, ingaba zikhona iimpendulo ezingalunganga?",
+     "choices": [
+      "Hayi, imibuzo yeyokuba ucinge",
+      "Ewe, ezininzi",
+      "Ewe, enye kuphela",
+      "Andazi"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Siza kubuyela nini kule mibuzo emihlanu?",
+     "choices": [
+      "Ekupheleni kwekhosi",
+      "Ngomso",
+      "Akusoze",
+      "Kwiveki ezayo"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Yintoni enye esiza kufunda ngayo kule khosi?",
+     "choices": [
+      "Indlela yokugcina iisats zakho zikhuselekile",
+      "Indlela yokupheka",
+      "Indlela yokuqhuba imoto",
+      "Imbali yebhola"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 3,
+   "kind": "lesson",
+   "title": "Kutheni sifuna imali?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 1.2",
+   "body": "# Kutheni sifuna imali?\n\nKhawucinge ngosuku lwakho. Ufuna ukutya, amanzi, umbane, iimpahla, uthutho. Akukho mntu unokwenza zonke ezi zinto yedwa.\n\nNgoko siyatshintshiselana: ndenza into enye, wena wenza enye, size sitshintshiselane.\n\n---\n\n# Imali isinceda ntoni?\n\nImali isinceda:\n- **sithenge** izinto esizidingayo kwabanye abantu\n- **sithengise** esikwenzayo okanye esinako\n- **songe** ngoku ukuze sibe nento ngomso\n- **sazi ixabiso** lezinto, size sithelekise\n\nUmzekelo: umnini-spaza uthengisa isonka ngemali, emva koko uthenga isitokhwe esitsha ngaloo mali.\n\n---\n\n# Kutheni singenakwenza imali ngokwethu?\n\nKutheni singenakusuka sikhabe ilitye kuvele imali? Kuba imali ibaluleke kuba **ayifumaneki lula**.\n\nUkuba wonke umntu ebenokwenza imali ngokulula, ibingayi kuba nexabiso. Siza kufunda ngakumbi ngale nto kwiiveki ezizayo.\n\n---\n\n# Okubalulekileyo kule veki\n\n> Imali sisixhobo esisinceda sitshintshiselane ngezinto, songe, kwaye sazi ixabiso lezinto.\n\nKwiveki ezayo siza kufunda indlela yokugcina iisats zakho zikhuselekile, kuba uza kuqala ukufumana iisats kule nyanga.\n",
+   "pictures": [],
+   "questions": [
+    {
+     "question": "Yeyiphi kwezi engeyiyo into imali esinceda ngayo?",
+     "choices": [
+      "Ukwenza ilitye libe yimali",
+      "Ukuthenga izinto esizidingayo",
+      "Ukonga ngoku ukuze sibe nento ngomso",
+      "Ukwazi ixabiso lezinto"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kutheni singenakusuka senze imali ngokukhaba ilitye?",
+     "choices": [
+      "Kuba imali ibaluleke kuba ayifumaneki lula",
+      "Kuba amatye anzima",
+      "Kuba urhulumente uthi hayi",
+      "Kuba amatye ambalwa"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kutheni umntu engenakwenza zonke izinto azidingayo yedwa?",
+     "choices": [
+      "Akanaxesha nezakhono zokwenza konke, ngoko utshintshiselana nabanye",
+      "Kuba umthetho uthi makangenzi",
+      "Kuba imali iyamthintela",
+      "Akukho sizathu"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ukonga imali ngoku kusinceda ntoni?",
+     "choices": [
+      "Ukuba sibe nento ngomso",
+      "Ukuba imali iphele ngokukhawuleza",
+      "Akusinceda nto",
+      "Ukuba sihlawule irhafu engakumbi"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Umnini-spaza uthengisa isonka, aze athenge isitokhwe esitsha ngaloo mali. Imali imncede ntoni?",
+     "choices": [
+      "Ukutshintshiselana ngezinto",
+      "Ukupheka isonka",
+      "Ukuvala ivenkile",
+      "Akukho nto"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ukuba wonke umntu ebenokwenza imali ngokulula, bekuya kwenzeka ntoni?",
+     "choices": [
+      "Imali ibingayi kuba nexabiso",
+      "Wonke umntu ebeya kuba sisityebi",
+      "Akukho nto ibiya kutshintsha",
+      "Imali ibiya kubiza ngakumbi"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 4,
+   "kind": "lesson",
+   "title": "Gcina iisats zakho zikhuselekile",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.5, 7.6 no-8.4 (isifundo esifutshane sokhuseleko, phambi kwentlawulo yokuqala)",
+   "body": "# Iisats zakho zezakho\n\nKule nyanga uza kufumana iisats zakho zokuqala kwi-wallet yakho ye-Lightning. Phambi koko, masifunde izinto ezintathu zokuzigcina zikhuselekile.\n\nKamva kwekhosi siza kufunda ngakumbi ngee-wallet ne-Lightning. Esi sisifundo esifutshane sokuqala.\n\n---\n\n# 1. Ibinzana-mfihlo lakho\n\n[[picture:bd25-w15-2]]\n\nXa uvula i-wallet, ihlala ikunika **amagama ali-12 okanye ama-24**. Eli **libinzana-mfihlo** lakho (seed phrase).\n\n- **Libhale phantsi ephepheni**, uligcine kwindawo ekhuselekileyo.\n- Ungalifoti, ungalibeki kwi-WhatsApp.\n- Ukuba ifowuni yakho ilahlekile, la magama abuyisa iisats zakho kwifowuni entsha.\n\n---\n\n# 2. Ungaze ulinike mntu\n\nUkuba umntu ufumana ibinzana-mfihlo lakho, angathatha **zonke** iisats zakho.\n\n> Umntu okucela ibinzana-mfihlo **ulisela**, nokuba uthi uvela kwiBitcoin Ekasi.\n\nIBitcoin Ekasi ayisoze ikucele ibinzana-mfihlo lakho okanye i-PIN yakho. Sidinga kuphela **idilesi yakho ye-Lightning** ukuze sikuthumelele iisats.\n\n---\n\n# 3. Hlola kabini phambi kokuthumela\n\nXa uthumela iisats, hlola **imali** kunye **nedilesi** kakuhle. Intlawulo ye-Lightning **ayibuyi**.\n\nUngathembi namnye, qinisekisa kuqala:\n- khuphela i-app ye-wallet kuphela kwi-Google Play okanye App Store\n- ungacofi amakhonkco ongawaziyo\n- umntu othembisa ukuphinda-phinda iisats zakho ulisela\n\n---\n\n# Okubalulekileyo kule veki\n\n- Bhala ibinzana-mfihlo ephepheni, uligcine likhuselekile.\n- Ungaze ulinike mntu. Ocela lona ulisela.\n- IBitcoin Ekasi idinga idilesi yakho ye-Lightning kuphela.\n- Hlola kabini, thumela kanye. Intlawulo ayibuyi.\n",
+   "pictures": [
+    "bd25-w15-2"
+   ],
+   "questions": [
+    {
+     "question": "Umntu uthi uvela kwiBitcoin Ekasi, ucela amagama akho ali-12. Wenza ntoni?",
+     "choices": [
+      "Andimniki, ulisela",
+      "Ndimnika",
+      "Ndimthumelela ifoto yawo",
+      "Ndiwabhala kwi-WhatsApp"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kufuneka uligcine njani ibinzana-mfihlo?",
+     "choices": [
+      "Ulibhale ephepheni, uligcine kwindawo ekhuselekileyo",
+      "Ulifote, ulifake kwi-Facebook",
+      "Ulithumele kubahlobo",
+      "Ulibeke kwi-WhatsApp"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ukuba ifowuni yakho ilahlekile, yintoni ebuyisa iisats zakho?",
+     "choices": [
+      "Ibinzana-mfihlo",
+      "Inombolo yefowuni",
+      "Igama lakho",
+      "Akukho nto"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "IBitcoin Ekasi idinga ntoni kuwe ukuze ikuthumelele iisats?",
+     "choices": [
+      "Idilesi yakho ye-Lightning",
+      "Ibinzana-mfihlo lakho",
+      "I-PIN yakho yefowuni",
+      "Iphasiwedi yakho"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ukuba uthumele iisats kwidilesi engalunganga, ziyabuya?",
+     "choices": [
+      "Hayi, intlawulo ayibuyi",
+      "Ewe, rhoqo",
+      "Ewe, ibhanki iyazibuyisa",
+      "Ewe, emva kweveki"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Umntu ukuthembisa ukuphinda-phinda iisats zakho ukuba umthumelela ezakho. Ngubani?",
+     "choices": [
+      "Ulisela",
+      "Ngumhlobo olungileyo",
+      "Yibhanki",
+      "NguSatoshi"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kufuneka uyikhuphele phi i-app ye-wallet?",
+     "choices": [
+      "Kwi-Google Play okanye App Store kuphela",
+      "Kwikhonkco elivela kumntu ongamaziyo",
+      "Kwi-WhatsApp",
+      "Naphi na"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 5,
+   "kind": "lesson",
+   "title": "Inkcazelo yemali",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.0–2.1",
+   "body": "# Yintoni imali?\n\n> \"Imali sisiqinisekiso sokuba singanayo le nto siza kuyifuna.\" – Aristotle\n\nWakhe wazibuza ukuba yintoni kanye imali? Abaninzi bethu bayakwazi ukuyisebenzisa, kodwa abaninzi abazi ukuba ivela phi okanye isebenza njani.\n\n**Imali sisixhobo sokunaniselana ngeempahla neenkonzo.** Ichaza ixabiso lezinto ukwenzela kube lula ukurhweba.\n\n---\n\n# Imali sisivumelwano\n\nImali sisivumelwano phakathi kwabantu. Ukuba iqela labantu livumelana ukusebenzisa into ethile ukuhlawula, loo nto iba yimali.\n\nUmzekelo: ukuba sonke ekasi sivumelana ukuba sihlawule ngeetshokoleyithi, iitshokoleyithi ziba yimali yethu. (Kodwa ziyanyibilika elangeni, ngoko aziyiyo imali elungileyo!)\n\n---\n\n# Unaniselwano\n\n**Unaniselwano** kukutshintshiselana ngeempahla okanye iinkonzo phakathi kwabantu ababini okanye ngaphezulu.\n\nUmzekelo: uthenga isangweji evenkileni. Unika imali, ufumana isangweji.\n\n> Imali inemisebenzi emithathu. Kwiiveki ezimbini ezizayo siza kufunda ngayo nganye.\n",
+   "pictures": [],
+   "questions": [
+    {
+     "question": "Imali sisixhobo sokwenza ntoni?",
+     "choices": [
+      "Ukunaniselana ngeempahla neenkonzo",
+      "Ukupheka",
+      "Ukwakha izindlu",
+      "Ukuhamba"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Yintoni eyenza into ibe yimali?",
+     "choices": [
+      "Xa iqela labantu livumelana ukuyisebenzisa ukuhlawula",
+      "Xa inombala oluhle",
+      "Xa inzima",
+      "Xa yenziwe ngephepha"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kutheni iitshokoleyithi zingeyiyo imali elungileyo?",
+     "choices": [
+      "Ziyanyibilika elangeni",
+      "Zimnandi kakhulu",
+      "Zixabisa kakhulu",
+      "Aziphatheki"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Yintoni unaniselwano?",
+     "choices": [
+      "Ukutshintshiselana ngeempahla okanye iinkonzo phakathi kwabantu",
+      "Ukonga ebhankini",
+      "Ukuboleka imali",
+      "Ukwenza imali entsha"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ngubani owathi 'Imali sisiqinisekiso sokuba singanayo le nto siza kuyifuna'?",
+     "choices": [
+      "Aristotle",
+      "Satoshi Nakamoto",
+      "Friedrich Hayek",
+      "Nelson Mandela"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Imali inemisebenzi emingaphi?",
+     "choices": [
+      "Emithathu",
+      "Mnye",
+      "Mibini",
+      "Mihlanu"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 6,
+   "kind": "lesson",
+   "title": "Umsebenzi 1: isixhobo sokutshintshiselana",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.2",
+   "body": "# Umsebenzi 1: Isixhobo sokutshintshiselana\n\nUmsebenzi wokuqala wemali kukusinceda sitshintshiselane ngezinto.\n\n[[picture:bd25-w02-1]]\n\n---\n\n# Ngaphandle kwemali\n\nNgaphandle kwemali, ukuba wena unemifuno kwaye ufuna isonka, kufuneka ufumane umntu onesonka **ofuna imifuno**.\n\nKunzima! Mhlawumbi umntu onesonka ufuna isepha, hayi imifuno. Ngoku kufuneka ufumane umntu onesepha ofuna imifuno...\n\n---\n\n# Ngemali\n\nNgemali akunyanzelekanga ukuba ukhangele umntu ofuna kanye le nto unayo.\n\n1. Uthengisa imifuno yakho ngemali, kuye nabani na oyifunayo.\n2. Uthenga isonka ngaloo mali, kuye nabani na onaso.\n\n> Imali yenza ukurhweba kube lula.\n\n---\n\n# Okubalulekileyo kule veki\n\nImali **sisixhobo sokutshintshiselana**: sithenga, sithengise ngayo, singakhangeli umntu ofuna kanye le nto sinayo.\n\nUmzekelo: uSipho uthenga isonka nge-R20 kwi-spaza. Lo ngumsebenzi wokuqala wemali.\n",
+   "pictures": [
+    "bd25-w02-1"
+   ],
+   "questions": [
+    {
+     "question": "USipho uthenga isonka nge-R20 kwi-spaza. Ngowuphi umsebenzi wemali lo?",
+     "choices": [
+      "Isixhobo sokutshintshiselana",
+      "Ukugcina ixabiso",
+      "Iyunithi ye-akhawunti",
+      "Ukuphatheka"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ngaphandle kwemali, yintoni enzima xa ufuna ukurhweba?",
+     "choices": [
+      "Ukufumana umntu onale nto uyifunayo kwaye ofuna le nto unayo",
+      "Ukupheka ukutya",
+      "Ukuhamba ngeteksi",
+      "Akukho nto inzima"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Unemifuno, ufuna isonka. Ngemali wenza ntoni?",
+     "choices": [
+      "Uthengisa imifuno ngemali, uze uthenge isonka ngaloo mali",
+      "Ukhangela umntu onesonka ofuna imifuno",
+      "Ulinda unyaka",
+      "Uyeka"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Imali yenza ukurhweba kube njani?",
+     "choices": [
+      "Kube lula",
+      "Kube nzima",
+      "Kube kude",
+      "Kungabikho"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ngowuphi umsebenzi wokuqala wemali esifunde ngawo?",
+     "choices": [
+      "Isixhobo sokutshintshiselana",
+      "Ukugcina ixabiso",
+      "Iyunithi ye-akhawunti",
+      "Ukunqongophala"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Umntu onesonka ufuna isepha, hayi imifuno yakho. Ngaphandle kwemali, kwenzeka ntoni?",
+     "choices": [
+      "Kufuneka ukhangele omnye umntu, kunzima",
+      "Uyamnika isonka",
+      "Ufumana isonka simahla",
+      "Akukho ngxaki"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 7,
+   "kind": "lesson",
+   "title": "Umsebenzi 2 no-3: iyunithi ye-akhawunti nokugcina ixabiso",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.2",
+   "body": "# Umsebenzi 2: Iyunithi ye-akhawunti\n\nImali sisilinganiso esivunywa ngumntu wonke. Isinceda sichaze kwaye sithelekise amaxabiso.\n\nUmzekelo: xa uthenga ifowuni, ungathelekisa amaxabiso ezivenkile ezahlukeneyo ngoko nangoko, kuba onke abhalwe **ngeerandi**.\n\n---\n\n# Ngaphandle kweyunithi\n\nUkuba ibingekho le yunithi, bekuza kufuneka uthelekise ngezinto ezahlukeneyo:\n\n\"Le fowuni ixabisa iinkukhu ezi-3 okanye iingxowa zomgubo ezi-2?\"\n\nKunzima kakhulu! Iyunithi enye yenza ukuba sibale, sithelekise, kwaye sibhale amatyala lula.\n\n---\n\n# Umsebenzi 3: Ukugcina ixabiso\n\nImali elungileyo kufuneka **igcine ixabiso layo ixesha elide**. Ngolo hlobo ungonga namhlanje uze uthenge ngomso.\n\nLe nto inceda abantu bacwangcisele ikamva: ukonga kwesikolo sabantwana, ukwakha, okanye ukuqala ishishini.\n\nUkuba imali ilahlekelwa lixabiso ngokukhawuleza, ukonga kunzima. Siza kufunda ngakumbi ngale nto kamva.\n\n---\n\n# Okubalulekileyo kule veki\n\nImali inemisebenzi emithathu:\n- **Isixhobo sokutshintshiselana**: sithenga, sithengise ngayo\n- **Iyunithi ye-akhawunti**: sibala, sithelekise amaxabiso ngayo\n- **Igcina ixabiso**: songa ngayo ngoku ngenxa yangomso\n\nUmzekelo: uThandi wonga inxalenye yomvuzo wakhe ukuze athenge isitovu kwinyanga ezayo. Lo ngumsebenzi wokugcina ixabiso.\n",
+   "pictures": [],
+   "questions": [
+    {
+     "question": "UThandi wonga imali yakhe ukuze athenge isitovu kwinyanga ezayo. Ngowuphi umsebenzi wemali lo?",
+     "choices": [
+      "Ukugcina ixabiso",
+      "Isixhobo sokutshintshiselana",
+      "Iyunithi ye-akhawunti",
+      "Akukho nanye"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Uthelekisa amaxabiso efowuni kwiivenkile ezimbini, zombini zibhale ngeerandi. Ngowuphi umsebenzi wemali lo?",
+     "choices": [
+      "Iyunithi ye-akhawunti",
+      "Ukugcina ixabiso",
+      "Isixhobo sokutshintshiselana",
+      "Ukomelela"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ngaphandle kweyunithi ye-akhawunti, kunzima ukwenza ntoni?",
+     "choices": [
+      "Ukuthelekisa amaxabiso",
+      "Ukutya",
+      "Ukulala",
+      "Ukuhamba"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Kutheni imali elungileyo kufuneka igcine ixabiso layo?",
+     "choices": [
+      "Ukuze wonge namhlanje uthenge ngomso",
+      "Ukuze ibe nombala omhle",
+      "Ukuze ibe nzima",
+      "Akukho sizathu"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Ukuba imali ilahlekelwa lixabiso ngokukhawuleza, kwenzeka ntoni?",
+     "choices": [
+      "Ukonga kunzima",
+      "Ukonga kulula",
+      "Akukho nto",
+      "Wonke umntu uba sisityebi"
+     ],
+     "answer": 0
+    },
+    {
+     "question": "Yeyiphi kwezi engeyiyo omnye wemisebenzi emithathu yemali?",
+     "choices": [
+      "Ukupheka ukutya",
+      "Isixhobo sokutshintshiselana",
+      "Iyunithi ye-akhawunti",
+      "Ukugcina ixabiso"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "week_no": 8,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 1",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 1 (iiveki 1–7)",
+   "body": "# Phinda: ukuhlaziya ikota 1\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yokuqala.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Le khosi ne-app zisebenza njani\n2. Dibana noSatoshi: imibuzo emihlanu ngemali\n3. Kutheni sifuna imali?\n4. Gcina iisats zakho zikhuselekile\n5. Yintoni imali? Imali sisivumelwano\n6. Umsebenzi 1: isixhobo sokutshintshiselana\n7. Umsebenzi 2 no-3: iyunithi ye-akhawunti nokugcina ixabiso\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 9,
+   "kind": "lesson",
+   "title": "Iimpawu zemali: ukomelela nokuphatheka",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 10,
+   "kind": "lesson",
+   "title": "Ukwahlulahluleka nokufana",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 11,
+   "kind": "lesson",
+   "title": "Ukunqongophala nokwamkeleka",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 12,
+   "kind": "lesson",
+   "title": "Iintlobo zemali",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 13,
+   "kind": "lesson",
+   "title": "Ukunqongophala, umonde nokukhetha",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 2.5",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 14,
+   "kind": "lesson",
+   "title": "Umdlalo wokutshintshiselana (unaniselwano)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 3.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 15,
+   "kind": "lesson",
+   "title": "Iingxaki zemali zakudala",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 3.1.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 16,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 2",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 2 (iiveki 9–15)",
+   "body": "# Phinda: ukuhlaziya ikota 2\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesibini.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Iimpawu zemali: ukomelela nokuphatheka\n2. Ukwahlulahluleka nokufana\n3. Ukunqongophala nokwamkeleka\n4. Iintlobo zemali\n5. Ukunqongophala, umonde nokukhetha\n6. Umdlalo wokutshintshiselana (unaniselwano)\n7. Iingxaki zemali zakudala\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 17,
+   "kind": "lesson",
+   "title": "Iingqekembe nemali engamaphepha",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 3.1.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 18,
+   "kind": "lesson",
+   "title": "Ukusuka kwimali eqinileyo ukuya kwengaqinanga",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 3.1.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 19,
+   "kind": "lesson",
+   "title": "Ukusuka ephepheni ukuya kwiplastiki",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 3.1.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 20,
+   "kind": "lesson",
+   "title": "Imali ka-intanethi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 3.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 21,
+   "kind": "lesson",
+   "title": "Imali yesiqhelo (fiat): intshayelelo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 22,
+   "kind": "lesson",
+   "title": "Ukususwa kwegolide ebantwini (1933)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 23,
+   "kind": "lesson",
+   "title": "Ukuphela kwegolide emva kwedola (1971)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 24,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 3",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 3 (iiveki 17–23)",
+   "body": "# Phinda: ukuhlaziya ikota 3\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesithathu.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Iingqekembe nemali engamaphepha\n2. Ukusuka kwimali eqinileyo ukuya kwengaqinanga\n3. Ukusuka ephepheni ukuya kwiplastiki\n4. Imali ka-intanethi\n5. Imali yesiqhelo (fiat): intshayelelo\n6. Ukususwa kwegolide ebantwini (1933)\n7. Ukuphela kwegolide emva kwedola (1971)\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 25,
+   "kind": "lesson",
+   "title": "Inkqubo emiselwe ngumthetho",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.2.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 26,
+   "kind": "lesson",
+   "title": "Iibhanki zenza imali ngamatyala",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.2.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 27,
+   "kind": "lesson",
+   "title": "Umsebenzi: ibali likaDax nesithuthuthu",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.2.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 28,
+   "kind": "lesson",
+   "title": "Ngubani olawulayo, ngubani oxhamlayo?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 29,
+   "kind": "lesson",
+   "title": "Ii-CBDC: ikamva lemali yesiqhelo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 4.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 30,
+   "kind": "lesson",
+   "title": "Ingxaki: intshayelelo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 31,
+   "kind": "lesson",
+   "title": "Unyuko-maxabiso namandla okuthenga",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.1.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 32,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 4",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 4 (iiveki 25–31)",
+   "body": "# Phinda: ukuhlaziya ikota 4\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesine.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Inkqubo emiselwe ngumthetho\n2. Iibhanki zenza imali ngamatyala\n3. Umsebenzi: ibali likaDax nesithuthuthu\n4. Ngubani olawulayo, ngubani oxhamlayo?\n5. Ii-CBDC: ikamva lemali yesiqhelo\n6. Ingxaki: intshayelelo\n7. Unyuko-maxabiso namandla okuthenga\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 33,
+   "kind": "lesson",
+   "title": "Umsebenzi: ifandesi yebhotile yamanzi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 34,
+   "kind": "lesson",
+   "title": "Ukuphela kwamandla okuthenga",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.2.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 35,
+   "kind": "lesson",
+   "title": "Ukunyuka kokungalingani ngobutyebi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.2.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 36,
+   "kind": "lesson",
+   "title": "Umsebenzi: iziphumo zenkqubo yemali",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 37,
+   "kind": "lesson",
+   "title": "Ingxaki yetyala lehlabathi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 38,
+   "kind": "lesson",
+   "title": "Ii-cypherpunks",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.3.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 39,
+   "kind": "lesson",
+   "title": "Ulawulo lwendawo enye nolungelulo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.3.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 40,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 5",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 5 (iiveki 33–39)",
+   "body": "# Phinda: ukuhlaziya ikota 5\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesihlanu.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Umsebenzi: ifandesi yebhotile yamanzi\n2. Ukuphela kwamandla okuthenga\n3. Ukunyuka kokungalingani ngobutyebi\n4. Umsebenzi: iziphumo zenkqubo yemali\n5. Ingxaki yetyala lehlabathi\n6. Ii-cypherpunks\n7. Ulawulo lwendawo enye nolungelulo\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 41,
+   "kind": "lesson",
+   "title": "Imbali emfutshane yemali ka-intanethi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 5.3.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 42,
+   "kind": "lesson",
+   "title": "USatoshi Nakamoto",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 43,
+   "kind": "lesson",
+   "title": "Kutheni ngo-2008? Iphepha elimhlophe",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 44,
+   "kind": "lesson",
+   "title": "Icebo likaNakamoto lokuvumelana",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.1.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 45,
+   "kind": "lesson",
+   "title": "Abantu abaphambili kwi-Bitcoin",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.1.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 46,
+   "kind": "lesson",
+   "title": "Umsebenzi: ukuvumelana kwemali esuka kum iye kuwe",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 47,
+   "kind": "lesson",
+   "title": "I-Bitcoin njengemali enzima ka-intanethi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.2.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 48,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 6",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 6 (iiveki 41–47)",
+   "body": "# Phinda: ukuhlaziya ikota 6\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesithandathu.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Imbali emfutshane yemali ka-intanethi\n2. USatoshi Nakamoto\n3. Kutheni ngo-2008? Iphepha elimhlophe\n4. Icebo likaNakamoto lokuvumelana\n5. Abantu abaphambili kwi-Bitcoin\n6. Umsebenzi: ukuvumelana kwemali esuka kum iye kuwe\n7. I-Bitcoin njengemali enzima ka-intanethi\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 49,
+   "kind": "lesson",
+   "title": "Iimpawu ze-Bitcoin: ukomelela, ukuphatheka, ukwahlulahluleka",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.2.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 50,
+   "kind": "lesson",
+   "title": "Ukufana, ukunqongophala (21 million) nokwamkeleka",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.2.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 51,
+   "kind": "lesson",
+   "title": "Ingxoxo: ingaba i-Bitcoin yimali enzima?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 52,
+   "kind": "lesson",
+   "title": "Ukuthatha uxanduva ngawe",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 6.2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 53,
+   "kind": "lesson",
+   "title": "Ukusebenzisa i-Bitcoin: intshayelelo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 54,
+   "kind": "lesson",
+   "title": "Ukufumana i-Bitcoin emntwini: ngobuqu",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.1.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 55,
+   "kind": "lesson",
+   "title": "Ukufumana i-Bitcoin emntwini: ku-intanethi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.1.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 56,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 7",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 7 (iiveki 49–55)",
+   "body": "# Phinda: ukuhlaziya ikota 7\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesixhenxe.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Iimpawu ze-Bitcoin: ukomelela, ukuphatheka, ukwahlulahluleka\n2. Ukufana, ukunqongophala (21 million) nokwamkeleka\n3. Ingxoxo: ingaba i-Bitcoin yimali enzima?\n4. Ukuthatha uxanduva ngawe\n5. Ukusebenzisa i-Bitcoin: intshayelelo\n6. Ukufumana i-Bitcoin emntwini: ngobuqu\n7. Ukufumana i-Bitcoin emntwini: ku-intanethi\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 57,
+   "kind": "lesson",
+   "title": "Iinkampani zokutshintsha (exchanges)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.1.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 58,
+   "kind": "lesson",
+   "title": "Ii-wallet: ezakho okanye ezigcinwa ngomnye",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.2.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 59,
+   "kind": "lesson",
+   "title": "Iintlobo zee-wallet; evulelekileyo okanye evalelekileyo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.2.2–7.2.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 60,
+   "kind": "lesson",
+   "title": "Ukuvula i-wallet yeselula nebinzana-mfihlo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 61,
+   "kind": "lesson",
+   "title": "Ukuthumela nokufumana iintlawulo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 62,
+   "kind": "lesson",
+   "title": "Ukugcina i-bitcoin ikhuselekile",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.5",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 63,
+   "kind": "lesson",
+   "title": "Ungathembi namnye, qinisekisa kuqala",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 7.6",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 64,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 8",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 8 (iiveki 57–63)",
+   "body": "# Phinda: ukuhlaziya ikota 8\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesibhozo.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Iinkampani zokutshintsha (exchanges)\n2. Ii-wallet: ezakho okanye ezigcinwa ngomnye\n3. Iintlobo zee-wallet; evulelekileyo okanye evalelekileyo\n4. Ukuvula i-wallet yeselula nebinzana-mfihlo\n5. Ukuthumela nokufumana iintlawulo\n6. Ukugcina i-bitcoin ikhuselekile\n7. Ungathembi namnye, qinisekisa kuqala\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 65,
+   "kind": "lesson",
+   "title": "Kutheni i-Lightning?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 66,
+   "kind": "lesson",
+   "title": "I-Lightning isebenza njani: iitshaneli",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 67,
+   "kind": "lesson",
+   "title": "Umzekelo: ityala evenkileni",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 68,
+   "kind": "lesson",
+   "title": "Ii-wallet ze-Lightning: ezakho okanye ezigcinwa ngomnye",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.2.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 69,
+   "kind": "lesson",
+   "title": "Evulelekileyo okanye evalelekileyo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.2.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 70,
+   "kind": "lesson",
+   "title": "Ukuvula i-wallet ye-Lightning",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 71,
+   "kind": "lesson",
+   "title": "Ukufumana iisats: i-invoyisi nedilesi ye-Lightning",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 72,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 9",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 9 (iiveki 65–71)",
+   "body": "# Phinda: ukuhlaziya ikota 9\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yesithoba.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Kutheni i-Lightning?\n2. I-Lightning isebenza njani: iitshaneli\n3. Umzekelo: ityala evenkileni\n4. Ii-wallet ze-Lightning: ezakho okanye ezigcinwa ngomnye\n5. Evulelekileyo okanye evalelekileyo\n6. Ukuvula i-wallet ye-Lightning\n7. Ukufumana iisats: i-invoyisi nedilesi ye-Lightning\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 73,
+   "kind": "lesson",
+   "title": "Ukuthumela iisats; umdyarho we-wallet",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 74,
+   "kind": "lesson",
+   "title": "Ukuthenga ku-intanethi nge-Lightning",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.5.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 75,
+   "kind": "lesson",
+   "title": "Ukufumana umrhwebi okufutshane (BTCMap)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.5.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 76,
+   "kind": "lesson",
+   "title": "Iivawutsha namakhadi ezipho",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.5.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 77,
+   "kind": "lesson",
+   "title": "Iindawo ezisebenzisa i-Bitcoin: El Salvador nekasi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 8.5.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 78,
+   "kind": "lesson",
+   "title": "I-Bitcoin ngaphakathi: intshayelelo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 79,
+   "kind": "lesson",
+   "title": "Ukubhala ngemfihlo (cryptography)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.1.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 80,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 10",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 10 (iiveki 73–79)",
+   "body": "# Phinda: ukuhlaziya ikota 10\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yeshumi.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Ukuthumela iisats; umdyarho we-wallet\n2. Ukuthenga ku-intanethi nge-Lightning\n3. Ukufumana umrhwebi okufutshane (BTCMap)\n4. Iivawutsha namakhadi ezipho\n5. Iindawo ezisebenzisa i-Bitcoin: El Salvador nekasi\n6. I-Bitcoin ngaphakathi: intshayelelo\n7. Ukubhala ngemfihlo (cryptography)\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 81,
+   "kind": "lesson",
+   "title": "Isitshixo sabucala nesikawonke-wonke",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.1.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 82,
+   "kind": "lesson",
+   "title": "Yintoni i-hash?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.1.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 83,
+   "kind": "lesson",
+   "title": "Umsebenzi: yenza i-SHA-256 hash",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.1.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 84,
+   "kind": "lesson",
+   "title": "Imodeli ye-UTXO",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 85,
+   "kind": "lesson",
+   "title": "Itshintshi neentlawulo zenethiwekhi",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 86,
+   "kind": "lesson",
+   "title": "Izitishi zokuqinisekisa (nodes)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.3.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 87,
+   "kind": "lesson",
+   "title": "Abavelisi (miners) ne-proof of work",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.3.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 88,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 11",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 11 (iiveki 81–87)",
+   "body": "# Phinda: ukuhlaziya ikota 11\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yeshumi elinanye.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Isitshixo sabucala nesikawonke-wonke\n2. Yintoni i-hash?\n3. Umsebenzi: yenza i-SHA-256 hash\n4. Imodeli ye-UTXO\n5. Itshintshi neentlawulo zenethiwekhi\n6. Izitishi zokuqinisekisa (nodes)\n7. Abavelisi (miners) ne-proof of work\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 89,
+   "kind": "lesson",
+   "title": "Ukwahlulwa kwesiqingatha (halving)",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.3.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 90,
+   "kind": "lesson",
+   "title": "Yintoni i-mempool?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 91,
+   "kind": "lesson",
+   "title": "Intlawulo ukusuka ekuqaleni ukuya ekupheleni",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.5",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 92,
+   "kind": "lesson",
+   "title": "Iibhloko, i-blockchain nokuqinisekiswa",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 9.5",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 93,
+   "kind": "lesson",
+   "title": "Kutheni i-Bitcoin? Ilixa lokukhonya",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.0",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 94,
+   "kind": "lesson",
+   "title": "Ii-CBDC: zintoni, zilawulwa ngubani?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 95,
+   "kind": "lesson",
+   "title": "Ii-CBDC ne-Bitcoin: umahluko",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.1",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 96,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 12",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 12 (iiveki 89–95)",
+   "body": "# Phinda: ukuhlaziya ikota 12\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yeshumi elinesibini.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Ukwahlulwa kwesiqingatha (halving)\n2. Yintoni i-mempool?\n3. Intlawulo ukusuka ekuqaleni ukuya ekupheleni\n4. Iibhloko, i-blockchain nokuqinisekiswa\n5. Kutheni i-Bitcoin? Ilixa lokukhonya\n6. Ii-CBDC: zintoni, zilawulwa ngubani?\n7. Ii-CBDC ne-Bitcoin: umahluko\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 97,
+   "kind": "lesson",
+   "title": "Imithetho esisiseko ye-Bitcoin",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 98,
+   "kind": "lesson",
+   "title": "Ingxoxo: ilungelo lokulawula imali yakho",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.2",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 99,
+   "kind": "lesson",
+   "title": "Iinzuzo ze-Bitcoin",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.3",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 100,
+   "kind": "lesson",
+   "title": "Ikamva eliqaqambileyo",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 101,
+   "kind": "lesson",
+   "title": "Amagama abalulekileyo, icandelo 1",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko Iglosari",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 102,
+   "kind": "lesson",
+   "title": "Amagama abalulekileyo, icandelo 2",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko Iglosari",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 103,
+   "kind": "lesson",
+   "title": "Ingxoxo yokugqibela: izimvo zakho zitshintshe njani?",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Isahluko 10.4",
+   "body": "",
+   "pictures": [],
+   "questions": []
+  },
+  {
+   "week_no": 104,
+   "kind": "review",
+   "title": "Phinda: ukuhlaziya ikota 13",
+   "source": "Bitcoin Diploma: IMfundo ngeziMali ngeXesha le-Bitcoin (isiXhosa, 2025), My First Bitcoin, CC BY-SA 4.0, Ikota 13 (iiveki 97–103)",
+   "body": "# Phinda: ukuhlaziya ikota 13\n\nWenze kakuhle! Ugqibe izifundo ezisi-7 zekota yeshumi elinesithathu.\n\nKule veki **akukho sifundo sitsha**. Imibuzo yale veki ivela kwizifundo zale kota. Ukuba awuqinisekanga, buyela kwizifundo uzifunde kwakhona phambi kokuba uqale.\n\n---\n\n# Esiyifundileyo kule kota\n\n1. Imithetho esisiseko ye-Bitcoin\n2. Ingxoxo: ilungelo lokulawula imali yakho\n3. Iinzuzo ze-Bitcoin\n4. Ikamva eliqaqambileyo\n5. Amagama abalulekileyo, icandelo 1\n6. Amagama abalulekileyo, icandelo 2\n7. Ingxoxo yokugqibela: izimvo zakho zitshintshe njani?\n\n> Ukuphinda kunceda ukuba ukhumbule. Phendula ezi-3 kwemi-4 ngokuchanekileyo.\n",
+   "pictures": [],
+   "questions": []
+  }
+ ]
+}

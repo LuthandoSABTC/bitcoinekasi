@@ -46,9 +46,11 @@ main{padding:24px clamp(16px,4vw,40px) 96px;max-width:980px;width:100%;min-width
   .shell{grid-template-columns:1fr}
   nav.side{display:none}
   main{padding:16px max(16px,env(safe-area-inset-left)) calc(96px + env(safe-area-inset-bottom))}
-  .tabbar{display:grid;grid-template-columns:repeat(6,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
-  .tabbar .navbtn{flex-direction:column;gap:2px;font-size:11px;padding:6px 0;justify-content:center;align-items:center}
+  .tabbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
+  .tabbar .navbtn{flex-direction:column;gap:2px;font-size:10px;padding:6px 0;justify-content:center;align-items:center;min-width:0}
+  .tabbar .navbtn span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
   .tabbar .navbtn .badge{display:none}
+  .wbar{display:none!important}
 }
 
 /* Page parts */
@@ -117,12 +119,23 @@ table.t td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
 table.t td.r,table.t th.r{text-align:right}
 .scroll{overflow-x:auto}
 
+/* Lesson preview (same look as the owner app) */
+.lesson-pv h2{font-size:20px;margin:0 0 10px;line-height:1.25}
+.lesson-pv h3{font-size:17px;margin:14px 0 6px}
+.lesson-pv p{margin:0 0 12px}
+.lesson-pv ul{margin:0 0 12px;padding-left:20px}
+.lesson-pv .remember{background:#fdebd3;border-left:5px solid var(--orange);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-weight:600}
+.lesson-pv figure{margin:0 0 12px}
+.lesson-pv img{width:100%;height:auto;border-radius:10px;display:block}
+
 /* Sign in */
 .login{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
 .login .card{width:100%;max-width:380px}
 .login img{width:64px;height:64px;border-radius:50%;background:#000;justify-self:center}
 .login h1{text-align:center}
 .demo-banner{background:var(--orange-soft);color:var(--orange);font:600 12px var(--mono);letter-spacing:.04em;text-align:center;padding:6px 12px}
+@media print{body.print-pins nav.side,body.print-pins .tabbar,body.print-pins #main>*:not(#pinlist),body.print-pins #pinlist .btn,body.print-pins .toast{display:none!important}
+  body.print-pins,body.print-pins .card{background:#fff!important;color:#000!important;border-color:#999!important}body.print-pins main{padding:0!important;margin:0!important}}
 </style>
 </head>
 <body>
@@ -385,6 +398,7 @@ pages.shack = id => {
         <label class="fld">Owner<select name="owner_id"><option value="">No owner linked</option>${owners.map(x => `<option value="${x.id}" ${s.owner_id === x.id ? "selected" : ""}>${esc(ownerLabel(x))}${x.lightning_address ? " · " + esc(x.lightning_address) : ""}</option>`).join("")}</select>
           <span class="hint">Owner not in the list? <a href="#/owner/new?shack=${esc(s.id || "")}">Add a new owner</a> first.</span></label>
         <label class="fld">First painted<input type="date" name="first_painted_on" value="${esc(s.first_painted_on)}"></label>
+        <label class="fld">Shack name<input type="text" name="name" maxlength="60" value="${esc(s.name)}" placeholder="e.g. Mama Thandi's Spaza"><span class="hint">Owners pick this name to sign in to the learning app. Leave empty to show "Shack ${esc(s.shack_no || "number")} · sponsor".</span></label>
         <label class="fld">Area or street<input type="text" name="area" value="${esc(s.area)}" placeholder="e.g. KwaNonqaba, Section B"></label>
         <label class="check fld wide"><input type="checkbox" name="needs_maintenance" ${s.needs_maintenance ? "checked" : ""}> Needs maintenance</label>
         <label class="fld wide">Photo link<input type="url" name="photo_url" value="${esc(s.photo_url)}" placeholder="https://drive.google.com/..."><span class="hint">Paste a Google Drive or other link to the wall photo.</span></label>
@@ -402,7 +416,7 @@ pages.shack = id => {
   bindInspectionHistory();
   bindForm("ps_shacks", s, f => ({
     shack_no: Number(f.shack_no), status: f.status, sponsor_id: f.sponsor_id, owner_id: f.owner_id, first_painted_on: f.first_painted_on,
-    area: f.area, needs_maintenance: !!f.needs_maintenance, photo_url: f.photo_url, x_post_url: f.x_post_url,
+    area: f.area, name: f.name, needs_maintenance: !!f.needs_maintenance, photo_url: f.photo_url, x_post_url: f.x_post_url,
     latitude: f.latitude === "" ? null : Number(f.latitude), longitude: f.longitude === "" ? null : Number(f.longitude), notes: f.notes
   }), r => "#/shack/" + r.id, "#/shacks", `Delete shack ${s.shack_no}? This cannot be undone.`);
 };
@@ -800,5 +814,7 @@ document.addEventListener("DOMContentLoaded", async function boot() {
 });
 </script>
 <script src="payments.js"></script>
+<script src="/learn/lesson-render.js"></script>
+<script src="learning.js"></script>
 </body>
 </html>
