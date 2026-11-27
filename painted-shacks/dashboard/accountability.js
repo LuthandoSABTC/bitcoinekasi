@@ -21,21 +21,15 @@
     walls: [{ group: "support", label: "Payment pending", count: 2, desc: "Said yes for 2026, invoice sent." },
             { group: "not", label: "Under review", count: 1, desc: "Being talked through with the logo's owner." }],
     classes: { count: 11, avg: 33, months: [29, 31, 30, 33, 32, 34, 31, 35, 36, 34, 37] },
-    sum: [["Received in 2026", "6,100,000"], ["Paid out in 2026", "−3,985,000"]], held: "2,115,000",
-    spend: [["Families", 68, "2.7M", "Monthly payouts in sats to every family in the program."],
-            ["Paint and upkeep", 17, "685k", "Paint, brushes and labour for new and repainted walls."],
-            ["Running the program", 8, "330k", "The monthly class: venue and snacks."],
+    sum: [["Received in 2026", "6,100,000"], ["Paid out in 2026", "−3,655,000"]], held: "2,445,000",
+    spend: [["Families", 74, "2.7M", "Monthly payouts in sats to every family in the program."],
+            ["Paint and upkeep", 19, "685k", "Paint, brushes and labour for new and repainted walls."],
             ["Partnerships", 7, "270k", "Finding partners and making their posts."]],
     // Ledger lines of kinds the apps don't record (costs, donations, carry-over). Monthly payouts are used only if the app has none yet.
-    costs: [["2026-11-14", "Monthly class: venue and snacks", 0, 30000], ["2026-10-14", "Monthly class: venue and snacks", 0, 30000],
-            ["2026-09-30", "Repaint for a new partner wall", 0, 85000], ["2026-09-15", "Outreach and partner posts", 0, 150000],
-            ["2026-09-14", "Monthly class: venue and snacks", 0, 30000], ["2026-08-14", "Monthly class: venue and snacks", 0, 30000],
-            ["2026-08-12", "Annual repaint: paint, brushes, labour", 0, 460000], ["2026-07-14", "Monthly class: venue and snacks", 0, 30000],
-            ["2026-06-14", "Monthly class: venue and snacks", 0, 30000], ["2026-05-19", "Donation", 250000, 0],
-            ["2026-05-14", "Monthly class: venue and snacks", 0, 30000], ["2026-04-30", "Outreach and partner posts", 0, 120000],
-            ["2026-04-14", "Monthly class: venue and snacks", 0, 30000], ["2026-03-14", "Monthly class: venue and snacks", 0, 30000],
-            ["2026-02-20", "Touch-up paint", 0, 140000], ["2026-02-14", "Monthly class: venue and snacks", 0, 30000],
-            ["2026-01-14", "Monthly class: venue and snacks", 0, 30000]],
+    costs: [["2026-09-30", "Repaint for a new partner wall", 0, 85000], ["2026-09-15", "Outreach and partner posts", 0, 150000],
+            ["2026-08-12", "Annual repaint: paint, brushes, labour", 0, 460000], ["2026-05-19", "Donation", 250000, 0],
+            ["2026-04-30", "Outreach and partner posts", 0, 120000],
+            ["2026-02-20", "Touch-up paint", 0, 140000]],
     payouts: ["2026-10-28", "2026-09-28", "2026-08-28", "2026-07-28", "2026-06-28", "2026-05-28", "2026-04-28", "2026-03-28", "2026-02-28", "2026-01-28"]
       .map(d => [d, "Monthly payout to families", 0, 270000]),
     // Paid sponsors whose admin record may still say in-kind (Casa confirmed paid by Luthando, 26 Nov 2026).
@@ -132,7 +126,6 @@
       (M.received_zar ? " (R" + M.received_zar.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ")" : "") +
       " and <b>" + n(M.paid_to_families_sats) + " sats</b> paid to families through the app.";
     const CAT = { paint: ["Paint and upkeep", "Paint, brushes and labour for new and repainted walls."],
-                  running: ["Running the program", "The monthly class: venue and snacks."],
                   partnerships: ["Partnerships", "Finding partners and making their posts."], other: ["Other costs", ""] };
     let spend = D.spend;
     if (realMoney) {
