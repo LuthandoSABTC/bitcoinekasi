@@ -38,6 +38,8 @@
             ["2026-01-14", "Monthly class: venue and snacks", 0, 30000], ["2026-01-01", "Carried over from 2025", 1200000, 0]],
     payouts: ["2026-10-28", "2026-09-28", "2026-08-28", "2026-07-28", "2026-06-28", "2026-05-28", "2026-04-28", "2026-03-28", "2026-02-28", "2026-01-28"]
       .map(d => [d, "Monthly payout to families", 0, 270000]),
+    // Paid sponsors whose admin record may still say in-kind (Casa confirmed paid by Luthando, 26 Nov 2026).
+    paidNames: [/^casa$/i],
     // Partner posts and reach from the draft, by partner name.
     posts: [{ match: /aqua/i, video: "15 Jul 2026", x: "https://x.com/BitcoinEkasi/status/2077407843066536261", impressions: "11,820", views: "2,745" },
             { match: /^casa$/i, video: "18 Nov 2026", x: "https://x.com/BitcoinEkasi/status/2123060784230002917",
@@ -56,11 +58,13 @@
   function render(d) {
     const a = d.accountability, y = a.year, pr = d.programme, M = a.money, L = a.learning;
     const walls = a.walls.reduce((s, w) => s + w.count, 0);
-    const partners = a.partners.length, paidPartners = a.partners.filter(p => p.type === "paid").length;
+    // Only paid sponsors are listed as partners. In-kind supporters still count in the walls section.
+    const paidList = a.partners.filter(p => p.type === "paid" || D.paidNames.some(r => r.test(p.name)));
+    const partners = paidList.length;
     const place = d.place || "JCC Camp, Mossel Bay";
     $("kicker").textContent = "Bitcoin Ekasi · " + place;
     $("lead").textContent = plural(walls, "logo wall") + " are painted on family homes in " + place.split(",")[0] + ". " +
-      plural(partners, "partner") + " back the programme in " + y + (paidPartners ? ", " + paidPartners + " of them in sats." : ".");
+      plural(partners, "paid partner") + " back the programme in " + y + ".";
 
     // Top numbers
     $("s-walls").textContent = n(walls);
@@ -116,11 +120,11 @@
       '</td><td class="r in">' + (r.in ? n(r.in) : "") + '</td><td class="r">' + (r.out ? n(r.out) : "") + '</td><td class="proof">Link when live</td></tr>').join("");
 
     // Partners: real partners and walls; video posts and reach from the draft
-    $("p-list").innerHTML = a.partners.map(p => {
+    $("p-list").innerHTML = paidList.map(p => {
       const site = safeUrl(p.website), extra = D.posts.find(x => x.match.test(p.name));
       const posts = (p.posts || []).map(safeUrl).filter(Boolean);
       let h = '<div class="card"><h3>' + (site ? '<a href="' + esc(site) + '" target="_blank" rel="noopener">' + esc(p.name) + " ↗</a>" : esc(p.name)) + "</h3>" +
-        "<p>" + (p.type === "paid" ? "Paid partner" : "In-kind partner") + "</p>" +
+        "<p>Paid partner</p>" +
         "<p>" + plural(p.walls, "wall") + ": shack " + p.shacks.map(x => "#" + x).join(", ") + "</p>" +
         (p.last_paid_on ? "<p>Paid " + esc(day(p.last_paid_on)) + (p.renews_on ? " · renews " + esc(day(p.renews_on)) : "") + "</p>" : "");
       const links = [];
@@ -134,7 +138,7 @@
       if (extra && extra.impressions) h += '<div class="reach"><div><b>' + extra.impressions + "</b><span>impressions on X</span></div><div><b>" + extra.views + "</b><span>video views</span></div></div>";
       if (extra && extra.note) h += "<p>" + esc(extra.note) + "</p>";
       return h + "</div>";
-    }).join("") || '<p class="empty">Partners show here once their payment or support is recorded.</p>';
+    }).join("") || '<p class="empty">Partners show here once their payment is recorded.</p>';
 
     $("updated").textContent = "Numbers updated " + new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Johannesburg", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(d.generated_at)) + " (South Africa time).";
     $("app").setAttribute("aria-busy", "false");
