@@ -892,7 +892,7 @@ pages.sections = async () => {
 
 /* ============================================================ public report (/dashboard)
    Everything the public report used to take from the 25 Nov draft. A field left empty keeps the draft's text on the page. */
-const CATS = {paint: "Paint and upkeep", partnerships: "Partnerships (outreach, posts)", donation: "Donation", other: "Other"};
+const CATS = {paint: "Paint and upkeep", donation: "Donation", other: "Other"};
 let reportCfg = null;
 pages.report = async () => {
   if (!reportCfg && !DEMO) { try { reportCfg = await call("GET", "/api/report-settings"); } catch (err) { toast(friendlyError(err), true); } }
@@ -920,7 +920,7 @@ pages.report = async () => {
       ${R.updated_by ? `<p class="hint" style="margin:0">Last changed by ${esc(R.updated_by)}${R.updated_at ? " on " + fmtDate(R.updated_at.slice(0, 10)) : ""}.</p>` : ""}
     </form>
     <div class="card"><div class="head" style="margin:0"><h2>Costs and other money in</h2><a class="btn small" href="#/entry/new">Add line</a></div>
-      <p class="muted" style="margin:0">${year} only. Paint, outreach, donations. The first line turns on the real money section of the report. Sponsor payments (Funding) and payouts to families are added to the report by the app, so don't type them here.</p>
+      <p class="muted" style="margin:0">${year} only. Paint and donations. The first line turns on the real money section of the report. Sponsor payments (Funding) and payouts to families are added to the report by the app, so don't type them here.</p>
       <div class="scroll"><table class="t"><thead><tr><th>Date</th><th>What for</th><th>Kind</th><th class="r">In</th><th class="r">Out</th><th>Proof</th></tr></thead><tbody>
         ${E.map(e => `<tr><td><a href="#/entry/${e.id}">${fmtDate(e.entry_date)}</a></td><td>${esc(e.what)}</td><td>${esc(CATS[e.category] || "Other")}</td>
           <td class="r num">${e.direction === "in" ? fmtSats(e.amount_sats) : ""}</td><td class="r num">${e.direction === "out" ? fmtSats(e.amount_sats) : ""}</td>

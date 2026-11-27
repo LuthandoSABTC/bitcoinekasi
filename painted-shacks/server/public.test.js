@@ -147,7 +147,7 @@ test("public report: admins type costs, agreements, wall statuses and video post
   assert.equal(R.agreements_signed, null, "nothing typed yet: the page keeps the draft");
   assert.equal(R.carried_over_sats, null);
   assert.equal(R.has_entries, false);
-  assert.equal(R.questions.length, 7, "the draft's questions to start with");
+  assert.equal(R.questions.length, 6, "the draft's questions to start with");
   assert.equal(R.show_draft_note, true);
 
   assert.equal((await call("PUT", "/api/report-settings", { agreements_signed: -1 })).status, 400);

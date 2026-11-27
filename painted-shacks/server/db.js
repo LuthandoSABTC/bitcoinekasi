@@ -399,7 +399,6 @@ function open(file) {
     db.prepare("insert into report_settings(id, questions) values (1, ?)").run([
       "The status names, especially how thank-you walls are described.",
       "Whether amounts show for each partner or only as totals.",
-      "Whether partnership costs get their own line.",
       "Payouts to families: the total paid and the number of households together reveal the amount per family. Show both, or only one?",
       "How each family's photo consent is recorded.",
       "Who updates the information, and how often.",
