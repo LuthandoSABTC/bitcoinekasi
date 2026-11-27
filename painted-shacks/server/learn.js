@@ -7,6 +7,8 @@
 //  * A week counts (7,000 sats) when the owner has read the lesson AND passed its quiz in the app.
 //    The server picks the quiz questions and marks the answers, so the phone never gets the answers first.
 //  * One new lesson a week: the next lesson opens on the Monday after the last one was finished.
+//  * 104 weeks in 13 terms of 8. A review week (kind 'review') has no new reading of its own: its quiz
+//    picks from the questions of that term's earlier lessons.
 //  * A finished week belongs to a monthly payout (pay_period). Finishing on or after the day the
 //    monthly payout is drafted counts for the next month, so nothing falls between two batches.
 "use strict";
@@ -19,6 +21,10 @@ const OWNER_COOKIE_DAYS = 120;
 const MAX_PIC_BYTES = 1.5e6;
 const ATTEMPT_MINUTES = 120;
 const MAX_ATTEMPTS_PER_DAY = 8;
+const MAX_WEEKS = 104;          // two years
+const TERM_WEEKS = 8;           // a term: 7 lessons, then a review week
+const termOf = week => Math.floor((week - 1) / TERM_WEEKS) + 1;
+const termStart = week => (termOf(week) - 1) * TERM_WEEKS + 1;
 
 const now = () => new Date().toISOString();
 const saNow = () => new Date(Date.now() + 2 * 3600e3);              // South Africa time (no daylight saving)
@@ -84,7 +90,7 @@ function init(ctx) {
   /* ---------------------------------------------------------------- lesson state for one owner */
   function ownerState(ownerId) {
     const s = settings();
-    const lessons = db.prepare("select id, week_no, title, status from lessons where week_no <= ? order by week_no").all(s.total_weeks);
+    const lessons = db.prepare("select id, week_no, kind, title, status from lessons where week_no <= ? order by week_no").all(s.total_weeks);
     const byWeek = new Map(lessons.map(l => [l.week_no, l]));
     const done = new Map(db.prepare("select * from lesson_completions where owner_id = ? and passed = 1").all(ownerId).map(c => [c.week_no, c]));
     const reads = new Map(db.prepare("select * from lesson_reads where owner_id = ?").all(ownerId).map(r => [r.week_no, r]));
@@ -105,7 +111,8 @@ function init(ctx) {
           else state = "ready";
         }
       }
-      weeks.push({ week_no: w, title: l && (l.status === "published" || c) ? l.title : null, state, opens_on,
+      weeks.push({ week_no: w, term: termOf(w), kind: l?.kind || (w % TERM_WEEKS === 0 ? "review" : "lesson"),
+                   title: l && (l.status === "published" || c) ? l.title : null, state, opens_on,
                    read_done: !!r?.read_done_at, completed_on: c?.completed_on || null, score: c?.score ?? null, total: c?.total ?? null });
     }
     return { weeks, next_week: nextWeek, done_count: done.size };
@@ -121,6 +128,14 @@ function init(ctx) {
     return { lesson: l, week: w };
   }
 
+  // The questions a lesson's quiz picks from. A review week uses the questions of the lessons before it in the same term.
+  function quizPool(l, liveOnly) {
+    const own = db.prepare("select * from quiz_questions where lesson_id = ? order by sort, created_at").all(l.id);
+    if (l.kind !== "review") return own;
+    return [...own, ...db.prepare(`select q.* from quiz_questions q join lessons x on x.id = q.lesson_id
+        where x.kind = 'lesson' and x.week_no between ? and ? ${liveOnly ? "and x.status = 'published'" : ""} order by x.week_no, q.sort, q.created_at`)
+      .all(termStart(l.week_no), l.week_no - 1)];
+  }
   const picIds = lessonId => db.prepare("select id from lesson_pictures where lesson_id = ? order by created_at").all(lessonId).map(r => r.id);
 
   /* ---------------------------------------------------------------- quiz */
@@ -137,7 +152,7 @@ function init(ctx) {
     if (db.prepare("select count(*) n from quiz_attempts where owner_id = ? and week_no = ? and started_at > ?").get(owner.id, week, since).n >= MAX_ATTEMPTS_PER_DAY)
       throw new Bad("You have tried many times today. Read the lesson again and try tomorrow.", 429);
     const s = settings();
-    const all = db.prepare("select * from quiz_questions where lesson_id = ? order by sort, created_at").all(lesson.id);
+    const all = quizPool(lesson, true);
     if (!all.length) throw new Bad("This quiz has no questions yet.", 409);
     shuffled(all, true);
     const pick = all.slice(0, Math.min(s.questions_shown, all.length));
@@ -166,18 +181,18 @@ function init(ctx) {
       const weeks = s.demo_weeks ? db.prepare("select week_no, title from lessons where week_no <= ? and length(trim(body)) >= 40 order by week_no").all(s.demo_weeks) : [];
       return send(res, 200, { weeks });
     }
-    let m = p.match(/^\/api\/learn\/demo\/lessons\/(\d{1,2})$/);
+    let m = p.match(/^\/api\/learn\/demo\/lessons\/(\d{1,3})$/);
     if (m && method === "GET") {
-      const l = demoLesson(Number(m[1])), qn = db.prepare("select count(*) n from quiz_questions where lesson_id = ?").get(l.id).n;
+      const l = demoLesson(Number(m[1])), qn = quizPool(l, false).length;
       return send(res, 200, { week_no: l.week_no, title: l.title, body: l.body, pictures: picIds(l.id), state: "ready", read_done: true, demo: true,
         questions: Math.min(s.questions_shown, qn), pass_correct: Math.min(s.pass_correct, qn) });
     }
-    m = p.match(/^\/api\/learn\/demo\/lessons\/(\d{1,2})\/quiz$/);
+    m = p.match(/^\/api\/learn\/demo\/lessons\/(\d{1,3})\/quiz$/);
     if (m && method === "POST") {
       const l = demoLesson(Number(m[1])), ip = clientIp(req), t = Date.now();
       const tries = (demoIp.get(ip) || []).filter(x => t - x < 3600e3); tries.push(t); demoIp.set(ip, tries);
       if (tries.length > 60) throw new Bad("Too many tries. Wait a while. / Zama emva kwexesha.", 429);
-      const all = shuffled(db.prepare("select * from quiz_questions where lesson_id = ?").all(l.id));
+      const all = shuffled(quizPool(l, false));
       if (!all.length) throw new Bad("This quiz has no questions yet.", 409);
       const pick = all.slice(0, Math.min(s.questions_shown, all.length));
       const orders = pick.map(q => shuffled(JSON.parse(q.choices).map((_, i) => i)));
@@ -321,7 +336,7 @@ function init(ctx) {
       audit(null, "owner_logins", owner.id, "PIN_CHANGED_BY_OWNER", null, null);
       return send(res, 200, { ok: true });
     }
-    let m = p.match(/^\/api\/learn\/lessons\/(\d{1,2})$/);
+    let m = p.match(/^\/api\/learn\/lessons\/(\d{1,3})$/);
     if (m && method === "GET") {
       const week = Number(m[1]);
       const { lesson, week: w } = lessonFor(owner.id, week, "open");
@@ -329,18 +344,18 @@ function init(ctx) {
       db.prepare(`insert into lesson_reads(owner_id, week_no, lesson_id, first_opened_at, last_opened_at) values (?,?,?,?,?)
                   on conflict(owner_id, week_no) do update set last_opened_at = excluded.last_opened_at, lesson_id = excluded.lesson_id`)
         .run(owner.id, week, lesson.id, t, t);
-      const qn = db.prepare("select count(*) n from quiz_questions where lesson_id = ?").get(lesson.id).n;
-      return send(res, 200, { week_no: week, title: lesson.title, body: lesson.body, pictures: picIds(lesson.id), state: w.state,
+      const qn = quizPool(lesson, true).length;
+      return send(res, 200, { week_no: week, kind: lesson.kind, term: termOf(week), title: lesson.title, body: lesson.body, pictures: picIds(lesson.id), state: w.state,
         read_done: w.read_done, questions: Math.min(settings().questions_shown, qn), pass_correct: Math.min(settings().pass_correct, qn) });
     }
-    m = p.match(/^\/api\/learn\/lessons\/(\d{1,2})\/read$/);
+    m = p.match(/^\/api\/learn\/lessons\/(\d{1,3})\/read$/);
     if (m && method === "POST") {
       const week = Number(m[1]);
       lessonFor(owner.id, week, "open");
       db.prepare("update lesson_reads set read_done_at = coalesce(read_done_at, ?), last_opened_at = ? where owner_id = ? and week_no = ?").run(now(), now(), owner.id, week);
       return send(res, 200, { ok: true });
     }
-    m = p.match(/^\/api\/learn\/lessons\/(\d{1,2})\/quiz$/);
+    m = p.match(/^\/api\/learn\/lessons\/(\d{1,3})\/quiz$/);
     if (m && method === "POST") return send(res, 200, startQuiz(owner, Number(m[1])));
     m = p.match(/^\/api\/learn\/quiz\/([\w-]{8,64})$/);
     if (m && method === "POST") { const b = await readJson(req); return send(res, 200, submitQuiz(owner, m[1], b.answers)); }
@@ -425,7 +440,7 @@ function init(ctx) {
       this_period: myPeriod(o.id), periods,
       weeks: st.weeks.map(w => {
         const r = reads.get(w.week_no), c = comps.get(w.week_no), a = attempts.get(w.week_no), l = lessons.get(w.week_no);
-        return { week_no: w.week_no, title: l?.title || null, lesson_status: l?.status || null, state: w.state, opens_on: w.opens_on,
+        return { week_no: w.week_no, kind: w.kind, term: w.term, title: l?.title || null, lesson_status: l?.status || null, state: w.state, opens_on: w.opens_on,
                  opened_at: r?.first_opened_at || null, read_done_at: r?.read_done_at || null, attempts: a?.n || 0, best_score: a?.best ?? null,
                  completed_on: c?.completed_on || null, score: c?.score ?? null, total: c?.total ?? null, pay_period: c?.pay_period || null };
       }),
@@ -485,22 +500,29 @@ function init(ctx) {
     if (!Array.isArray(list)) throw new Bad("This is not a lessons file.");
     const n = { added: 0, replaced: 0, skipped: 0, pictures: 0, missing_pictures: 0 };
     tx(() => {
+      // A picture can belong to one lesson only. When the course is re-split, a picture moves to another week,
+      // so first let go of the pictures of every draft this import will replace.
+      if (replaceDrafts) for (const l of list) {
+        const cur = db.prepare("select id, status from lessons where week_no = ?").get(Number(l.week_no));
+        if (cur && cur.status !== "published" && !lessonFull(cur.id).usage.opened) db.prepare("delete from lesson_pictures where lesson_id = ?").run(cur.id);
+      }
       for (const l of list) {
         const week = Number(l.week_no);
-        if (!Number.isInteger(week) || week < 1 || week > 60 || !String(l.title || "").trim()) throw new Bad("A lesson in the file has no week or title.");
+        if (!Number.isInteger(week) || week < 1 || week > MAX_WEEKS || !String(l.title || "").trim()) throw new Bad("A lesson in the file has no week or title.");
         const qs = cleanQuestions(l.questions || []);
+        const kind = l.kind === "review" ? "review" : "lesson";
         const title = String(l.title).trim().slice(0, 200), body = String(l.body || "").slice(0, 100000), source = l.source ? String(l.source).slice(0, 300) : null;
         const cur = db.prepare("select id, status from lessons where week_no = ?").get(week);
         let id;
         if (cur) {
           if (!replaceDrafts || cur.status === "published" || lessonFull(cur.id).usage.opened) { n.skipped++; continue; }
           id = cur.id;
-          db.prepare("update lessons set title = ?, body = ?, source = ?, updated_by_name = ?, updated_at = ? where id = ?").run(title, body, source, user.full_name, now(), id);
+          db.prepare("update lessons set kind = ?, title = ?, body = ?, source = ?, updated_by_name = ?, updated_at = ? where id = ?").run(kind, title, body, source, user.full_name, now(), id);
           db.prepare("delete from lesson_pictures where lesson_id = ?").run(id);
           n.replaced++;
         } else {
           id = crypto.randomUUID();
-          db.prepare("insert into lessons(id, week_no, title, body, source, updated_by_name) values (?,?,?,?,?,?)").run(id, week, title, body, source, user.full_name);
+          db.prepare("insert into lessons(id, week_no, kind, title, body, source, updated_by_name) values (?,?,?,?,?,?,?)").run(id, week, kind, title, body, source, user.full_name);
           n.added++;
         }
         saveQuestions(id, qs.map(q => ({ ...q, id: null })));
@@ -524,13 +546,17 @@ function init(ctx) {
     if (!l) throw new Bad("Not found", 404);
     const questions = db.prepare("select id, question, choices, answer from quiz_questions where lesson_id = ? order by sort, created_at").all(id).map(q => ({ ...q, choices: JSON.parse(q.choices) }));
     const usage = db.prepare("select (select count(*) from lesson_completions where week_no = ?1) done, (select count(distinct owner_id) from lesson_reads where week_no = ?1) opened").get(l.week_no);
-    return { ...l, questions, pictures: picIds(id), usage };
+    const review = l.kind === "review" ? { from: termStart(l.week_no), to: l.week_no - 1, questions: quizPool(l, false).length, live_questions: quizPool(l, true).length } : null;
+    return { ...l, term: termOf(l.week_no), questions, pictures: picIds(id), usage, review };
   }
   function publishProblems(l) {
     const s = settings(), out = [];
     if (!l.title.trim()) out.push("The lesson has no title.");
     if (l.body.trim().length < 40) out.push("The lesson text is empty or very short.");
-    if (l.questions.length < s.questions_shown) out.push(`The quiz needs at least ${s.questions_shown} questions (it shows ${s.questions_shown} at random). It has ${l.questions.length}.`);
+    if (l.kind === "review") {
+      if (l.review.live_questions < s.questions_shown)
+        out.push(`A review week's quiz uses the questions of the live lessons in weeks ${l.review.from}–${l.review.to}. Publish those lessons first (it needs at least ${s.questions_shown} questions, there are ${l.review.live_questions}).`);
+    } else if (l.questions.length < s.questions_shown) out.push(`The quiz needs at least ${s.questions_shown} questions (it shows ${s.questions_shown} at random). It has ${l.questions.length}.`);
     for (const m of l.body.matchAll(/\[\[picture:([\w-]+)\]\]/g)) if (!l.pictures.includes(m[1])) out.push("The text points to a picture that was deleted.");
     return out;
   }
@@ -584,6 +610,7 @@ function init(ctx) {
       }
       const next = { ...before, ...upd };
       if (next.demo_weeks > 5) throw new Bad("Practice can show at most 5 weeks.");
+      if (next.total_weeks < 1 || next.total_weeks > MAX_WEEKS) throw new Bad(`The course can have 1 to ${MAX_WEEKS} weeks.`);
       if (next.pass_correct > next.questions_shown) throw new Bad("The pass mark can't be more than the number of questions shown.");
       if (Object.keys(upd).length)
         db.prepare(`update learn_settings set ${Object.keys(upd).map(k => k + " = ?").join(", ")}, updated_at = ? where id = 1`).run(...Object.values(upd), now());
@@ -592,7 +619,7 @@ function init(ctx) {
     }
 
     if (p === "/api/lessons" && method === "GET") {
-      return send(res, 200, { settings: settings(), lessons: db.prepare(`select l.id, l.week_no, l.title, l.status, l.source, l.updated_at, l.published_at, l.published_by_name,
+      return send(res, 200, { settings: settings(), term_weeks: TERM_WEEKS, lessons: db.prepare(`select l.id, l.week_no, l.kind, l.title, l.status, l.source, l.updated_at, l.published_at, l.published_by_name,
           (select count(*) from quiz_questions where lesson_id = l.id) questions, (select count(*) from lesson_pictures where lesson_id = l.id) pictures,
           length(l.body) chars, (select count(*) from lesson_completions where week_no = l.week_no) done
         from lessons l order by l.week_no`).all() });
@@ -600,12 +627,13 @@ function init(ctx) {
     if (p === "/api/lessons" && method === "POST") {
       const b = await readJson(req);
       const week = Number(b.week_no), title = String(b.title || "").trim();
-      if (!Number.isInteger(week) || week < 1 || week > 60) throw new Bad("Week must be 1 to 60.");
+      if (!Number.isInteger(week) || week < 1 || week > MAX_WEEKS) throw new Bad(`Week must be 1 to ${MAX_WEEKS}.`);
       if (!title) throw new Bad("Give the lesson a title.");
       if (db.prepare("select 1 from lessons where week_no = ?").get(week)) throw new Bad(`Week ${week} already has a lesson.`, 409);
       const id = crypto.randomUUID();
-      db.prepare("insert into lessons(id, week_no, title, updated_by_name) values (?,?,?,?)").run(id, week, title.slice(0, 200), user.full_name);
-      audit(user, "lessons", id, "INSERT", null, { week_no: week, title });
+      const kind = b.kind === "review" ? "review" : "lesson";
+      db.prepare("insert into lessons(id, week_no, kind, title, updated_by_name) values (?,?,?,?,?)").run(id, week, kind, title.slice(0, 200), user.full_name);
+      audit(user, "lessons", id, "INSERT", null, { week_no: week, kind, title });
       return send(res, 201, lessonFull(id));
     }
     if (p === "/api/lessons/import" && method === "POST") {
@@ -633,9 +661,10 @@ function init(ctx) {
         const before = lessonFull(m[1]), upd = {};
         if (b.title !== undefined) { upd.title = String(b.title || "").trim().slice(0, 200); if (!upd.title) throw new Bad("Give the lesson a title."); }
         if (b.body !== undefined) upd.body = String(b.body || "").slice(0, 100000);
+        if (b.kind !== undefined) upd.kind = b.kind === "review" ? "review" : "lesson";
         if (b.week_no !== undefined && Number(b.week_no) !== before.week_no) {
           const w = Number(b.week_no);
-          if (!Number.isInteger(w) || w < 1 || w > 60) throw new Bad("Week must be 1 to 60.");
+          if (!Number.isInteger(w) || w < 1 || w > MAX_WEEKS) throw new Bad(`Week must be 1 to ${MAX_WEEKS}.`);
           if (before.usage.done || before.usage.opened) throw new Bad("Owners have already opened this lesson, so its week can't change.");
           if (db.prepare("select 1 from lessons where week_no = ?").get(w)) throw new Bad(`Week ${w} already has a lesson.`, 409);
           upd.week_no = w;

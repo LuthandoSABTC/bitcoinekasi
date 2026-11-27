@@ -224,16 +224,20 @@ create table if not exists learn_settings (
   questions_shown  integer not null default 4 check (questions_shown between 1 and 20),
   pass_correct     integer not null default 3 check (pass_correct between 1 and 20),
   one_per_week     integer not null default 1,
-  total_weeks      integer not null default 20 check (total_weeks between 1 and 60),
+  total_weeks      integer not null default 104 check (total_weeks between 1 and 104),
   start_date       text default '2026-12-01',  -- week 1 opens on this day (SA time); empty = open now
+  demo_weeks       integer not null default 2, -- practice mode on the sign-in page: first N weeks, no sats; 0 = off
   updated_at       text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 insert or ignore into learn_settings(id) values (1);
 
--- One lesson per week of the course. Owners only see published lessons; an admin publishes after checking.
+-- One lesson per week of the course (104 weeks = 13 terms of 8: 7 lessons, then a review week).
+-- Owners only see published lessons; an admin publishes after checking.
+-- kind 'review': no new reading; its quiz uses the questions of the lessons earlier in the same term.
 create table if not exists lessons (
   id                 text primary key,
-  week_no            integer not null unique check (week_no between 1 and 60),
+  week_no            integer not null unique check (week_no between 1 and 104),
+  kind               text not null default 'lesson' check (kind in ('lesson','review')),
   title              text not null,
   body               text not null default '',
   status             text not null default 'draft' check (status in ('draft','published')),
@@ -475,6 +479,26 @@ function open(file) {
       token_hash  text primary key,
       login_id    text not null references partner_logins(id) on delete cascade,
       expires_at  integer not null)`);
+  }
+  // 2026-11-27: the course grows from 20 to 104 weeks (two years) with review weeks. SQLite can't change a check, so rebuild.
+  const sqlOf = t => db.prepare("select sql from sqlite_master where type = 'table' and name = ?").get(t).sql;
+  if (/between 1 and 60/.test(sqlOf("lessons")) || /between 1 and 60/.test(sqlOf("learn_settings"))) {
+    const newSql = t => SCHEMA.match(new RegExp(`create table if not exists ${t} \\(([\\s\\S]*?)\\n\\);`))[1];
+    db.exec("pragma foreign_keys = off");
+    try {
+      db.exec("begin");
+      for (const t of ["lessons", "learn_settings"]) {
+        const cols = db.prepare(`select name from pragma_table_info('${t}')`).all().map(c => c.name).join(", ");
+        db.exec(`create table ${t}_new (${newSql(t)}\n)`);
+        db.exec(`insert into ${t}_new (${cols}) select ${cols} from ${t}`);
+        db.exec(`drop table ${t}`);
+        db.exec(`alter table ${t}_new rename to ${t}`);
+      }
+      db.exec("update learn_settings set total_weeks = 104 where total_weeks = 20");
+      const bad = db.prepare("pragma foreign_key_check").all();
+      if (bad.length) throw new Error("foreign key check failed: " + JSON.stringify(bad.slice(0, 3)));
+      db.exec("commit");
+    } catch (e) { db.exec("rollback"); throw e; } finally { db.exec("pragma foreign_keys = on"); }
   }
   return db;
 }

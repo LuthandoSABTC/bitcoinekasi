@@ -198,13 +198,13 @@ test("payout batch takes weeks from the app; an admin change sticks until reset"
 test("admin progress view shows each owner's weeks, current lesson and last activity", async () => {
   const r = await api("admin", "GET", "/api/learn-admin/progress");
   assert.equal(r.status, 200);
-  assert.equal(r.data.published, 2); assert.equal(r.data.total_weeks, 20);
+  assert.equal(r.data.published, 2); assert.equal(r.data.total_weeks, 104);
   const t = r.data.owners.find(o => o.owner_id === owner1);
   assert.equal(t.has_login, true); assert.ok(t.last_activity); assert.deepEqual(t.shacks, [7]);
   const n = r.data.owners.find(o => o.owner_id === "own00003");
   assert.equal(n.has_login, false); assert.equal(n.weeks_done, 0); assert.equal(n.current.week_no, 1);
   const one = await api("admin", "GET", `/api/learn-admin/owners/${owner1}`);
-  assert.equal(one.status, 200); assert.equal(one.data.weeks.length, 20);
+  assert.equal(one.status, 200); assert.equal(one.data.weeks.length, 104);
   assert.equal(one.data.weeks[0].attempts, 2); assert.ok(one.data.weeks[0].read_done_at);
   assert.ok(one.data.periods.find(p => p.period === "2027-03").weeks === 5);
 });
@@ -307,4 +307,58 @@ test("practice mode: first weeks without sign-in, nothing saved, no sats", async
   assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 0 })).status, 200);
   assert.equal((await api("visitor", "GET", "/api/learn/demo/lessons/1")).status, 404, "practice can be switched off");
   assert.equal((await api("admin", "PATCH", "/api/learn-admin/settings", { demo_weeks: 6 })).status, 400);
+});
+
+test("104 weeks: a review week's quiz uses the questions of that term's live lessons", async () => {
+  assert.equal(q("select total_weeks from learn_settings").get().total_weeks, 104);
+  assert.equal((await api("admin", "POST", "/api/lessons", { week_no: 105, title: "too far" })).status, 400);
+  // Term 6 = weeks 41-48. Week 48 is its review week.
+  const a = (await api("admin", "POST", "/api/lessons", { week_no: 41, title: "Isifundo 41" })).data.id;
+  const b = (await api("admin", "POST", "/api/lessons", { week_no: 42, title: "Isifundo 42" })).data.id;
+  const other = (await api("admin", "POST", "/api/lessons", { week_no: 49, title: "Ikota 7" })).data.id;
+  const rv = (await api("admin", "POST", "/api/lessons", { week_no: 48, kind: "review", title: "Phinda: ikota 6" })).data;
+  assert.equal(rv.kind, "review"); assert.equal(rv.term, 6); assert.deepEqual([rv.review.from, rv.review.to], [41, 47]);
+  const mk = (n, tag) => Array.from({ length: n }, (_, i) => ({ question: `${tag} ${i}?`, choices: ["Ewe", "Hayi"], answer: 0 }));
+  for (const [id, tag] of [[a, "w41"], [b, "w42"], [other, "w49"]]) assert.equal((await api("admin", "PATCH", `/api/lessons/${id}`, { body: BODY, questions: mk(4, tag) })).status, 200);
+  assert.equal((await api("admin", "PATCH", `/api/lessons/${rv.id}`, { body: BODY })).status, 200);
+  let r = await api("admin", "POST", `/api/lessons/${rv.id}/publish`, {});
+  assert.equal(r.status, 400); assert.match(r.data.error, /weeks 41–47/, "needs the term's lessons live first");
+  for (const id of [a, b, other]) assert.equal((await api("admin", "POST", `/api/lessons/${id}/publish`, {})).status, 200);
+  r = await api("admin", "POST", `/api/lessons/${rv.id}/publish`, {});
+  assert.equal(r.status, 200); assert.equal(r.data.review.live_questions, 8);
+  // Owner 2 has finished weeks 1-47 (put in directly), so the review week is next.
+  const ins = q("insert or ignore into lesson_completions(owner_id, week_no, completed_on, completed_at, pay_period) values (?,?,?,?,?)");
+  for (let w = 1; w <= 47; w++) ins.run(owner2, w, "2020-01-06", "2020-01-06T10:00:00Z", "2020-01");
+  const me = (await api("owner2", "GET", "/api/learn/me")).data;
+  const w48 = me.weeks.find(w => w.week_no === 48);
+  assert.equal(w48.state, "ready"); assert.equal(w48.kind, "review"); assert.equal(w48.term, 6); assert.equal(me.weeks.length, 104);
+  assert.equal((await api("owner2", "GET", "/api/learn/lessons/48")).data.kind, "review");
+  assert.equal((await api("owner2", "GET", "/api/learn/lessons/100")).status, 403, "3-digit weeks reach the route");
+  assert.equal((await api("owner2", "POST", "/api/learn/lessons/48/read", {})).status, 200);
+  for (let i = 0; i < 3; i++) {
+    const s = (await api("owner2", "POST", "/api/learn/lessons/48/quiz", {})).data;
+    assert.equal(s.questions.length, 4);
+    for (const x of s.questions) assert.match(x.question, /^w4[12] /, "only questions from weeks 41-47");
+  }
+});
+
+test("moving to 104 weeks rebuilds an old database and keeps its lessons and questions", () => {
+  const { open } = require("./db");
+  const { DatabaseSync } = require("node:sqlite");
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "ps-old-")), "old.db");
+  const old = open(file);   // make the current tables, then put back the old 60-week checks
+  old.exec(`pragma foreign_keys = off; drop table lessons; create table lessons (id text primary key, week_no integer not null unique check (week_no between 1 and 60),
+    title text not null, body text not null default '', status text not null default 'draft', source text, published_at text, published_by_name text, updated_by_name text,
+    created_at text not null default 'x', updated_at text not null default 'x');
+    update learn_settings set total_weeks = 20;`);
+  old.prepare("insert into lessons(id, week_no, title) values ('L1', 1, 'Old')").run();
+  old.prepare("insert into quiz_questions(id, lesson_id, question, choices, answer) values ('q1', 'L1', 'Q', '[\"a\",\"b\"]', 0)").run();
+  old.close();
+  const db = open(file);
+  assert.equal(db.prepare("select kind from lessons where id = 'L1'").get().kind, "lesson");
+  assert.equal(db.prepare("select total_weeks from learn_settings").get().total_weeks, 104);
+  db.prepare("insert into lessons(id, week_no, title) values ('L104', 104, 'Last')").run();
+  db.prepare("delete from lessons where id = 'L1'").run();
+  assert.equal(db.prepare("select count(*) n from quiz_questions").get().n, 0, "questions still go with their lesson");
+  db.close(); void DatabaseSync;
 });
