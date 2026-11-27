@@ -3,7 +3,7 @@
 // Rules this file keeps:
 //  * Only counts, dates and shack numbers. Never owner names, phone numbers, PINs, notes, sponsor contacts,
 //    inspection notes or photos, payment hashes or errors.
-//  * An owner's Lightning address is only shown when the owner chose to show it (owners.show_address_publicly).
+//  * Lightning addresses and phone numbers are never shown here (admin app only; Luthando, 27 Nov 2026).
 //  * Sponsor payments are only shown when an admin left "show publicly" on (sponsor_payments.show_publicly).
 //  * The numbers are worked out at most once a minute and kept in memory, so many visitors cost the small
 //    server almost nothing.
@@ -34,7 +34,7 @@ function init({ db, pay, learn, send, Bad }) {
     /* -------------------------------------------------------------- shacks, owners, sponsors */
     const shacks = db.prepare(`select s.id, s.shack_no, s.status, s.area, s.owner_id, s.first_painted_on,
         sp.id as sponsor_id, sp.name as sponsor, sp.website, sp.kind as sponsor_kind, sp.payment_status as sponsor_status, s.x_post_url,
-        o.active as owner_active, o.show_address_publicly as show_addr, o.lightning_address as addr
+        o.active as owner_active
       from shacks s left join sponsors sp on sp.id = s.sponsor_id left join owners o on o.id = s.owner_id
       where s.status <> 'removed' order by s.shack_no`).all();
     const shackById = new Map(shacks.map(s => [s.id, s]));
@@ -43,9 +43,7 @@ function init({ db, pay, learn, send, Bad }) {
     for (const s of shacks) if (s.owner_id && !ownerShack.has(s.owner_id)) ownerShack.set(s.owner_id, s);
     const activeOwners = [...ownerShack.values()].filter(s => s.owner_active).length;
     const painted = shacks.filter(s => s.status === "painted" || s.status === "needs_repaint").length;
-    const publicAddr = s => (s && s.show_addr && s.owner_active && s.addr ? s.addr : null);
-    const addrState = s => (!s || !s.owner_id ? "none" : publicAddr(s) ? "public" : s.addr ? "private" : "none");
-    const shackRef = s => (s ? { shack_no: s.shack_no, logo: s.sponsor || null, address: publicAddr(s), address_state: addrState(s) } : null);
+    const shackRef = s => (s ? { shack_no: s.shack_no, logo: s.sponsor || null } : null);
 
     /* -------------------------------------------------------------- inspections */
     const latest = db.prepare(`select i.shack_id, i.result, i.inspected_on from inspections i
@@ -139,8 +137,6 @@ function init({ db, pay, learn, send, Bad }) {
     const funding = db.prepare(`select p.received_on, p.purpose, p.amount_sats, p.amount_zar, p.renews_on, sp.name as sponsor, sp.website, p.proof_url
       from sponsor_payments p join sponsors sp on sp.id = p.sponsor_id where p.show_publicly = 1 order by p.received_on desc`).all()
       .map(({ proof_url, ...r }) => ({ ...r, website: webLink(r.website), proof: webLink(proof_url) }));
-    const tips = [...ownerShack.values()].filter(publicAddr).map(s => ({ shack_no: s.shack_no, address: s.addr, logo: s.sponsor || null }))
-      .sort((a, b) => a.shack_no - b.shack_no);
     const sponsorWalls = new Map();
     for (const s of shacks) if (s.sponsor && s.status !== "free_wall") {
       const e = sponsorWalls.get(s.sponsor) || { name: s.sponsor, website: webLink(s.website), walls: 0 };
@@ -210,6 +206,11 @@ function init({ db, pay, learn, send, Bad }) {
       if (v) e.video = { on: v.video_on || null, x: webLink(v.video_x_url), nostr: webLink(v.video_nostr_url), impressions: v.impressions,
                          views: v.views, coming_soon: !!v.coming_soon, note: v.note || null };
     }
+    // Cleaning inspections this year: totals only (each family's results are for paid partners, see partner.js).
+    const yearInsp = db.prepare("select shack_id, result from inspections where inspected_on like ?").all(year + "-%").filter(i => shackById.has(i.shack_id));
+    const inspections = { total: yearInsp.length, passed: yearInsp.filter(i => i.result === "good").length,
+      not_passed: yearInsp.filter(i => i.result !== "good").length, shacks: new Set(yearInsp.map(i => i.shack_id)).size,
+      latest_good: good, latest_of: latest.length };
     const accountability = {
       year,
       walls: WALL_KINDS.map(k => ({ ...k, count: wallCount.get(k.key) || 0 })),
@@ -218,6 +219,7 @@ function init({ db, pay, learn, send, Bad }) {
                paid_to_families_sats: outMonths.reduce((a, m) => a + m.sats, 0) + past.reduce((a, p) => a + p.amount_sats, 0), fees_sats: outMonths.reduce((a, m) => a + m.fees, 0), ledger },
       learning: { months: learnMonths, lessons: yearLessons.length, households: new Set(yearLessons.map(c => c.owner_id)).size },
       households: activeOwners,
+      inspections,
       // Report settings and lines typed in the admin app. null = not typed yet, so the page keeps the draft's text.
       report: {
         agreements_signed: rs.agreements_signed, agreement_url: webLink(rs.agreement_url), carried_over_sats: rs.carried_over_sats,
@@ -255,7 +257,6 @@ function init({ db, pay, learn, send, Bad }) {
       months, paid_total_sats: paidTotal,
       funding: { rows: funding, total_sats: funding.reduce((a, r) => a + r.amount_sats, 0),
                  total_zar: funding.reduce((a, r) => a + (r.amount_zar || 0), 0), sponsors: new Set(funding.map(r => r.sponsor)).size },
-      tips: { list: tips, owners: activeOwners },
       sponsors: [...sponsorWalls.values()].sort((a, b) => b.walls - a.walls || a.name.localeCompare(b.name)),
       accountability,
     };

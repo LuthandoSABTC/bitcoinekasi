@@ -461,6 +461,21 @@ function open(file) {
       ["2026-08", "2026-08-27", 7], ["2026-09", "2026-09-24", 6], ["2026-10", "2026-10-29", 8], ["2026-11", "2026-11-25", 5]])
       ins.run(require("node:crypto").randomUUID(), period, paid_on, n, n * 28000);
   }
+  // 2026-11-27: paid partners sign in to /dashboard/partners/ to follow each family's lessons and inspections (server/partner.js).
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'partner_logins'").get()) {
+    db.exec(`create table partner_logins (
+      id            text primary key,
+      sponsor_id    text not null references sponsors(id) on delete cascade,
+      email         text not null unique collate nocase,
+      pw_hash       text not null,
+      disabled      integer not null default 0,
+      last_login_at text,
+      created_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.exec(`create table partner_sessions (
+      token_hash  text primary key,
+      login_id    text not null references partner_logins(id) on delete cascade,
+      expires_at  integer not null)`);
+  }
   return db;
 }
 

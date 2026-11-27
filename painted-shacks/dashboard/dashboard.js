@@ -216,7 +216,7 @@
       li.querySelector(".ft").textContent = txt;
       if (e.shack) {
         const meta = li.querySelector(".meta"); meta.hidden = false;
-        const addr = e.shack.address_state === "public" ? "⚡ " + e.shack.address : e.shack.address_state === "private" ? "⚡ address kept private" : "";
+        const addr = "";   // Lightning addresses are never shown publicly (admin only)
         meta.innerHTML = (e.shack.logo ? '<span class="logo-tag"></span>' : "") + (addr ? '<span class="ln"></span>' : "");
         if (e.shack.logo) meta.querySelector(".logo-tag").textContent = "Logo: " + e.shack.logo;
         if (addr) { const ln = meta.querySelector(".ln"); ln.textContent = addr; if (e.shack.address_state !== "public") ln.classList.add("priv"); }
@@ -293,22 +293,10 @@
 
   /* ------------------------------------------------------------------ tips + sponsors */
   function tips(d) {
-    const t = d.tips;
-    $("tiplist").innerHTML = t.list.length
-      ? t.list.map(x => "<div><b>" + pad3(x.shack_no) + "</b><code>" + esc(x.address) + "</code><button type=\"button\">COPY</button></div>").join("")
-      : '<p class="empty">No owner has chosen to show their address yet.</p>';
-    $("tip-count").textContent = t.list.length + " of " + plural(t.owners, "owner") + " show their address";
     $("sponsors").innerHTML = d.sponsors.map(s => { const u = safeUrl(s.website), label = esc(s.name) + (s.walls > 1 ? " <small>×" + s.walls + "</small>" : "");
       return u ? '<a class="spl chip-l" href="' + esc(u) + '" target="_blank" rel="noopener">' + label + " ↗</a>" : "<span>" + label + "</span>"; }).join("") ||
       '<p class="desc">Sponsors show here once their logo is on a wall.</p>';
   }
-  $("tiplist").addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b) return;
-    const code = b.previousElementSibling, t = code.textContent;
-    const done = () => { b.textContent = "COPIED"; setTimeout(() => (b.textContent = "COPY"), 1500); };
-    const select = () => { const r = document.createRange(); r.selectNodeContents(code); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
-    try { navigator.clipboard.writeText(t).then(done, select); } catch (err) { select(); }
-  });
 
   /* ------------------------------------------------------------------ load + refresh */
   function render(d) {

@@ -7,6 +7,7 @@ const { open } = require("./db");
 const payments = require("./payments");
 const learning = require("./learn");
 const publicDash = require("./public");
+const partnerView = require("./partner");
 
 const PORT = Number(process.env.PORT || 3417);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -185,6 +186,9 @@ async function handle(req, res) {
 
   if (p === "/api/health") return send(res, 200, { ok: true });
 
+  // Partner view (/dashboard/partners/): paid sponsors only, their own sign-in. See partner.js.
+  if (p.startsWith("/api/partner/")) return partner.routes(req, res, p, method);
+
   // Owner learning app (/learn): owners sign in with shack number + PIN, separate from staff accounts.
   if (p.startsWith("/api/learn/")) return learn.ownerRoutes(req, res, p, method);
 
@@ -276,6 +280,9 @@ async function handle(req, res) {
     audit(user, "dash_map", "1", "UPDATE", null, out);
     return send(res, 200, out);
   }
+  // Sign-ins for paid partners (one or more per sponsor).
+  if (p.startsWith("/api/partner-logins") && await partner.adminRoutes(req, res, p, method, user)) return;
+
   // Public report settings (signed agreements, money left over from last year, wall statuses, questions, draft note).
   if (p === "/api/report-settings" && method === "GET") return send(res, 200, publicData.reportSettings());
   if (p === "/api/report-settings" && method === "PUT") {
@@ -591,6 +598,7 @@ const pay = payments.init({ db, audit, tx, Bad, readJson, send, checkPassword })
 const learn = learning.init({ db, audit, tx, Bad, readJson, send, hashPassword, checkPassword, sha256, readCookie, clientIp, currentUser,
   cookieSecure: COOKIE_SECURE, dataDir: require("node:path").dirname(DB_PATH), pay });
 const publicData = publicDash.init({ db, pay, learn, send, Bad });
+const partner = partnerView.init({ db, send, Bad, readJson, hashPassword, checkPassword, sha256, readCookie, clientIp, audit, cookieSecure: COOKIE_SECURE });
 
 if (require.main === module) {
   pay.startTimers();
@@ -604,4 +612,4 @@ if (require.main === module) {
   }).listen(PORT, HOST, () => console.log(`Painted Shacks API on http://${HOST}:${PORT}, database ${DB_PATH}`));
 }
 
-module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn, publicData };
+module.exports = { db, hashPassword, checkPassword, handle, resultOf, dueInfo, PHOTO_DIR, pay, learn, publicData, partner };
