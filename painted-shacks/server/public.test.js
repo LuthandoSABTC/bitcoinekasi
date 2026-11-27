@@ -136,3 +136,46 @@ test("accountability: walls by sponsor status, partners, money in and out, no pr
   assert.equal(a.money.paid_to_families_sats, year === "2026" ? 49000 : 0);
   assert.ok(a.money.ledger.every(r => !/Thandi|Sipho/.test(r.what)), "payouts are one line per month");
 });
+
+test("public report: admins type costs, agreements, wall statuses and video posts; empty means draft", async () => {
+  const login = await fetch(appUrl + "/api/login", { method: "POST", headers: { "Content-Type": "application/json", "X-PS-Admin": "1" }, body: JSON.stringify({ email: "a@x.co", password: "admin-password-1" }) });
+  const cookie = login.headers.get("set-cookie").split(";")[0];
+  const call = (method, p, body) => fetch(appUrl + p, { method, headers: { "Content-Type": "application/json", "X-PS-Admin": "1", Cookie: cookie }, body: body && JSON.stringify(body) });
+  const pub = async () => (await (await fetch(appUrl + "/api/public/dashboard")).json()).accountability.report;
+
+  let R = await pub();
+  assert.equal(R.agreements_signed, null, "nothing typed yet: the page keeps the draft");
+  assert.equal(R.carried_over_sats, null);
+  assert.equal(R.has_entries, false);
+  assert.equal(R.questions.length, 7, "the draft's questions to start with");
+  assert.equal(R.show_draft_note, true);
+
+  assert.equal((await call("PUT", "/api/report-settings", { agreements_signed: -1 })).status, 400);
+  assert.equal((await call("PUT", "/api/report-settings", { agreement_url: "javascript:alert(1)" })).status, 400);
+  assert.equal((await fetch(appUrl + "/api/report-settings", { method: "PUT", headers: { "Content-Type": "application/json", "X-PS-Admin": "1" }, body: "{}" })).status, 401);
+  const ok = await call("PUT", "/api/report-settings", { agreements_signed: "38", agreement_url: "https://example.org/agreement.pdf", carried_over_sats: 1200000,
+    pending_walls: 0, review_walls: 1, review_note: "Talking to the owner", questions: ["One", " ", "Two"], show_draft_note: false });
+  assert.equal(ok.status, 200);
+  const year = saToday().slice(0, 4);
+  assert.equal((await call("POST", "/api/report_entries", { entry_date: year + "-11-14", direction: "out", category: "running", what: "Class venue", amount_sats: 30000, proof_url: "https://x.example/tx" })).status, 201);
+  assert.equal((await call("POST", "/api/report_entries", { entry_date: year + "-05-19", direction: "in", category: "donation", what: "Donation", amount_sats: 250000 })).status, 201);
+  assert.equal((await call("POST", "/api/report_entries", { entry_date: year + "-05-19", direction: "sideways", what: "x", amount_sats: 1 })).status, 400);
+  assert.equal((await call("POST", "/api/report_entries", { entry_date: year + "-05-19", direction: "out", what: "x", amount_sats: 1, proof_url: "ftp://x" })).status, 400);
+  assert.equal((await call("POST", "/api/partner_posts", { sponsor_id: "spn1", video_on: year + "-07-15", video_x_url: "https://x.com/BitcoinEkasi/status/2", impressions: 11820, views: 2745 })).status, 201);
+  assert.equal((await call("POST", "/api/partner_posts", { sponsor_id: "spn1" })).status, 400, "one video post per sponsor");
+
+  R = await pub();
+  assert.equal(R.agreements_signed, 38);
+  assert.equal(R.agreement_url, "https://example.org/agreement.pdf");
+  assert.equal(R.carried_over_sats, 1200000);
+  assert.equal(R.pending_walls, 0); assert.equal(R.review_walls, 1); assert.equal(R.review_note, "Talking to the owner");
+  assert.deepEqual(R.questions, ["One", "Two"]);
+  assert.equal(R.show_draft_note, false);
+  assert.equal(R.entries.length, 2);
+  assert.deepEqual(R.entries[0], { date: year + "-11-14", direction: "out", category: "running", what: "Class venue", sats: 30000, proof: "https://x.example/tx" });
+  const d = await (await fetch(appUrl + "/api/public/dashboard")).json();
+  const p = d.accountability.partners.find(x => x.shacks.includes(7));
+  assert.equal(p.video.impressions, 11820);
+  assert.equal(p.video.x, "https://x.com/BitcoinEkasi/status/2");
+  assert.ok(!JSON.stringify(d).includes("Luthando"), "who changed the settings stays private");
+});

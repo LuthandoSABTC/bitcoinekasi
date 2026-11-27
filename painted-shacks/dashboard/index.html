@@ -75,6 +75,7 @@ td.in{color:var(--in)}
 .partners{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .partners .card p{margin:2px 0;font-size:13px;color:var(--ink2)}
 .partners .links{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+[hidden]{display:none!important}
 .tag{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:middle}
 .note{font-size:13px;color:var(--ink2);border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 8px 8px 0;margin:14px 0 0;max-width:62ch}
 .empty{color:var(--ink2);font-size:14px;padding:12px 0}
@@ -102,7 +103,7 @@ html.embed .top{display:none}
     <span style="display:flex;gap:10px;align-items:center"><a href="live.html">Live view →</a><button id="theme" type="button" aria-label="Switch light or dark">◐</button></span></div>
   <h1>Painted Shacks Accountability</h1>
   <p class="lead" id="lead">Loading the latest numbers…</p>
-  <div class="draft"><b>Draft for the team.</b> Walls, partners and money received come live from the Painted Shacks apps. Parts marked <span class="tag">SAMPLE</span> still use the made-up numbers from the draft, to show how the page will look, until the apps have that information. Parts marked <span class="tag grey">DRAFT 25 NOV</span> are copied from the draft and are not in the apps yet.</div>
+  <div class="draft" id="draftnote"><b>Draft for the team.</b> Walls, partners and money received come live from the Painted Shacks apps. Parts marked <span class="tag">SAMPLE</span> still use the made-up numbers from the draft, to show how the page will look, until the apps have that information. Parts marked <span class="tag grey">DRAFT 25 NOV</span> are copied from the draft and are not in the apps yet.</div>
 
   <div class="stats">
     <div class="card stat"><div class="k">Walls painted</div><div class="v" id="s-walls">–</div><div class="s">Logo walls on family homes</div></div>
@@ -139,8 +140,8 @@ html.embed .top{display:none}
         <li id="t-pay">A payment in sats for each finished week.</li>
         <li>A freshly painted wall each year.</li></ul></div>
     </div>
-    <div class="card" style="margin-top:12px"><div class="big-line"><span class="bign">40</span> households have signed this year's agreement <span class="tag">SAMPLE</span></div></div>
-    <p class="desc" style="margin-top:10px;font-size:13px">Signed copies stay private. The blank agreement, in English and isiXhosa, will be posted here so anyone can read the terms.</p>
+    <div class="card" style="margin-top:12px"><div class="big-line"><span class="bign" id="a-n">40</span> <span id="a-t">households have signed this year's agreement</span> <span class="tag" id="a-tag">SAMPLE</span></div></div>
+    <p class="desc" style="margin-top:10px;font-size:13px" id="a-note">Signed copies stay private. The blank agreement, in English and isiXhosa, will be posted here so anyone can read the terms.</p>
   </section>
 
   <section id="learning">
@@ -155,15 +156,15 @@ html.embed .top{display:none}
   </section>
 
   <section id="money">
-    <h2>Where does the money go? <span class="tag">SAMPLE</span></h2>
-    <p class="samplenote">SAMPLE NUMBERS where marked. Costs like paint, the class venue and outreach, and the money held, are not in the apps yet, so those parts show the draft's made-up numbers. Money received from partners and payouts to families are real.</p>
+    <h2>Where does the money go? <span class="tag m-tag">SAMPLE</span></h2>
+    <p class="samplenote" id="m-note">SAMPLE NUMBERS where marked. Costs like paint, the class venue and outreach, and the money held, are not in the apps yet, so those parts show the draft's made-up numbers. Money received from partners and payouts to families are real.</p>
     <p class="desc">All amounts are in sats, the small units bitcoin is counted in. One bitcoin is 100 million sats.</p>
-    <div class="card"><h3><span id="m-title">This year so far, in sats</span> <span class="tag">SAMPLE</span></h3>
+    <div class="card"><h3><span id="m-title">This year so far, in sats</span> <span class="tag m-tag">SAMPLE</span></h3>
       <div class="ledger-sum" id="m-sum"></div>
       <p class="real" id="m-real"></p></div>
-    <div class="card" style="margin-top:12px"><h3>What the money paid for <span class="tag">SAMPLE</span></h3><div id="m-spend"></div></div>
+    <div class="card" style="margin-top:12px"><h3>What the money paid for <span class="tag m-tag">SAMPLE</span></h3><div id="m-spend"></div></div>
     <div class="card" style="margin-top:12px"><h3>Every payment, in and out</h3>
-      <p class="desc" style="margin:0;font-size:13px">In the live version, each line links to its transaction so anyone can check it. Payouts to families are one line per month, never per family.</p>
+      <p class="desc" style="margin:0;font-size:13px">Lines with a proof link can be checked by anyone. Payouts to families are one line per month, never per family.</p>
       <div class="tablewrap"><table><thead><tr><th>Date</th><th>What for</th><th class="r">In</th><th class="r">Out</th><th>Proof</th></tr></thead><tbody id="m-rows"></tbody></table></div>
     </div>
   </section>
@@ -187,15 +188,9 @@ html.embed .top{display:none}
       <li><b>Money in:</b> partner payments recorded in the admin app (Sponsors, Add payment).</li>
       <li><b>Money out:</b> the monthly Lightning payouts to families, sent from the admin app.</li>
       <li><b>Learning:</b> lessons and quizzes finished in the owner app.</li>
-      <li><b>Not in the apps yet</b> (shown from the draft): costs, money held, signed agreements, payment proof links, post reach and wall photos.</li></ul></div>
-    <div class="card" style="margin-top:12px"><h3>Questions to settle before it goes public <span class="tag grey">DRAFT 25 NOV</span></h3><ol>
-      <li>The status names, especially how thank-you walls are described.</li>
-      <li>Whether amounts show for each partner or only as totals.</li>
-      <li>Whether partnership costs get their own line.</li>
-      <li>Payouts to families: the total paid and the number of households together reveal the amount per family. Show both, or only one?</li>
-      <li>How each family's photo consent is recorded.</li>
-      <li>Who updates the information, and how often.</li>
-      <li>Hosting on a bitcoinekasi.com subdomain.</li></ol></div>
+      <li><b>Typed in the admin app</b> (Public report page): costs and donations, money left over from last year, signed agreements, proof links, partner video posts and reach, and walls waiting on payment or under review. Until a part is filled in, the draft's text stays and is marked.</li>
+      <li><b>Not in the apps yet:</b> wall photos.</li></ul></div>
+    <div class="card" style="margin-top:12px" id="q-card"><h3>Questions to settle before it goes public</h3><ol id="q-list"></ol></div>
   </section>
 
   <footer>

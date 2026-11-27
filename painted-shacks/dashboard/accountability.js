@@ -57,6 +57,8 @@
 
   function render(d) {
     const a = d.accountability, y = a.year, pr = d.programme, M = a.money, L = a.learning;
+    const R = a.report || { questions: [], entries: [], show_draft_note: true };
+    $("draftnote").hidden = R.show_draft_note === false;
     const walls = a.walls.reduce((s, w) => s + w.count, 0);
     // Only paid sponsors are listed as partners. In-kind supporters still count in the walls section.
     const paidList = a.partners.filter(p => p.type === "paid" || D.paidNames.some(r => r.test(p.name)));
@@ -69,11 +71,14 @@
     // Top numbers
     $("s-walls").textContent = n(walls);
     $("s-partners-k").textContent = "Partners in " + y; $("s-partners").textContent = n(partners);
-    $("s-paid-k").innerHTML = "Paid to families in " + y + (M.paid_to_families_sats ? "" : " " + SAMPLE);
-    $("s-paid").innerHTML = esc(M.paid_to_families_sats ? short(M.paid_to_families_sats) : short(D.paidToFamilies)) + " <small>sats</small>";
+    const paidReal = M.paid_to_families_sats > 0 || R.carried_over_sats != null || R.has_entries;
+    $("s-paid-k").innerHTML = "Paid to families in " + y + (paidReal ? "" : " " + SAMPLE);
+    $("s-paid").innerHTML = esc(paidReal ? short(M.paid_to_families_sats) : short(D.paidToFamilies)) + " <small>sats</small>";
 
-    // Walls: real groups from the app, plus the draft's two statuses the app doesn't have
-    const rows = [...a.walls.filter(w => w.count), ...D.walls.map(w => ({ ...w, draft: true }))];
+    // Walls: real groups from the app, plus "Payment pending" and "Under review" (typed in the admin app; the draft's numbers until then)
+    const extra = [[R.pending_walls, R.pending_note, D.walls[0]], [R.review_walls, R.review_note, D.walls[1]]]
+      .map(([count, note, dw]) => (count == null ? { ...dw, draft: true } : { ...dw, count, desc: note || dw.desc })).filter(w => w.count);
+    const rows = [...a.walls.filter(w => w.count), ...extra];
     const max = Math.max(1, ...rows.map(w => w.count));
     const group = (g, title) => '<div class="grp">' + title + "</div>" + rows.filter(w => w.group === g).map(w =>
       '<div class="row"><div class="h"><b>' + esc(w.label) + (w.draft ? " " + DRAFT : "") + '</b><span class="n">' + n(w.count) + '</span></div><div class="bar' +
@@ -82,7 +87,10 @@
 
     // Terms
     $("t-pay").textContent = n(pr.sats_per_week) + " sats for each finished week, up to " + n(pr.sats_per_week * pr.max_weeks) + " sats a month, paid over Lightning on the last Friday of the month.";
-    $("toc-agree").innerHTML = SAMPLE;
+    const signed = R.agreements_signed != null;
+    $("toc-agree").innerHTML = signed ? "›" : SAMPLE; $("a-tag").hidden = signed;
+    if (signed) { $("a-n").textContent = n(R.agreements_signed); $("a-t").textContent = (R.agreements_signed === 1 ? "household has" : "households have") + " signed this year's agreement"; }
+    if (R.agreement_url) $("a-note").innerHTML = 'Signed copies stay private. <a href="' + esc(R.agreement_url) + '" target="_blank" rel="noopener">Read the blank agreement ↗</a>, in English and isiXhosa.';
 
     // Learning: real once the first lessons are finished, the draft's class numbers until then
     const real = L.lessons > 0;
@@ -103,25 +111,52 @@
       cols(D.classes.months.map((v, i) => [MON[i], v]), Math.max(...D.classes.months));
     }
 
-    // Money: the draft's totals (costs and money held aren't in the apps), real lines where the apps have them
-    $("toc-money").innerHTML = SAMPLE;
+    // Money: real once the team has typed costs or last year's left-over in the admin app; the draft's numbers until then.
+    const realMoney = R.carried_over_sats != null || R.has_entries;
+    const ins = R.entries.filter(e => e.direction === "in"), outs = R.entries.filter(e => e.direction === "out");
+    const sum = list => list.reduce((t, e) => t + e.sats, 0);
+    $("toc-money").innerHTML = realMoney ? "›" : SAMPLE;
+    document.querySelectorAll(".m-tag").forEach(t => { t.hidden = realMoney; });
+    $("m-note").hidden = realMoney;
     $("m-title").textContent = "This year so far, in sats";
-    $("m-sum").innerHTML = D.sum.map(([k, v]) => "<div><span>" + k + "</span><span>" + v + "</span></div>").join("") +
-      '<div class="big"><span>Held now</span><b>' + D.held + "</b></div>";
+    if (realMoney) {
+      const left = R.carried_over_sats || 0, got = M.received_sats + sum(ins), spent = M.paid_to_families_sats + sum(outs);
+      $("m-sum").innerHTML = [["Left over from " + (y - 1), n(left)], ["Received in " + y, "+" + n(got)], ["Paid out in " + y, "−" + n(spent)]]
+        .map(([k, v]) => "<div><span>" + k + "</span><span>" + v + "</span></div>").join("") +
+        '<div class="big"><span>Held now</span><b>' + n(left + got - spent) + "</b></div>";
+    } else {
+      $("m-sum").innerHTML = D.sum.map(([k, v]) => "<div><span>" + k + "</span><span>" + v + "</span></div>").join("") +
+        '<div class="big"><span>Held now</span><b>' + D.held + "</b></div>";
+    }
     $("m-real").innerHTML = "Real so far: <b>" + n(M.received_sats) + " sats</b> received from partners in " + y +
       (M.received_zar ? " (R" + M.received_zar.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ")" : "") +
       " and <b>" + n(M.paid_to_families_sats) + " sats</b> paid to families through the app.";
-    $("m-spend").innerHTML = D.spend.map(([k, p, sats, desc]) => '<div class="row spend"><div class="h"><b>' + k + '</b><span><span class="pct">' + p + "%</span><small>" + sats + ' sats</small></span></div><div class="bar"><i style="width:' + p + '%"></i></div><p>' + desc + "</p></div>").join("");
-    const ledger = M.ledger.map(r => ({ date: r.date, what: r.what + (r.from ? " · " + r.from : ""), in: r.in_sats, out: r.out_sats }));
+    const CAT = { paint: ["Paint and upkeep", "Paint, brushes and labour for new and repainted walls."],
+                  running: ["Running the program", "The monthly class: venue and snacks."],
+                  partnerships: ["Partnerships", "Finding partners and making their posts."], other: ["Other costs", ""] };
+    let spend = D.spend;
+    if (realMoney) {
+      const parts = [["Families", M.paid_to_families_sats, "Monthly payouts in sats to every family in the program."],
+        ...Object.keys(CAT).map(k => [CAT[k][0], sum(outs.filter(e => (e.category in CAT ? e.category : "other") === k)), CAT[k][1]])].filter(x => x[1] > 0);
+      const total = parts.reduce((t, x) => t + x[1], 0) || 1;
+      spend = parts.map(([k, v, desc]) => [k, Math.round(v / total * 100), short(v), desc]);
+    }
+    $("m-spend").innerHTML = (spend.length ? "" : '<p class="empty">Nothing paid out yet this year.</p>') + spend.map(([k, p, sats, desc]) => '<div class="row spend"><div class="h"><b>' + k + '</b><span><span class="pct">' + p + "%</span><small>" + sats + ' sats</small></span></div><div class="bar"><i style="width:' + p + '%"></i></div><p>' + desc + "</p></div>").join("");
+    const ledger = [...M.ledger.map(r => ({ date: r.date, what: r.what + (r.from ? " · " + r.from : ""), in: r.in_sats, out: r.out_sats, proof: r.proof })),
+      ...R.entries.map(e => ({ date: e.date, what: e.what, in: e.direction === "in" ? e.sats : 0, out: e.direction === "out" ? e.sats : 0, proof: e.proof }))];
     const hasPayouts = M.ledger.some(r => r.out_sats > 0);
-    const sample = [...D.costs, ...(hasPayouts ? [] : D.payouts)].filter(r => r[0].startsWith(y)).map(([date, what, i, o]) => ({ date, what, in: i, out: o, sample: true }));
+    const sample = realMoney ? [] : [...D.costs, ...(hasPayouts ? [] : D.payouts)].filter(r => r[0].startsWith(y)).map(([date, what, i, o]) => ({ date, what, in: i, out: o, sample: true }));
     const all = [...ledger, ...sample].sort((p, q) => q.date.localeCompare(p.date) || (p.sample ? 1 : -1));
     $("m-rows").innerHTML = all.map(r => "<tr><td>" + esc(day(r.date)) + "</td><td>" + esc(r.what) + (r.sample ? " " + SAMPLE : "") +
-      '</td><td class="r in">' + (r.in ? n(r.in) : "") + '</td><td class="r">' + (r.out ? n(r.out) : "") + '</td><td class="proof">Link when live</td></tr>').join("");
+      '</td><td class="r in">' + (r.in ? n(r.in) : "") + '</td><td class="r">' + (r.out ? n(r.out) : "") + '</td><td class="proof">' + (r.proof ? '<a href="' + esc(r.proof) + '" target="_blank" rel="noopener">Check ↗</a>' : r.sample ? "Link when live" : "–") + "</td></tr>").join("") ||
+      '<tr><td colspan="5" class="empty">No payments yet this year.</td></tr>';
 
     // Partners: real partners and walls; video posts and reach from the draft
     $("p-list").innerHTML = paidList.map(p => {
-      const extra = D.posts.find(x => x.match.test(p.name)), site = safeUrl(p.website) || (extra && safeUrl(extra.site));
+      const draft = D.posts.find(x => x.match.test(p.name)), site = safeUrl(p.website) || (draft && safeUrl(draft.site));
+      // The video post typed in the admin app; the draft's until then.
+      const v = p.video, extra = v ? { video: v.on ? day(v.on) : null, x: safeUrl(v.x), nostr: safeUrl(v.nostr), soon: v.coming_soon && !v.x && !v.nostr,
+        impressions: v.impressions != null ? n(v.impressions) : null, views: v.views != null ? n(v.views) : null, note: v.note, real: true } : draft;
       const posts = (p.posts || []).map(safeUrl).filter(Boolean);
       let h = '<div class="card"><h3>' + (site ? '<a href="' + esc(site) + '" target="_blank" rel="noopener">' + esc(p.name) + " ↗</a>" : esc(p.name)) + "</h3>" +
         "<p>Paid partner</p>" +
@@ -129,16 +164,20 @@
         (p.last_paid_on ? "<p>Paid " + esc(day(p.last_paid_on)) + (p.renews_on ? " · renews " + esc(day(p.renews_on)) : "") + "</p>" : "");
       const links = [];
       if (extra && !extra.soon) {
-        h += "<p>Video posted " + esc(extra.video) + " " + DRAFT + "</p>";
+        if (extra.video) h += "<p>Video posted " + esc(extra.video) + (extra.real ? "" : " " + DRAFT) + "</p>";
         if (extra.x) links.push('<a href="' + esc(extra.x) + '" target="_blank" rel="noopener">Watch on X ↗</a>');
         if (extra.nostr) links.push('<a href="' + esc(extra.nostr) + '" target="_blank" rel="noopener">Watch on nostr ↗</a>');
       } else if (extra && extra.soon) h += "<p>Video coming soon</p>";
       posts.forEach((u, i) => links.push('<a href="' + esc(u) + '" target="_blank" rel="noopener">' + (posts.length > 1 ? "Wall " + (i + 1) + " photo on X" : "Wall photo on X") + " ↗</a>"));
       if (links.length) h += '<div class="links">' + links.join("") + "</div>";
-      if (extra && extra.impressions) h += '<div class="reach"><div><b>' + extra.impressions + "</b><span>impressions on X</span></div><div><b>" + extra.views + "</b><span>video views</span></div></div>";
+      if (extra && (extra.impressions || extra.views)) h += '<div class="reach">' + (extra.impressions ? "<div><b>" + esc(extra.impressions) + "</b><span>impressions on X</span></div>" : "") +
+        (extra.views ? "<div><b>" + esc(extra.views) + "</b><span>video views</span></div>" : "") + "</div>";
       if (extra && extra.note) h += "<p>" + esc(extra.note) + "</p>";
       return h + "</div>";
     }).join("") || '<p class="empty">Partners show here once their payment is recorded.</p>';
+
+    $("q-card").hidden = !R.questions.length;
+    $("q-list").innerHTML = R.questions.map(q => "<li>" + esc(q) + "</li>").join("");
 
     $("updated").textContent = "Numbers updated " + new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Johannesburg", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(d.generated_at)) + " (South Africa time).";
     $("app").setAttribute("aria-busy", "false");

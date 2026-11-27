@@ -380,6 +380,58 @@ function open(file) {
     db.prepare("insert into dash_map(id, sections, updated_by) values (1, ?, 'Luthando')")
       .run(JSON.stringify([{ name: "Zinyoka", lat: null, lng: null, radius_m: 120 }, { name: "Asazani", lat: null, lng: null, radius_m: 90 }]));
   }
+  // 2026-11-27: the parts of the public report (/dashboard) that used to come from the 25 Nov draft, now typed in the admin app
+  // (Public report page). Everything in these tables is meant to be public. A value left empty keeps the draft's text on the page.
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'report_settings'").get()) {
+    db.exec(`create table report_settings (
+      id                 integer primary key check (id = 1),
+      agreements_signed  integer check (agreements_signed >= 0),
+      agreement_url      text,
+      carried_over_sats  integer check (carried_over_sats >= 0),
+      pending_walls      integer check (pending_walls >= 0),
+      pending_note       text,
+      review_walls       integer check (review_walls >= 0),
+      review_note        text,
+      questions          text,
+      show_draft_note    integer not null default 1,
+      updated_by         text,
+      updated_at         text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    db.prepare("insert into report_settings(id, questions) values (1, ?)").run([
+      "The status names, especially how thank-you walls are described.",
+      "Whether amounts show for each partner or only as totals.",
+      "Whether partnership costs get their own line.",
+      "Payouts to families: the total paid and the number of households together reveal the amount per family. Show both, or only one?",
+      "How each family's photo consent is recorded.",
+      "Who updates the information, and how often.",
+      "Hosting on a bitcoinekasi.com subdomain."].join("\n"));
+    // Costs (paint, class venue, outreach) and money in that isn't a sponsor payment (donations, other).
+    db.exec(`create table report_entries (
+      id           text primary key,
+      entry_date   text not null,
+      direction    text not null check (direction in ('out','in')),
+      category     text not null default 'other' check (category in ('paint','running','partnerships','donation','other')),
+      what         text not null,
+      amount_sats  integer not null check (amount_sats > 0),
+      proof_url    text,
+      created_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    // A partner's video post and its reach (one row per sponsor).
+    db.exec(`create table partner_posts (
+      id            text primary key,
+      sponsor_id    text not null unique references sponsors(id) on delete cascade,
+      video_on      text,
+      video_x_url   text,
+      video_nostr_url text,
+      impressions   integer check (impressions >= 0),
+      views         integer check (views >= 0),
+      coming_soon   integer not null default 0,
+      note          text,
+      created_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at    text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+  }
+  // 2026-11-27: a public proof link (transaction or invoice) on each sponsor payment, shown on the report's ledger.
+  if (!db.prepare("select 1 from pragma_table_info('sponsor_payments') where name = 'proof_url'").get())
+    db.exec("alter table sponsor_payments add column proof_url text");
   return db;
 }
 

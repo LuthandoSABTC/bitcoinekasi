@@ -136,9 +136,9 @@ function init({ db, pay, learn, send, Bad }) {
       .sort((a, b) => (a.name ? 0 : 1) - (b.name ? 0 : 1) || b.shacks - a.shacks || b.lessons - a.lessons);
 
     /* -------------------------------------------------------------- funding, tips, sponsors */
-    const funding = db.prepare(`select p.received_on, p.purpose, p.amount_sats, p.amount_zar, p.renews_on, sp.name as sponsor, sp.website
+    const funding = db.prepare(`select p.received_on, p.purpose, p.amount_sats, p.amount_zar, p.renews_on, sp.name as sponsor, sp.website, p.proof_url
       from sponsor_payments p join sponsors sp on sp.id = p.sponsor_id where p.show_publicly = 1 order by p.received_on desc`).all()
-      .map(r => ({ ...r, website: webLink(r.website) }));
+      .map(({ proof_url, ...r }) => ({ ...r, website: webLink(r.website), proof: webLink(proof_url) }));
     const tips = [...ownerShack.values()].filter(publicAddr).map(s => ({ shack_no: s.shack_no, address: s.addr, logo: s.sponsor || null }))
       .sort((a, b) => a.shack_no - b.shack_no);
     const sponsorWalls = new Map();
@@ -184,7 +184,7 @@ function init({ db, pay, learn, send, Bad }) {
     const outMonths = db.prepare(`select substr(paid_at,1,7) month, sum(amount_sats) sats, sum(coalesce(fee_sats,0)) fees, count(distinct owner_id) households, max(paid_at) at
                                   from payouts where status = 'paid' and paid_at >= ? group by 1 order by 1`).all(year + "-01-01");
     const ledger = [
-      ...inYear.map(r => ({ date: r.received_on, what: "Partner sponsorship", from: r.sponsor, in_sats: r.amount_sats, out_sats: 0 })),
+      ...inYear.map(r => ({ date: r.received_on, what: "Partner sponsorship", from: r.sponsor, in_sats: r.amount_sats, out_sats: 0, proof: r.proof || null })),
       ...outMonths.map(m => ({ date: saDay(m.at), what: `${monthName(m.month).split(" ")[0]} payout to ${m.households} ${m.households === 1 ? "family" : "families"}`, in_sats: 0, out_sats: m.sats })),
     ].sort((a, b) => b.date.localeCompare(a.date));
     const yearLessons = comps.filter(c => c.completed_on.startsWith(year));
@@ -194,6 +194,16 @@ function init({ db, pay, learn, send, Bad }) {
       const rows = comps.filter(c => c.completed_on.startsWith(per));
       learnMonths.push({ period: per, households: new Set(rows.map(c => c.owner_id)).size, lessons: rows.length });
     }
+    /* -------------------------------------------------------------- typed in the admin app's Public report page */
+    const rs = reportSettings();
+    const entries = db.prepare("select entry_date, direction, category, what, amount_sats, proof_url from report_entries where entry_date like ? order by entry_date desc")
+      .all(year + "-%");
+    const videos = new Map(db.prepare("select * from partner_posts").all().map(v => [v.sponsor_id, v]));
+    for (const [sid, e] of partnerMap) {
+      const v = videos.get(sid);
+      if (v) e.video = { on: v.video_on || null, x: webLink(v.video_x_url), nostr: webLink(v.video_nostr_url), impressions: v.impressions,
+                         views: v.views, coming_soon: !!v.coming_soon, note: v.note || null };
+    }
     const accountability = {
       year,
       walls: WALL_KINDS.map(k => ({ ...k, count: wallCount.get(k.key) || 0 })),
@@ -202,6 +212,14 @@ function init({ db, pay, learn, send, Bad }) {
                paid_to_families_sats: outMonths.reduce((a, m) => a + m.sats, 0), fees_sats: outMonths.reduce((a, m) => a + m.fees, 0), ledger },
       learning: { months: learnMonths, lessons: yearLessons.length, households: new Set(yearLessons.map(c => c.owner_id)).size },
       households: activeOwners,
+      // Report settings and lines typed in the admin app. null = not typed yet, so the page keeps the draft's text.
+      report: {
+        agreements_signed: rs.agreements_signed, agreement_url: webLink(rs.agreement_url), carried_over_sats: rs.carried_over_sats,
+        pending_walls: rs.pending_walls, pending_note: rs.pending_note, review_walls: rs.review_walls, review_note: rs.review_note,
+        questions: rs.questions, show_draft_note: rs.show_draft_note,
+        entries: entries.map(r => ({ date: r.entry_date, direction: r.direction, category: r.category, what: r.what, sats: r.amount_sats, proof: webLink(r.proof_url) })),
+        has_entries: db.prepare("select count(*) n from report_entries").get().n > 0,
+      },
     };
 
     return {
@@ -270,6 +288,42 @@ function init({ db, pay, learn, send, Bad }) {
     return mapSettings();
   }
 
+  /* -------------------------------------------------------------- public report settings (changed in the admin app) */
+  function reportSettings() {
+    const r = db.prepare("select * from report_settings where id = 1").get() || {};
+    return {
+      agreements_signed: r.agreements_signed ?? null, agreement_url: r.agreement_url || null, carried_over_sats: r.carried_over_sats ?? null,
+      pending_walls: r.pending_walls ?? null, pending_note: r.pending_note || null, review_walls: r.review_walls ?? null, review_note: r.review_note || null,
+      questions: String(r.questions || "").split("\n").map(q => q.trim()).filter(Boolean), show_draft_note: r.show_draft_note !== 0,
+      updated_by: r.updated_by || null, updated_at: r.updated_at || null,
+    };
+  }
+  function saveReport(body, user) {
+    const count = (k, label) => {
+      const v = body?.[k];
+      if (v === null || v === undefined || v === "") return null;
+      const x = Number(v);
+      if (!Number.isInteger(x) || x < 0 || x > 1e12) throw new Bad(`${label} must be a whole number, 0 or more.`);
+      return x;
+    };
+    const text = (k, max) => {
+      const v = String(body?.[k] ?? "").trim();
+      if (v.length > max) throw new Bad("One of the notes is too long.");
+      return v || null;
+    };
+    const url = text("agreement_url", 2000);
+    if (url && !webLink(url)) throw new Bad("The agreement link must start with https://");
+    const qs = (Array.isArray(body?.questions) ? body.questions : String(body?.questions ?? "").split("\n")).map(q => String(q).trim()).filter(Boolean);
+    if (qs.length > 20 || qs.some(q => q.length > 300)) throw new Bad("At most 20 questions, each at most 300 letters.");
+    db.prepare(`update report_settings set agreements_signed = ?, agreement_url = ?, carried_over_sats = ?, pending_walls = ?, pending_note = ?,
+                review_walls = ?, review_note = ?, questions = ?, show_draft_note = ?, updated_by = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') where id = 1`)
+      .run(count("agreements_signed", "Signed agreements"), url, count("carried_over_sats", "Left over from last year"),
+           count("pending_walls", "Payment pending"), text("pending_note", 200), count("review_walls", "Under review"), text("review_note", 200),
+           qs.join("\n"), body?.show_draft_note === false ? 0 : 1, user?.full_name || null);
+    cache = null;
+    return reportSettings();
+  }
+
   function get() {
     if (!cache || Date.now() - cacheAt > CACHE_MS) { cache = JSON.stringify(build()); cacheAt = Date.now(); }
     return cache;
@@ -283,7 +337,7 @@ function init({ db, pay, learn, send, Bad }) {
     return send(res, 200, get(), { ...cors, "Cache-Control": `public, max-age=${Math.min(30, Math.round(CACHE_MS / 1000))}` });
   }
 
-  return { routes, build, mapSettings, saveMap, clear: () => { cache = null; } };
+  return { routes, build, mapSettings, saveMap, reportSettings, saveReport, clear: () => { cache = null; } };
 }
 
 module.exports = { init };

@@ -169,7 +169,7 @@ function toast(msg, err) {
 
 /* ============================================================ data layer
    One interface, two backends: Supabase (real) and an in-memory demo. */
-const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments"];
+const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments", "ps_report_entries", "ps_partner_posts"];
 const DEMO = !!window.PS_DEMO_DATA || new URLSearchParams(location.search).has("demo");
 const cache = {};
 const api = (t) => "/api/" + t.replace(/^ps_/, "");
@@ -339,7 +339,7 @@ pages.home = () => {
       <p style="margin:0"><b>${inspectedMonth}</b> shack${inspectedMonth === 1 ? "" : "s"} inspected this month. ${(cache.inspections || []).length} inspections in total.
       <a href="/inspect/">Open the inspector app</a> · <a href="#/settings">Add an inspector</a></p></div>
     <div class="card"><h2>Public dashboard</h2>
-      <p style="margin:0">Live totals for everyone at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. It shows shack numbers, never owner names or phone numbers. A Lightning address only shows when the owner agreed (tick on the owner's page). <a href="#/sections">Sections and map</a></p></div>
+      <p style="margin:0">Live totals for everyone at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. It shows shack numbers, never owner names or phone numbers. A Lightning address only shows when the owner agreed (tick on the owner's page). <a href="#/sections">Sections and map</a> · <a href="#/report">Public report: costs, agreements and more</a></p></div>
     ${upcoming ? `<div class="card"><h2>Next sponsor renewal</h2><p style="margin:0"><b>${esc(sponsorName(upcoming.sponsor_id))}</b> on ${fmtDate(upcoming.renews_on)} <span class="muted">(${fmtSats(upcoming.amount_sats)} sats last time)</span></p></div>` : ""}
   `);
 };
@@ -580,6 +580,10 @@ pages.sponsor = id => {
       ${pays.length ? `<div class="scroll"><table class="t"><thead><tr><th>Date</th><th class="r">Sats</th><th class="r">Rand</th><th>Renews</th><th></th></tr></thead><tbody>
         ${pays.map(p => `<tr><td>${fmtDate(p.received_on)}</td><td class="r num">${fmtSats(p.amount_sats)}</td><td class="r num">${fmtZar(p.amount_zar)}</td><td>${fmtDate(p.renews_on)}</td><td class="r"><a href="#/payment/${p.id}">Edit</a></td></tr>`).join("")}
       </tbody></table></div>` : '<p class="muted" style="margin:0">No payments recorded.</p>'}</div>
+    ${(() => { const v = cache.ps_partner_posts.find(x => x.sponsor_id === s.id);
+      return `<div class="card"><div class="head" style="margin:0"><h2>Video post on the public report</h2><a class="btn small" href="#/video/${v ? v.id : "new?sponsor=" + s.id}">${v ? "Edit" : "Add"}</a></div>
+      <p class="muted" style="margin:0">${v ? esc([v.video_on ? "Posted " + fmtDate(v.video_on) : v.coming_soon ? "Coming soon" : "No date", v.impressions != null ? fmtSats(v.impressions) + " impressions" : "", v.views != null ? fmtSats(v.views) + " views" : ""].filter(Boolean).join(" · "))
+        : "Not added yet. The public report shows the draft's text for paid partners until you add it."}</p></div>`; })()}
     <div class="card"><div class="head" style="margin:0"><h2>Contacts</h2><a class="btn small" href="#/contact/new?sponsor=${s.id}">Add contact</a></div>
       ${contacts.length ? `<div class="list">${contacts.map(c => `<a class="item" href="#/contact/${c.id}"><div class="main"><b>${esc(c.name)}</b><small>${esc([c.email, c.chat].filter(Boolean).join(" · ") || "No details")}</small></div></a>`).join("")}</div>` : '<p class="muted" style="margin:0">No contacts yet.</p>'}</div>`}`);
   bindForm("ps_sponsors", s, f => ({name: f.name.trim(), website: f.website, kind: f.kind, payment_status: f.payment_status, logo_url: f.logo_url,
@@ -623,11 +627,12 @@ pages.payment = (id, params) => {
       <label class="fld">Value in Rand<input type="number" name="amount_zar" min="0" step="0.01" value="${esc(p.amount_zar)}"></label>
       <label class="fld wide">For<input type="text" name="purpose" value="${esc(p.purpose)}"></label>
       <label class="check fld wide"><input type="checkbox" name="show_publicly" ${p.show_publicly ? "checked" : ""}> Show on the public dashboard</label>
+      <label class="fld wide">Proof link (public)<input type="url" name="proof_url" value="${esc(p.proof_url)}" placeholder="https://"><span class="hint">A link anyone can open to check this payment, like the transaction or invoice. Shown on the public report.</span></label>
       <label class="fld wide">Notes<textarea name="notes">${esc(p.notes)}</textarea></label></div>
       <div class="actions"><button class="btn" type="submit">Save payment</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
     </form>`);
   bindForm("ps_sponsor_payments", p, f => ({sponsor_id: f.sponsor_id, received_on: f.received_on, renews_on: f.renews_on, amount_sats: Number(f.amount_sats),
-    amount_zar: f.amount_zar === "" ? null : Number(f.amount_zar), purpose: f.purpose, show_publicly: !!f.show_publicly, notes: f.notes}),
+    amount_zar: f.amount_zar === "" ? null : Number(f.amount_zar), purpose: f.purpose, show_publicly: !!f.show_publicly, proof_url: f.proof_url, notes: f.notes}),
     () => "#/funding", "#/funding", "Delete this payment record?");
 };
 
@@ -636,7 +641,7 @@ pages.funding = () => {
   const sats = P.reduce((a, p) => a + Number(p.amount_sats || 0), 0);
   const zar = P.reduce((a, p) => a + Number(p.amount_zar || 0), 0);
   shell("funding", `
-    <div class="head"><div><h1>Funding</h1><p class="sub">Sponsor money received for Painted Shacks.</p></div><a class="btn" href="#/payment/new">Record payment</a></div>
+    <div class="head"><div><h1>Funding</h1><p class="sub">Sponsor money received for Painted Shacks.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost" href="#/report">Costs and public report</a><a class="btn" href="#/payment/new">Record payment</a></div></div>
     <div class="stats">
       <div class="stat hero"><span class="lbl">Total sats</span><span class="val">${fmtSats(sats)}</span></div>
       <div class="stat"><span class="lbl">Total in Rand</span><span class="val">${fmtZar(zar)}</span></div>
@@ -883,6 +888,100 @@ pages.sections = async () => {
     } catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
   });
   drawRows();
+};
+
+/* ============================================================ public report (/dashboard)
+   Everything the public report used to take from the 25 Nov draft. A field left empty keeps the draft's text on the page. */
+const CATS = {paint: "Paint and upkeep", running: "Running the program (class venue, snacks)", partnerships: "Partnerships (outreach, posts)", donation: "Donation", other: "Other"};
+let reportCfg = null;
+pages.report = async () => {
+  if (!reportCfg && !DEMO) { try { reportCfg = await call("GET", "/api/report-settings"); } catch (err) { toast(friendlyError(err), true); } }
+  const R = reportCfg = reportCfg || {questions: [], show_draft_note: true};
+  const year = saToday().slice(0, 4);
+  const E = cache.ps_report_entries.slice().sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+  const num = (name, label, hint) => `<label class="fld">${label}<input type="number" name="${name}" min="0" step="1" value="${R[name] ?? ""}" placeholder="Not typed yet">${hint ? `<span class="hint">${hint}</span>` : ""}</label>`;
+  shell("funding", `
+    <a class="back" href="#/funding">${I.back}Funding</a>
+    <div class="head"><div><h1>Public report</h1><p class="sub">What partners see at <a href="/dashboard/" target="_blank" rel="noopener">${esc(location.host)}/dashboard</a>. Everything on this page is public.</p></div></div>
+    <form class="card f" id="repf">
+      <h2>Report details</h2>
+      <p class="muted" style="margin:0">Leave a box empty to keep the draft's sample text on the page. Type 0 to show nothing.</p>
+      <div class="fields">
+        ${num("agreements_signed", "Signed agreements this year")}
+        <label class="fld">Blank agreement link<input type="url" name="agreement_url" value="${esc(R.agreement_url)}" placeholder="https://"><span class="hint">The unsigned agreement in English and isiXhosa. Never a signed copy.</span></label>
+        ${num("carried_over_sats", `Sats left over from ${year - 1}`, "Turns on the real money section, with the costs below.")}
+        ${num("pending_walls", "Walls: payment pending")}
+        <label class="fld">What it means<input type="text" name="pending_note" maxlength="200" value="${esc(R.pending_note)}" placeholder="Said yes for ${year}, invoice sent."></label>
+        ${num("review_walls", "Walls: under review")}
+        <label class="fld">What it means<input type="text" name="review_note" maxlength="200" value="${esc(R.review_note)}" placeholder="Being talked through with the logo's owner."></label>
+        <label class="fld wide">Questions to settle before it goes public (one per line)<textarea name="questions" rows="7">${esc((R.questions || []).join("\n"))}</textarea><span class="hint">Leave empty to hide this list.</span></label>
+        <label class="check fld wide"><input type="checkbox" name="show_draft_note" ${R.show_draft_note !== false ? "checked" : ""}> Show the "Draft for the team" note at the top</label>
+      </div>
+      <div class="actions"><button class="btn" type="submit">Save report details</button></div>
+      ${R.updated_by ? `<p class="hint" style="margin:0">Last changed by ${esc(R.updated_by)}${R.updated_at ? " on " + fmtDate(R.updated_at.slice(0, 10)) : ""}.</p>` : ""}
+    </form>
+    <div class="card"><div class="head" style="margin:0"><h2>Costs and other money in</h2><a class="btn small" href="#/entry/new">Add line</a></div>
+      <p class="muted" style="margin:0">Paint, the class venue, outreach, donations. Sponsor payments (Funding) and payouts to families are added to the report by the app, so don't type them here.</p>
+      <div class="scroll"><table class="t"><thead><tr><th>Date</th><th>What for</th><th>Kind</th><th class="r">In</th><th class="r">Out</th><th>Proof</th></tr></thead><tbody>
+        ${E.map(e => `<tr><td><a href="#/entry/${e.id}">${fmtDate(e.entry_date)}</a></td><td>${esc(e.what)}</td><td>${esc(CATS[e.category] || "Other")}</td>
+          <td class="r num">${e.direction === "in" ? fmtSats(e.amount_sats) : ""}</td><td class="r num">${e.direction === "out" ? fmtSats(e.amount_sats) : ""}</td>
+          <td>${e.proof_url ? `<a href="${esc(e.proof_url)}" target="_blank" rel="noopener">Link</a>` : ""}</td></tr>`).join("") || '<tr><td colspan="6" class="muted">No lines yet. The report shows the draft\'s sample costs until you add one.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="card"><h2>Partner video posts</h2>
+      <p class="muted" style="margin:0">Add the video post, its links and reach on each sponsor's page: ${cache.ps_sponsors.filter(x => x.payment_status === "paying").map(x => `<a href="#/sponsor/${x.id}">${esc(x.name)}</a>`).join(", ") || "no paying sponsors yet"}. Missing one? Set its payment status to Paying on its page.</p></div>`);
+  $("#repf").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector("[type=submit]"), f = Object.fromEntries(new FormData(e.target));
+    const body = {...f, show_draft_note: e.target.show_draft_note.checked, questions: f.questions.split("\n")};
+    btn.disabled = true;
+    try { reportCfg = DEMO ? {...R, ...body, questions: body.questions.filter(q => q.trim())} : await call("PUT", "/api/report-settings", body); toast("Saved"); pages.report(); }
+    catch (err) { toast(friendlyError(err), true); } finally { btn.disabled = false; }
+  });
+};
+
+pages.entry = id => {
+  const isNew = id === "new";
+  const e = isNew ? {entry_date: saToday(), direction: "out", category: "running"} : byId("ps_report_entries", id);
+  if (!e) return notFound();
+  shell("funding", `
+    <a class="back" href="#/report">${I.back}Public report</a>
+    <div class="head"><h1>${isNew ? "New line" : "Edit line"}</h1></div>
+    <form class="card f" id="form"><div class="fields">
+      <label class="fld">Date<input type="date" name="entry_date" required value="${esc(e.entry_date)}"></label>
+      <label class="fld">Money<select name="direction"><option value="out" ${e.direction === "out" ? "selected" : ""}>Out (a cost)</option><option value="in" ${e.direction === "in" ? "selected" : ""}>In (not a sponsor payment)</option></select></label>
+      <label class="fld wide">What for<input type="text" name="what" required maxlength="200" value="${esc(e.what)}" placeholder="e.g. Monthly class: venue and snacks"></label>
+      <label class="fld">Kind<select name="category">${Object.entries(CATS).map(([k, v]) => `<option value="${k}" ${e.category === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label class="fld">Amount in sats<input type="number" name="amount_sats" min="1" step="1" required value="${esc(e.amount_sats)}"></label>
+      <label class="fld wide">Proof link (public)<input type="url" name="proof_url" value="${esc(e.proof_url)}" placeholder="https://"><span class="hint">Optional. A transaction, receipt photo or invoice anyone can open.</span></label></div>
+      <div class="actions"><button class="btn" type="submit">Save line</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
+    </form>`);
+  bindForm("ps_report_entries", e, f => ({entry_date: f.entry_date, direction: f.direction, category: f.category, what: f.what.trim(), amount_sats: Number(f.amount_sats), proof_url: f.proof_url}),
+    "#/report", "#/report", "Delete this line from the public report?");
+};
+
+pages.video = (id, params) => {
+  const isNew = id === "new";
+  const v = isNew ? {sponsor_id: params.get("sponsor"), coming_soon: false} : byId("ps_partner_posts", id);
+  if (!v) return notFound();
+  const sp = byId("ps_sponsors", v.sponsor_id);
+  shell("sponsors", `
+    <a class="back" href="#/sponsor/${esc(v.sponsor_id)}">${I.back}${esc(sp?.name || "Sponsor")}</a>
+    <div class="head"><h1>Video post: ${esc(sp?.name || "")}</h1></div>
+    <form class="card f" id="form"><div class="fields">
+      <label class="fld">Video posted on<input type="date" name="video_on" value="${esc(v.video_on)}"></label>
+      <label class="check fld"><input type="checkbox" name="coming_soon" ${v.coming_soon ? "checked" : ""}> Not posted yet: show "Video coming soon"</label>
+      <label class="fld wide">Video on X<input type="url" name="video_x_url" value="${esc(v.video_x_url)}" placeholder="https://x.com/BitcoinEkasi/status/…"></label>
+      <label class="fld wide">Video on nostr<input type="url" name="video_nostr_url" value="${esc(v.video_nostr_url)}" placeholder="https://primal.net/e/…"></label>
+      <label class="fld">Impressions on X<input type="number" name="impressions" min="0" step="1" value="${esc(v.impressions)}"><span class="hint">From X analytics, four weeks after posting.</span></label>
+      <label class="fld">Video views<input type="number" name="views" min="0" step="1" value="${esc(v.views)}"></label>
+      <label class="fld wide">Note (public)<input type="text" name="note" maxlength="200" value="${esc(v.note)}" placeholder="e.g. Reach is added four weeks after posting."></label></div>
+      <p class="hint" style="margin:0">The wall photo post comes from each shack's "X post" link.</p>
+      <div class="actions"><button class="btn" type="submit">Save video post</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
+    </form>`);
+  const n = x => x === "" ? null : Number(x);
+  bindForm("ps_partner_posts", v, f => ({sponsor_id: v.sponsor_id, video_on: f.video_on, coming_soon: !!f.coming_soon, video_x_url: f.video_x_url,
+    video_nostr_url: f.video_nostr_url, impressions: n(f.impressions), views: n(f.views), note: f.note}),
+    "#/sponsor/" + v.sponsor_id, "#/sponsor/" + v.sponsor_id, "Delete this video post? The report goes back to the draft's text.");
 };
 
 /* ============================================================ router */

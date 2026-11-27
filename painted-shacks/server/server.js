@@ -46,7 +46,13 @@ const T = {
     cols: { sponsor_id: "id!", name: "text!", email: "email", chat: "text", notes: "text" } },
   sponsor_payments: {
     cols: { sponsor_id: "id!", received_on: "date!", amount_sats: "int!", amount_zar: "num", purpose: "text", renews_on: "date",
-            show_publicly: "bool", notes: "text" } },
+            show_publicly: "bool", proof_url: "url", notes: "text" } },
+  // Public report (/dashboard): costs and other money in, and each partner's video post. Everything here is public.
+  report_entries: {
+    cols: { entry_date: "date!", direction: "text!", category: "text", what: "text!", amount_sats: "int!", proof_url: "url" } },
+  partner_posts: {
+    cols: { sponsor_id: "id!", video_on: "date", video_x_url: "url", video_nostr_url: "url", impressions: "int", views: "int",
+            coming_soon: "bool", note: "text" } },
   owners: {
     cols: { full_name: "text", phone: "text", age: "int", occupation: "text", lightning_address: "lnaddr", show_address_publicly: "bool",
             preferred_language: "text", active: "bool", joined_on: "date", notes: "text" } },
@@ -78,6 +84,17 @@ function clean(table, body, isNew) {
       case "bool": v = v === true || v === 1 || v === "1" || v === "true" ? 1 : 0; break;
     }
     out[col] = v;
+  }
+  if (table === "report_entries") {
+    if ("direction" in out && !["in", "out"].includes(out.direction)) throw new Bad("Choose money in or money out.");
+    if ("category" in out && out.category !== null && !["paint", "running", "partnerships", "donation", "other"].includes(out.category)) throw new Bad("Choose what kind of line this is.");
+    if ("amount_sats" in out && !(out.amount_sats > 0)) throw new Bad("The amount must be more than 0 sats.");
+    if (out.category === null) delete out.category;
+  }
+  if (table === "partner_posts") {
+    for (const k of ["impressions", "views"]) if (out[k] != null && out[k] < 0) throw new Bad("Reach can't be below 0.");
+    if (isNew && out.sponsor_id && db.prepare("select 1 from partner_posts where sponsor_id = ?").get(out.sponsor_id))
+      throw new Bad("This sponsor already has a video post. Edit that one.");
   }
   return out;
 }
@@ -251,6 +268,13 @@ async function handle(req, res) {
     audit(user, "dash_map", "1", "UPDATE", null, out);
     return send(res, 200, out);
   }
+  // Public report settings (signed agreements, money left over from last year, wall statuses, questions, draft note).
+  if (p === "/api/report-settings" && method === "GET") return send(res, 200, publicData.reportSettings());
+  if (p === "/api/report-settings" && method === "PUT") {
+    const out = publicData.saveReport(await readJson(req), user);
+    audit(user, "report_settings", "1", "UPDATE", null, out);
+    return send(res, 200, out);
+  }
   // Put many shacks in a section at once: { areas: { <shack id>: "Zinyoka" | "" } }
   if (p === "/api/shacks/areas" && method === "POST") {
     const { areas } = await readJson(req);
@@ -275,9 +299,10 @@ async function handle(req, res) {
 
   if (p === "/api/import" && method === "POST") return send(res, 200, importSeed(await readJson(req), user));
 
-  const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks)(?:\/([\w-]{1,64}))?$/);
+  const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks|report_entries|partner_posts)(?:\/([\w-]{1,64}))?$/);
   if (m) {
     const [, table, id] = m;
+    publicData.clear();   // the public dashboard shows sponsors, shacks and report lines: rebuild it on the next visit
     if (method === "POST" && !id) {
       const row = clean(table, await readJson(req), true);
       row.id = crypto.randomUUID();
