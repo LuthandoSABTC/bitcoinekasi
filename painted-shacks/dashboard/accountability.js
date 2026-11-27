@@ -42,7 +42,7 @@
     paidNames: [/^casa$/i],
     // Partner posts and reach from the draft, by partner name.
     posts: [{ match: /aqua/i, video: "15 Jul 2026", x: "https://x.com/BitcoinEkasi/status/2077407843066536261", impressions: "11,820", views: "2,745" },
-            { match: /^casa$/i, video: "18 Nov 2026", x: "https://x.com/BitcoinEkasi/status/2123060784230002917",
+            { match: /^casa$/i, site: "https://casa.io/", video: "18 Nov 2026", x: "https://x.com/BitcoinEkasi/status/2123060784230002917",
               nostr: "https://primal.net/e/nevent1qqsx9t62yzucr35uqtqmzdgvenmavvsmn0k6vmzmh4y3gaxnjj537tcmdh5ew", note: "Reach is added four weeks after posting." },
             { match: /^fedi$/i, soon: true }],
   };
@@ -121,7 +121,7 @@
 
     // Partners: real partners and walls; video posts and reach from the draft
     $("p-list").innerHTML = paidList.map(p => {
-      const site = safeUrl(p.website), extra = D.posts.find(x => x.match.test(p.name));
+      const extra = D.posts.find(x => x.match.test(p.name)), site = safeUrl(p.website) || (extra && safeUrl(extra.site));
       const posts = (p.posts || []).map(safeUrl).filter(Boolean);
       let h = '<div class="card"><h3>' + (site ? '<a href="' + esc(site) + '" target="_blank" rel="noopener">' + esc(p.name) + " ↗</a>" : esc(p.name)) + "</h3>" +
         "<p>Paid partner</p>" +
