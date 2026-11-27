@@ -105,7 +105,7 @@
 
     // Cleaning inspections: totals only
     const C = a.inspections || { total: 0, passed: 0, not_passed: 0, shacks: 0 };
-    $("c-k1").textContent = "Inspections in " + y; $("c-total").textContent = n(C.total);
+    $("c-k1").textContent = "Cleaning checks in " + y; $("c-total").textContent = n(C.total);
     $("c-s1").textContent = C.shacks ? "At " + plural(C.shacks, "home") : "None yet this year";
     $("c-pass").textContent = n(C.passed); $("c-fail").textContent = n(C.not_passed);
 
