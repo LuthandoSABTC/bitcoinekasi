@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Painted Shacks Dashboard</title>
+<meta name="description" content="Live numbers from Bitcoin Ekasi's Painted Shacks in JCC Camp, Mossel Bay: painted shacks, lessons finished, sats paid to owners, sponsors.">
+<link rel="icon" href="ekasi-sign.png">
+<link rel="preload" href="fonts/pixelify-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script>try{if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add('embed')}catch(e){}</script>
+<style>
+@font-face{font-family:"Pixelify Sans";font-weight:500;font-display:swap;src:url(fonts/pixelify-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Pixelify Sans";font-weight:700;font-display:swap;src:url(fonts/pixelify-sans-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:600;font-display:swap;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-weight:400;font-display:swap;src:url(fonts/inter-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-weight:600;font-display:swap;src:url(fonts/inter-latin-600-normal.woff2) format("woff2")}
+/* Layout: terminal-style public page. Top bar, stats hero with pixel mascot, township map + ranked sections, live feed. */
+:root{
+  --bg:#d3e4bf; --bg2:#c7dbb1; --ink:#26331f; --ink2:#4d5e43; --line:#8fa67f; --panel:#dcebc9;
+  --orange:#e07a00; --orange-soft:rgba(224,122,0,.16); --barbg:#eef5e4;
+  --px:"Pixelify Sans","Courier New",monospace; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; --body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a10;--bg2:#18220f;--ink:#cfe6b4;--ink2:#93ad7d;--line:#3e5235;--panel:#1a2516;--orange:#f7931a;--orange-soft:rgba(247,147,26,.18);--barbg:#0d130b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121a10;--bg2:#18220f;--ink:#cfe6b4;--ink2:#93ad7d;--line:#3e5235;--panel:#1a2516;--orange:#f7931a;--orange-soft:rgba(247,147,26,.18);--barbg:#0d130b;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:14px;line-height:1.5;
+  background-image:linear-gradient(var(--bg2) 1px,transparent 1px),linear-gradient(90deg,var(--bg2) 1px,transparent 1px);background-size:4px 4px}
+a{color:inherit}
+:focus-visible{outline:2px dashed var(--orange);outline-offset:3px}
+.in{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.top{border-top:3px solid var(--ink);border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top .in{display:flex;align-items:stretch;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font:700 18px var(--px);letter-spacing:.04em;padding-block:12px;text-decoration:none}
+.logo b{color:var(--orange)}
+nav.main{display:flex;flex-wrap:wrap}
+nav.main a{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;padding:16px 14px;color:var(--ink2)}
+nav.main a.on{background:var(--ink);color:var(--bg)}
+nav.main a.on::before{content:"> "}
+.theme{background:none;border:0;color:var(--ink);font:700 18px var(--px);cursor:pointer;padding:0 10px}
+.sub{border-bottom:1px dashed var(--line)}
+.sub .in{display:flex;gap:10px;flex-wrap:wrap;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding-block:12px}
+.sub a{text-decoration:none}.sub a:hover{color:var(--ink)}
+.sub span{opacity:.5}
+.sample{color:var(--orange)}
+/* hero */
+.hero{border-bottom:1px dashed var(--line)}
+.hero .in{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:32px;padding-block:28px 36px;border-top:2px solid var(--ink);margin-top:-1px}
+h1{font:700 clamp(40px,7vw,64px)/1 var(--px);margin:6px 0 16px;letter-spacing:.01em;text-shadow:2px 2px 0 var(--line)}
+.lead{font-size:16px;margin:0 0 14px;max-width:46ch}
+.lead b{font-weight:600}
+.cap{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+.bracket{display:flex;align-items:center;gap:6px;font:700 24px var(--px);margin-top:8px;max-width:520px}
+.bracket .fill{flex:1;height:14px;position:relative}
+.bracket .fill i{position:absolute;inset:0 auto 0 0;background:repeating-linear-gradient(90deg,var(--ink) 0 8px,transparent 8px 10px)}
+.tiles{display:grid;grid-template-columns:1fr auto 1fr;gap:18px 20px;align-items:center}
+.tile .v{font:600 20px var(--mono);font-variant-numeric:tabular-nums;margin:2px 0 4px}
+.tile.r{text-align:right}
+.pbar{height:9px;border:1px solid var(--ink);background:var(--barbg);padding:1px}
+.pbar i{display:block;height:100%;background:repeating-linear-gradient(90deg,var(--ink) 0 5px,transparent 5px 7px);transition:width .6s}
+.pbar.o i{background:repeating-linear-gradient(90deg,var(--orange) 0 5px,transparent 5px 7px)}
+.bot{grid-row:span 2;width:150px;height:auto;image-rendering:pixelated}
+@media (prefers-reduced-motion:no-preference){.bot{animation:bob 2.4s steps(2) infinite}@keyframes bob{50%{transform:translateY(-4px)}}}
+/* sections */
+section.blk{border-bottom:1px dashed var(--line)}
+section.blk > .in{padding-block:32px}
+h2{font:700 24px var(--px);margin:0 0 4px;letter-spacing:.02em}
+.desc{color:var(--ink2);margin:0 0 18px;font-size:13px}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:32px;align-items:start}
+.map{border:1px dashed var(--ink2);position:relative;background:var(--panel)}
+.map > svg{display:block;width:100%;height:auto}
+.mapbtn{position:absolute;right:10px;bottom:10px;font:500 11px var(--mono);letter-spacing:.12em;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:6px 10px;cursor:pointer}
+.rank{display:grid}
+.rank button{all:unset;cursor:pointer;display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:13px 4px;border-bottom:1px dashed var(--line);font-size:13px}
+.rank button:hover,.rank button.on{background:var(--orange-soft)}
+.rank .n{font:700 15px var(--px);color:var(--ink2)}
+.rank .m{font:400 12px var(--mono);color:var(--ink2);text-align:right}
+.rank b{font-weight:600}
+/* feed */
+.feedgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:32px;align-items:start}
+.feed{list-style:none;margin:0;padding:0;font:400 13px var(--mono)}
+.feed li{display:grid;grid-template-columns:62px 22px 1fr;gap:8px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.feed time{color:var(--ink2)}
+.feed .ft{display:block}
+.feed .meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:3px;font-size:11.5px;color:var(--ink2)}
+.feed .logo-tag{color:var(--orange);font-weight:600}
+.feed .ln{overflow-wrap:anywhere}
+.feed .ic{font-weight:600;color:var(--orange)}
+.feed li.new{animation:flash 1.2s}
+@keyframes flash{from{background:var(--orange-soft)}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){.feed li.new{animation:none}}
+.chart svg{width:100%;height:auto;display:block}
+.tips{display:grid;gap:0}
+.tips div{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.tips code{font:500 12px var(--mono);overflow-wrap:anywhere;min-width:0}
+.tips button{font:500 11px var(--mono);letter-spacing:.08em;background:var(--bg);border:1px solid var(--ink);color:var(--ink);padding:4px 8px;cursor:pointer}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.day .col{height:150px;border-bottom:1px solid var(--ink);display:flex;align-items:flex-end}
+.day .col i{display:block;width:100%;background:var(--ink2);opacity:.7;transition:height .6s}
+.day.today .col i{background:var(--ink);opacity:1;outline:1px solid var(--ink)}
+.day.future .col{border-bottom-style:dashed}
+.day span{display:block;font:500 10px var(--mono);color:var(--ink2);text-align:center;margin-top:4px;letter-spacing:.06em;text-transform:uppercase}
+.day.today span{color:var(--orange);font-weight:600}
+.leaders{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 32px;margin:12px 0 16px}
+.leaders div{display:flex;align-items:baseline;gap:8px;min-width:0}
+.leaders span{font-size:13px;white-space:nowrap}
+.leaders i{flex:1;border-bottom:2px dotted var(--ink2);transform:translateY(-4px);min-width:16px}
+.leaders b{font:700 26px var(--px);font-variant-numeric:tabular-nums}
+a.spl{color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}a.spl:hover{color:var(--orange)}
+.sponsors a.chip-l{border:1px solid var(--ink);padding:6px 10px;font:500 12px var(--mono);background:var(--panel)}
+.leaders.money b{font:600 22px var(--mono)}
+.facts{font-size:13px;color:var(--ink2);margin:0 0 8px}.facts b{color:var(--ink)}
+.months{display:grid;gap:12px;margin-top:8px}
+.mrow{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center}
+.mrow b{display:block;font-size:13px}.mrow small{font:400 11px var(--mono);color:var(--ink2)}
+.mbar{display:flex;align-items:center;gap:8px;min-width:0;font:500 12px var(--mono)}
+.mbar i{height:13px;background:repeating-linear-gradient(90deg,var(--ink) 0 5px,transparent 5px 7px);flex:none}
+.mrow.now .mbar i{background:repeating-linear-gradient(90deg,var(--orange) 0 5px,transparent 5px 7px)}
+.tablewrap{overflow-x:auto;margin:8px 0 18px;border:1px dashed var(--ink2)}
+table.fund{width:100%;border-collapse:collapse;font:400 13px var(--mono);font-variant-numeric:tabular-nums;min-width:640px}
+.fund th{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);text-align:left;padding:10px 12px;border-bottom:1px solid var(--ink)}
+.fund td{padding:11px 12px;border-bottom:1px dashed var(--line);white-space:nowrap}
+.fund .r{text-align:right}
+.fund b{font-family:var(--body);font-weight:600}
+.fund tfoot td{font-weight:600;border-bottom:0;border-top:1px solid var(--ink)}
+.renew{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px 32px}
+.renew div{display:grid;gap:3px}.renew b{font:700 20px var(--px)}.renew span:not(.cap){font-size:13px;color:var(--ink2)}
+.sponsors{display:flex;flex-wrap:wrap;gap:8px}
+.sponsors span{border:1px solid var(--ink);padding:6px 10px;font:500 12px var(--mono);background:var(--panel)}
+.sponsors small{color:var(--ink2)}
+footer .in{padding-block:24px 40px;font:400 12px var(--mono);color:var(--ink2);display:grid;gap:6px}
+@media (max-width:820px){
+  .hero .in,.mapgrid,.feedgrid{grid-template-columns:1fr}
+  .tiles{grid-template-columns:1fr 1fr}
+  .bot{grid-row:auto;grid-column:1/-1;justify-self:center;order:-1;width:110px}
+  nav.main a{padding:10px 10px;font-size:11px}
+}
+.tile .v.txt{font-size:14px;line-height:1.3}
+.status{color:var(--ink2)}.status.live{color:var(--orange)}.status.off{color:#b3261e}
+.note{font-size:13px;color:var(--ink2);border-left:3px solid var(--orange);padding:6px 10px;margin:14px 0 0;max-width:60ch;background:var(--orange-soft)}
+.rank .m small{display:block}
+.day .col{position:relative}.day .col b{position:absolute;left:0;right:0;text-align:center;font:600 11px var(--mono);bottom:4px;color:var(--ink)}
+.feed .meta .priv{opacity:.75}
+.mrow small.up{color:var(--orange)}
+.renew .pbar{margin-top:4px}
+.tips .empty{display:block;grid-template-columns:none;color:var(--ink2);border-bottom:0}
+#lmap{height:360px;background:var(--panel)}
+.map .mapbtn{z-index:500;bottom:28px}
+.leaflet-container{font:500 12px var(--mono)}
+.ps-tip{font:700 13px var(--px);background:var(--bg);color:var(--ink);border:1px solid var(--ink);border-radius:0;box-shadow:none;padding:2px 6px}
+.ps-tip::before{display:none}
+@media (max-width:820px){#lmap{height:300px}}
+html.embed .top,html.embed .sub{display:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="in">
+    <a class="logo" href="#stats"><svg width="22" height="22" viewBox="0 0 11 11" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="4" width="11" height="1" fill="currentColor"/><rect x="1" y="5" width="9" height="6" fill="#e07a00"/><rect x="2" y="3" width="7" height="1" fill="currentColor"/><rect x="4" y="2" width="3" height="1" fill="currentColor"/><rect x="4" y="7" width="2" height="4" fill="currentColor"/></svg><span>PAINTED SHACKS</span><b>DASHBOARD</b></a>
+    <div style="display:flex;align-items:stretch">
+      <button class="theme" id="theme" aria-label="Switch light or dark">☼</button>
+      <nav class="main" aria-label="Main">
+        <a class="on" href="#stats">Stats</a><a href="#shacks">Shacks</a><a href="#lessons">Lessons</a><a href="#tips">Tip</a><a href="./">Report</a>
+      </nav>
+    </div>
+  </div>
+</header>
+<div class="sub"><div class="in">
+  <a href="#shacks">[Active sections]</a><span>|</span><a href="#feed">Latest</a><span>|</span><a href="#highlights">Highlights</a><span>|</span><a href="#lessons">Every month</a><span>|</span><a href="#funding">Funding</a><span>|</span><a href="#tips">Tip a shack</a><span>|</span><span class="status" id="status">Loading live data…</span>
+</div></div>
+
+<main id="app" aria-busy="true">
+<section class="hero" id="stats">
+  <div class="in">
+    <div>
+      <div class="cap">bitcoinekasi.com/painted-shacks · <span id="clock">live</span></div>
+      <h1 id="h-title">Painted Shacks</h1>
+      <p class="lead" id="h-lead">Loading the latest numbers…</p>
+      <div class="cap" id="h-cap">&nbsp;</div>
+      <div class="bracket" id="h-bracket">[<span class="fill"><i id="h-fill" style="width:0"></i></span>]</div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="cap">Shacks painted</div><div class="v" id="t-painted">–</div><div class="pbar"><i id="t-painted-bar" style="width:0"></i></div></div>
+      <svg class="bot" viewBox="0 -13 30 47" role="img" aria-label="Pixel mascot: a little painted shack holding a phone, with a Bitcoin Ekasi sign on its roof" shape-rendering="crispEdges">
+        <rect x="14" y="-1" width="2" height="4" fill="currentColor"/><circle cx="15" cy="-6.5" r="6.4" fill="#fff"/><image href="ekasi-sign.png" x="9" y="-12.5" width="12" height="12"><title>Bitcoin Ekasi</title></image>
+        <rect x="3" y="6" width="24" height="2" fill="currentColor"/><rect x="5" y="4" width="20" height="2" fill="currentColor"/><rect x="9" y="3" width="12" height="1" fill="currentColor"/>
+        <rect x="4" y="8" width="22" height="16" fill="#e07a00"/>
+        <rect x="8" y="8" width="1" height="16" fill="#000" opacity=".15"/><rect x="21" y="8" width="1" height="16" fill="#000" opacity=".15"/>
+        <rect x="8" y="11" width="4" height="4" fill="#fff"/><rect x="18" y="11" width="4" height="4" fill="#fff"/>
+        <rect x="10" y="12" width="2" height="2" fill="#1a1a1a"/><rect x="18" y="12" width="2" height="2" fill="#1a1a1a"/>
+        <rect x="12" y="18" width="6" height="1" fill="#1a1a1a"/><rect x="11" y="17" width="1" height="1" fill="#1a1a1a"/><rect x="18" y="17" width="1" height="1" fill="#1a1a1a"/>
+        <rect x="0" y="14" width="4" height="2" fill="currentColor"/><rect x="0" y="9" width="4" height="6" fill="#26331f"/><rect x="1" y="10" width="2" height="3" fill="#9fd0ff"/>
+        <rect x="26" y="15" width="3" height="2" fill="currentColor"/>
+        <rect x="23" y="19" width="5" height="5" fill="#f7931a"/><rect x="24" y="20" width="3" height="3" fill="#fff" opacity=".35"/>
+        <rect x="6" y="24" width="18" height="2" fill="currentColor"/>
+        <rect x="7" y="26" width="5" height="5" fill="currentColor"/><rect x="18" y="26" width="5" height="5" fill="currentColor"/>
+        <rect x="8" y="27" width="3" height="3" fill="#8fa67f"/><rect x="19" y="27" width="3" height="3" fill="#8fa67f"/>
+      </svg>
+      <div class="tile r"><div class="cap">Lesson done this week</div><div class="v" id="t-week">–</div><div class="pbar o"><i id="t-week-bar" style="width:0"></i></div></div>
+      <div class="tile"><div class="cap">Good condition</div><div class="v" id="t-good">–</div><div class="pbar"><i id="t-good-bar" style="width:0"></i></div></div>
+      <div class="tile r"><div class="cap">Paid on time</div><div class="v" id="t-ontime">–</div><div class="pbar"><i id="t-ontime-bar" style="width:0"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="shacks">
+  <div class="in">
+    <h2>Active sections</h2>
+    <p class="desc"><span id="place-desc">Where the painted shacks are in JCC Camp, Mossel Bay. Pick a section to see it on the map.</span> <span id="map-sub">Map is a sketch, not to scale.</span></p>
+    <div class="mapgrid">
+      <div class="map">
+        <svg viewBox="0 0 520 330" role="img" aria-label="Sketch map of JCC Camp with the painted shacks by section" id="mapsvg">
+          <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--line)" stroke-width=".6" opacity=".6"/></pattern></defs>
+          <rect width="520" height="330" fill="url(#grid)"/>
+          <path d="M0 300 Q140 280 260 300 T520 290 V330 H0Z" fill="var(--line)" opacity=".35"/>
+          <text x="20" y="318" font-family="IBM Plex Mono,monospace" font-size="10" fill="var(--ink2)">to the sea ↓</text>
+          <g fill="none" stroke="var(--ink2)" stroke-width="3" opacity=".55"><path d="M10 160 C140 150 260 175 510 150"/><path d="M250 10 C245 100 265 200 255 290"/></g>
+          <text x="250" y="166" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="var(--ink2)" style="paint-order:stroke" stroke="var(--panel)" stroke-width="3">Main road</text>
+          <g stroke="var(--ink)" stroke-width="1.2" fill="var(--bg)" opacity=".9">
+            <path d="M40 30 L230 22 L238 140 L50 146Z"/><path d="M272 24 L480 40 L470 138 L276 150Z"/>
+            <path d="M40 172 L236 166 L240 280 L60 276Z"/><path d="M276 170 L460 162 L440 270 L270 280Z"/>
+          </g>
+          <g id="dots"></g>
+          <g id="pins" font-family="Pixelify Sans,monospace" font-size="15" fill="var(--ink)"></g>
+        </svg>
+        <div id="lmap" hidden></div>
+        <button class="mapbtn" id="mapbtn" hidden>[ PAUSE ]</button>
+      </div>
+      <div>
+        <div class="rank" id="rank"></div>
+        <p class="note" id="rank-note" hidden></p>
+        <p class="facts" id="gmaps" hidden style="margin-top:14px"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="feed">
+  <div class="in">
+    <div class="feedgrid">
+      <div>
+        <h2>Latest activity</h2>
+        <p class="desc">Straight from the apps as it happens. Shack numbers only, never names.</p>
+        <ul class="feed" id="feedlist"></ul>
+        <p class="note" id="feed-empty" hidden>Nothing yet. Finished lessons, inspections and payouts will show here as they happen.</p>
+      </div>
+      <div>
+        <h2>Lessons per day</h2>
+        <p class="desc" id="days-desc">Owners finish lessons on their phones in their own time.</p>
+        <div class="cap" id="today-cap">Today: 0 lessons finished</div>
+        <div class="days" id="days"></div>
+        <div class="cap" style="display:flex;justify-content:space-between;margin-top:6px"><span id="days-from"></span><span id="days-to"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="highlights">
+  <div class="in">
+    <h2>Highlights</h2>
+    <p class="desc" id="hl-desc">This payout round.</p>
+    <div class="leaders">
+      <div><span>lessons finished</span><i></i><b id="hl-lessons">0</b></div>
+      <div><span>owners learning</span><i></i><b id="hl-owners">0</b></div>
+      <div><span>sats earned</span><i></i><b id="hl-sats">0</b></div>
+      <div><span>shacks inspected</span><i></i><b id="hl-insp">0</b></div>
+      <div><span>quiz passed first try</span><i></i><b id="hl-first">–</b></div>
+    </div>
+    <p class="facts" id="hl-facts"></p>
+    <p class="facts" id="hl-recent"></p>
+  </div>
+</section>
+
+<section class="blk" id="lessons">
+  <div class="in">
+    <h2>Every month so far</h2>
+    <p class="desc" style="max-width:62ch" id="months-desc"></p>
+    <div class="months" id="months"></div>
+  </div>
+</section>
+
+<section class="blk" id="funding">
+  <div class="in">
+    <h2>Sponsor funding</h2>
+    <p class="desc">Money that sponsors put in for their logos on the shacks. It pays the owners' sats.</p>
+    <div class="leaders money" style="margin-top:4px">
+      <div><span>sats received</span><i></i><b id="f-sats">0</b></div>
+      <div><span>in rand</span><i></i><b id="f-zar">R0</b></div>
+      <div><span>sponsors</span><i></i><b id="f-n">0</b></div>
+    </div>
+    <div class="tablewrap" id="f-wrap">
+      <table class="fund">
+        <thead><tr><th>Date</th><th>For</th><th>From</th><th class="r">Amount (R)</th><th class="r">Sats</th><th>Renews</th></tr></thead>
+        <tbody id="f-rows"></tbody>
+        <tfoot><tr><td colspan="3">Total</td><td class="r" id="f-tzar"></td><td class="r" id="f-tsats"></td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="note" id="f-empty" hidden>Sponsor payments will show here once they are recorded.</p>
+    <div class="renew" id="renew"></div>
+  </div>
+</section>
+
+<section class="blk" id="tips">
+  <div class="in feedgrid">
+    <div>
+      <h2>Tip a shack</h2>
+      <p class="desc">Owners who chose to show their Lightning address. Tips go straight to their wallet.</p>
+      <div class="tips" id="tiplist"></div>
+      <div class="cap" style="margin-top:10px" id="tip-count"></div>
+    </div>
+    <div>
+      <h2>Sponsors</h2>
+      <p class="desc">Whose logos are on the walls.</p>
+      <div class="sponsors" id="sponsors"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="in">
+  <span>Live from the Painted Shacks apps on Bitcoin Ekasi's own server. Updates every minute as lessons, inspections and payouts happen.</span>
+  <span>Only totals and shack numbers are shown. Owners' names and phone numbers are never published, and a Lightning address only shows if its owner chose to share it.</span>
+  <span>The main page: <a href="./">Painted Shacks Accountability</a>, where the walls are, who supports them and where the money goes.</span>
+  <span id="updated"></span>
+</div></footer>
+
+<script src="dashboard.js"></script>
+</body>
+</html>

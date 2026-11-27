@@ -48,7 +48,9 @@ Real data (owner Lightning addresses, sponsor contacts) is **not** kept in this 
 
 ## Public dashboard
 
-`dashboard/index.html` + `dashboard.js` (the retro "Painted Shacks Dashboard" design, fonts in `dashboard/fonts`, all self-hosted so no visitor data goes to Google). The page calls `GET /api/public/dashboard` every minute. That endpoint (`server/public.js`):
+`dashboard/index.html` + `accountability.js` is the main page: **Painted Shacks Accountability**, in the format of the team's draft of 25 Nov 2026 (walls, family terms, learning, money in and out, partners, photos). Where the apps don't have the information yet (costs, money held, signed agreements, class numbers, proof links, post reach), it keeps the draft's text and made-up numbers, marked SAMPLE or DRAFT 25 NOV; they are in one list (`D`) at the top of `accountability.js`. `/dashboard/accountability/` forwards to it.
+
+`dashboard/live.html` + `dashboard.js` is the live view (the retro "Painted Shacks Dashboard" design, fonts in `dashboard/fonts`, all self-hosted so no visitor data goes to Google). The page calls `GET /api/public/dashboard` every minute. That endpoint (`server/public.js`):
 
 - needs no sign-in and is read-only; it is worked out at most once a minute and kept in memory, so many visitors cost the server almost nothing;
 - returns only totals, dates and shack numbers. Never owner names, phone numbers, PINs, notes, inspection photos or payment details;
