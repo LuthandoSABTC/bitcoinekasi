@@ -183,7 +183,13 @@ function init({ db, pay, learn, send, Bad }) {
     const inYear = funding.filter(r => r.received_on.startsWith(year));
     const outMonths = db.prepare(`select substr(paid_at,1,7) month, sum(amount_sats) sats, sum(coalesce(fee_sats,0)) fees, count(distinct owner_id) households, max(paid_at) at
                                   from payouts where status = 'paid' and paid_at >= ? group by 1 order by 1`).all(year + "-01-01");
+    // Payouts made before the app (typed in admin), skipping any month the app itself paid.
+    const appMonths = new Set(outMonths.map(m => m.month));
+    const past = db.prepare("select period, paid_on, households, amount_sats, proof_url from past_payouts where period like ? order by period").all(year + "-%")
+      .filter(p => !appMonths.has(p.period));
     const ledger = [
+      ...past.map(p => ({ date: p.paid_on, what: `${monthName(p.period).split(" ")[0]} payout to ${p.households} ${p.households === 1 ? "family" : "families"}`,
+                          in_sats: 0, out_sats: p.amount_sats, proof: webLink(p.proof_url) })),
       ...inYear.map(r => ({ date: r.received_on, what: "Partner sponsorship", from: r.sponsor, in_sats: r.amount_sats, out_sats: 0, proof: r.proof || null })),
       ...outMonths.map(m => ({ date: saDay(m.at), what: `${monthName(m.month).split(" ")[0]} payout to ${m.households} ${m.households === 1 ? "family" : "families"}`, in_sats: 0, out_sats: m.sats })),
     ].sort((a, b) => b.date.localeCompare(a.date));
@@ -209,7 +215,7 @@ function init({ db, pay, learn, send, Bad }) {
       walls: WALL_KINDS.map(k => ({ ...k, count: wallCount.get(k.key) || 0 })),
       partners,
       money: { received_sats: inYear.reduce((a, r) => a + r.amount_sats, 0), received_zar: inYear.reduce((a, r) => a + (r.amount_zar || 0), 0),
-               paid_to_families_sats: outMonths.reduce((a, m) => a + m.sats, 0), fees_sats: outMonths.reduce((a, m) => a + m.fees, 0), ledger },
+               paid_to_families_sats: outMonths.reduce((a, m) => a + m.sats, 0) + past.reduce((a, p) => a + p.amount_sats, 0), fees_sats: outMonths.reduce((a, m) => a + m.fees, 0), ledger },
       learning: { months: learnMonths, lessons: yearLessons.length, households: new Set(yearLessons.map(c => c.owner_id)).size },
       households: activeOwners,
       // Report settings and lines typed in the admin app. null = not typed yet, so the page keeps the draft's text.

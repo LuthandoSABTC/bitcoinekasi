@@ -133,7 +133,10 @@ test("accountability: walls by sponsor status, partners, money in and out, no pr
   assert.deepEqual(a.partners[0].posts, ["https://x.com/BitcoinEkasi/status/1"]);
   assert.equal(a.money.received_sats, 3095490, "only public payments this year");
   const year = new Date().toISOString().slice(0, 4);
-  assert.equal(a.money.paid_to_families_sats, year === "2026" ? 49000 : 0);
+  const appMonths = q("select distinct substr(paid_at,1,7) m from payouts where status = 'paid'").all().map(r => r.m);
+  const pastSats = q("select period, amount_sats from past_payouts where period like '" + year + "-%'").all().filter(r => !appMonths.includes(r.period)).reduce((t, r) => t + r.amount_sats, 0);
+  assert.equal(a.money.paid_to_families_sats, (year === "2026" ? 49000 : 0) + pastSats, "app payouts plus register months the app didn't pay");
+  assert.ok(pastSats > 0 || year !== "2026");
   assert.ok(a.money.ledger.every(r => !/Thandi|Sipho/.test(r.what)), "payouts are one line per month");
 });
 

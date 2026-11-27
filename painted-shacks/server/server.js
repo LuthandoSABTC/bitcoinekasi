@@ -50,6 +50,8 @@ const T = {
   // Public report (/dashboard): costs and other money in, and each partner's video post. Everything here is public.
   report_entries: {
     cols: { entry_date: "date!", direction: "text!", category: "text", what: "text!", amount_sats: "int!", proof_url: "url" } },
+  past_payouts: {
+    cols: { period: "text!", paid_on: "date!", households: "int!", amount_sats: "int!", proof_url: "url" } },
   partner_posts: {
     cols: { sponsor_id: "id!", video_on: "date", video_x_url: "url", video_nostr_url: "url", impressions: "int", views: "int",
             coming_soon: "bool", note: "text" } },
@@ -90,6 +92,11 @@ function clean(table, body, isNew) {
     if ("category" in out && out.category !== null && !["paint", "running", "partnerships", "donation", "other"].includes(out.category)) throw new Bad("Choose what kind of line this is.");
     if ("amount_sats" in out && !(out.amount_sats > 0)) throw new Bad("The amount must be more than 0 sats.");
     if (out.category === null) delete out.category;
+  }
+  if (table === "past_payouts") {
+    if ("period" in out && !/^\d{4}-(0[1-9]|1[0-2])$/.test(out.period)) throw new Bad("Choose the month.");
+    for (const k of ["households", "amount_sats"]) if (out[k] != null && out[k] < 0) throw new Bad("Numbers can't be below 0.");
+    if (isNew && out.period && db.prepare("select 1 from past_payouts where period = ?").get(out.period)) throw new Bad("That month is already in the list. Edit it instead.");
   }
   if (table === "partner_posts") {
     for (const k of ["impressions", "views"]) if (out[k] != null && out[k] < 0) throw new Bad("Reach can't be below 0.");
@@ -299,7 +306,7 @@ async function handle(req, res) {
 
   if (p === "/api/import" && method === "POST") return send(res, 200, importSeed(await readJson(req), user));
 
-  const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks|report_entries|partner_posts)(?:\/([\w-]{1,64}))?$/);
+  const m = p.match(/^\/api\/(sponsors|sponsor_contacts|sponsor_payments|owners|shacks|report_entries|partner_posts|past_payouts)(?:\/([\w-]{1,64}))?$/);
   if (m) {
     const [, table, id] = m;
     publicData.clear();   // the public dashboard shows sponsors, shacks and report lines: rebuild it on the next visit

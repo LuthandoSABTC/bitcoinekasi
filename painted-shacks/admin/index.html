@@ -169,7 +169,7 @@ function toast(msg, err) {
 
 /* ============================================================ data layer
    One interface, two backends: Supabase (real) and an in-memory demo. */
-const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments", "ps_report_entries", "ps_partner_posts"];
+const TABLES = ["ps_shacks", "ps_owners", "ps_sponsors", "ps_sponsor_contacts", "ps_sponsor_payments", "ps_report_entries", "ps_partner_posts", "ps_past_payouts"];
 const DEMO = !!window.PS_DEMO_DATA || new URLSearchParams(location.search).has("demo");
 const cache = {};
 const api = (t) => "/api/" + t.replace(/^ps_/, "");
@@ -926,6 +926,13 @@ pages.report = async () => {
           <td class="r num">${e.direction === "in" ? fmtSats(e.amount_sats) : ""}</td><td class="r num">${e.direction === "out" ? fmtSats(e.amount_sats) : ""}</td>
           <td>${e.proof_url ? `<a href="${esc(e.proof_url)}" target="_blank" rel="noopener">Link</a>` : ""}</td></tr>`).join("") || '<tr><td colspan="6" class="muted">No lines yet. The report shows the draft\'s sample costs until you add one.</td></tr>'}
       </tbody></table></div></div>
+    <div class="card"><div class="head" style="margin:0"><h2>Payouts to families before the app</h2><a class="btn small" href="#/pastpay/new">Add month</a></div>
+      <p class="muted" style="margin:0">One line per month, from the attendance register. Only the total and the number of families show publicly, never names. Payouts sent from the Payments screen are added by the app.</p>
+      <div class="scroll"><table class="t"><thead><tr><th>Month</th><th>Paid on</th><th class="r">Families</th><th class="r">Sats</th><th>Proof</th></tr></thead><tbody>
+        ${cache.ps_past_payouts.slice().sort((a, b) => b.period.localeCompare(a.period)).map(x => `<tr><td><a href="#/pastpay/${x.id}">${esc(x.period)}</a></td><td>${fmtDate(x.paid_on)}</td>
+          <td class="r num">${x.households}</td><td class="r num">${fmtSats(x.amount_sats)}</td><td>${x.proof_url ? `<a href="${esc(x.proof_url)}" target="_blank" rel="noopener">Link</a>` : ""}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">None yet.</td></tr>'}
+      </tbody></table></div>
+      <p class="hint" style="margin:0">Total: ${fmtSats(cache.ps_past_payouts.reduce((t, x) => t + Number(x.amount_sats || 0), 0))} sats.</p></div>
     <div class="card"><h2>Partner video posts</h2>
       <p class="muted" style="margin:0">Add the video post, its links and reach on each sponsor's page: ${cache.ps_sponsors.filter(x => x.payment_status === "paying").map(x => `<a href="#/sponsor/${x.id}">${esc(x.name)}</a>`).join(", ") || "no paying sponsors yet"}. Missing one? Set its payment status to Paying on its page.</p></div>`);
   $("#repf").addEventListener("submit", async e => {
@@ -956,6 +963,25 @@ pages.entry = id => {
     </form>`);
   bindForm("ps_report_entries", e, f => ({entry_date: f.entry_date, direction: f.direction, category: f.category, what: f.what.trim(), amount_sats: Number(f.amount_sats), proof_url: f.proof_url}),
     "#/report", "#/report", "Delete this line from the public report?");
+};
+
+pages.pastpay = id => {
+  const isNew = id === "new";
+  const x = isNew ? {period: saToday().slice(0, 7), paid_on: saToday(), households: "", amount_sats: ""} : byId("ps_past_payouts", id);
+  if (!x) return notFound();
+  shell("funding", `
+    <a class="back" href="#/report">${I.back}Public report</a>
+    <div class="head"><h1>${isNew ? "Add a month's payout" : "Payout for " + esc(x.period)}</h1></div>
+    <form class="card f" id="form"><div class="fields">
+      <label class="fld">Month<input type="month" name="period" required value="${esc(x.period)}"></label>
+      <label class="fld">Paid on<input type="date" name="paid_on" required value="${esc(x.paid_on)}"></label>
+      <label class="fld">Families paid<input type="number" name="households" min="0" step="1" required value="${esc(x.households)}"></label>
+      <label class="fld">Total sats<input type="number" name="amount_sats" min="0" step="1" required value="${esc(x.amount_sats)}"><span class="hint">Usually families × 28,000.</span></label>
+      <label class="fld wide">Proof link (public)<input type="url" name="proof_url" value="${esc(x.proof_url)}" placeholder="https://"><span class="hint">Optional. Must not show family names.</span></label></div>
+      <div class="actions"><button class="btn" type="submit">Save</button>${!isNew ? '<button class="btn danger" type="button" id="del" style="margin-left:auto">Delete</button>' : ""}</div>
+    </form>`);
+  bindForm("ps_past_payouts", x, f => ({period: f.period, paid_on: f.paid_on, households: Number(f.households), amount_sats: Number(f.amount_sats), proof_url: f.proof_url}),
+    "#/report", "#/report", "Delete this month from the public report?");
 };
 
 pages.video = (id, params) => {

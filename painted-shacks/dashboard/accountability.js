@@ -103,8 +103,8 @@
       cols(D.classes.months.map((v, i) => [MON[i], v]), Math.max(...D.classes.months));
     }
 
-    // Money (this year only): real once the team has typed a cost or donation in the admin app; the draft's numbers until then.
-    const realMoney = R.has_entries;
+    // Money (this year only): real once there are payouts to families or a cost or donation typed in the admin app; the draft's numbers until then.
+    const realMoney = R.has_entries || M.paid_to_families_sats > 0;
     const ins = R.entries.filter(e => e.direction === "in"), outs = R.entries.filter(e => e.direction === "out");
     const sum = list => list.reduce((t, e) => t + e.sats, 0);
     $("toc-money").innerHTML = realMoney ? "›" : SAMPLE;

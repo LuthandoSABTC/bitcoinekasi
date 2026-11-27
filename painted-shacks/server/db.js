@@ -431,6 +431,24 @@ function open(file) {
   // 2026-11-27: a public proof link (transaction or invoice) on each sponsor payment, shown on the report's ledger.
   if (!db.prepare("select 1 from pragma_table_info('sponsor_payments') where name = 'proof_url'").get())
     db.exec("alter table sponsor_payments add column proof_url text");
+  // 2026-11-27: monthly payouts to families made before the payout screen existed (from the attendance register sheet,
+  // one tab per month). Totals only, never per family. Shown on the public report next to payouts sent from the app.
+  if (!db.prepare("select 1 from sqlite_master where type = 'table' and name = 'past_payouts'").get()) {
+    db.exec(`create table past_payouts (
+      id           text primary key,
+      period       text not null unique check (period glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]'),
+      paid_on      text not null,
+      households   integer not null check (households >= 0),
+      amount_sats  integer not null check (amount_sats >= 0),
+      proof_url    text,
+      created_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at   text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`);
+    // Counted from the register: each family paid 28,000 sats (4 weeks) that month.
+    const ins = db.prepare("insert into past_payouts(id, period, paid_on, households, amount_sats) values (?,?,?,?,?)");
+    for (const [period, paid_on, n] of [["2026-05", "2026-05-08", 8], ["2026-06", "2026-06-30", 10], ["2026-07", "2026-07-30", 10],
+      ["2026-08", "2026-08-27", 7], ["2026-09", "2026-09-24", 6], ["2026-10", "2026-10-29", 8], ["2026-11", "2026-11-25", 5]])
+      ins.run(require("node:crypto").randomUUID(), period, paid_on, n, n * 28000);
+  }
   return db;
 }
 
